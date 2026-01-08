@@ -7,22 +7,25 @@ import HowItWorksSection from "@/components/home/HowItWorksSection";
 import TemplatesPreview from "@/components/home/TemplatesPreview";
 import TestimonialsSection from "@/components/home/TestimonialsSection";
 import CTASection from "@/components/home/CTASection";
+import { PageTransition } from "@/components/PageTransition";
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <main>
-        <HeroSection />
-        <FeaturesSection />
-        <StatsSection />
-        <HowItWorksSection />
-        <TemplatesPreview />
-        <TestimonialsSection />
-        <CTASection />
-      </main>
-      <Footer />
-    </div>
+    <PageTransition>
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <main>
+          <HeroSection />
+          <FeaturesSection />
+          <StatsSection />
+          <HowItWorksSection />
+          <TemplatesPreview />
+          <TestimonialsSection />
+          <CTASection />
+        </main>
+        <Footer />
+      </div>
+    </PageTransition>
   );
 };
 
