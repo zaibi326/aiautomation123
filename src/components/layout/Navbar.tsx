@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Zap, Sparkles, ExternalLink } from "lucide-react";
+import { Menu, X, Zap, Sparkles, ArrowRight } from "lucide-react";
 import { useState } from "react";
 
 const Navbar = () => {
@@ -9,9 +9,9 @@ const Navbar = () => {
   const isHeroPage = location.pathname === "/";
 
   const navLinks = [
-    { name: "Automations", href: "/automations", external: false },
-    { name: "Courses", href: "https://aiautobase.com/courses", external: true },
-    { name: "Pricing", href: "/pricing", external: false },
+    { name: "Automations", href: "/automations" },
+    { name: "Courses", href: "/courses" },
+    { name: "Pricing", href: "/pricing" },
   ];
 
   return (
@@ -29,7 +29,7 @@ const Navbar = () => {
               className="text-primary-foreground font-semibold underline underline-offset-2 hover:opacity-80 transition-opacity flex items-center gap-1"
             >
               Explore Now
-              <ExternalLink className="w-3 h-3" />
+              <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
         </div>
@@ -54,30 +54,15 @@ const Navbar = () => {
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-8">
               {navLinks.map((link) => (
-                link.external ? (
-                  <a
-                    key={link.name}
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`text-sm font-medium transition-colors hover:text-primary flex items-center gap-1 ${
-                      isHeroPage ? "hero-text-muted hover:text-hero-text" : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {link.name}
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                ) : (
-                  <Link
-                    key={link.name}
-                    to={link.href}
-                    className={`text-sm font-medium transition-colors hover:text-primary ${
-                      isHeroPage ? "hero-text-muted hover:text-hero-text" : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {link.name}
-                  </Link>
-                )
+                <Link
+                  key={link.name}
+                  to={link.href}
+                  className={`text-sm font-medium transition-colors hover:text-primary ${
+                    isHeroPage ? "hero-text-muted hover:text-hero-text" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {link.name}
+                </Link>
               ))}
             </div>
 
@@ -113,32 +98,16 @@ const Navbar = () => {
             }`}>
               <div className="flex flex-col gap-4">
                 {navLinks.map((link) => (
-                  link.external ? (
-                    <a
-                      key={link.name}
-                      href={link.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => setIsOpen(false)}
-                      className={`text-sm font-medium py-2 flex items-center gap-1 ${
-                        isHeroPage ? "hero-text-muted" : "text-muted-foreground"
-                      }`}
-                    >
-                      {link.name}
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  ) : (
-                    <Link
-                      key={link.name}
-                      to={link.href}
-                      onClick={() => setIsOpen(false)}
-                      className={`text-sm font-medium py-2 ${
-                        isHeroPage ? "hero-text-muted" : "text-muted-foreground"
-                      }`}
-                    >
-                      {link.name}
-                    </Link>
-                  )
+                  <Link
+                    key={link.name}
+                    to={link.href}
+                    onClick={() => setIsOpen(false)}
+                    className={`text-sm font-medium py-2 ${
+                      isHeroPage ? "hero-text-muted" : "text-muted-foreground"
+                    }`}
+                  >
+                    {link.name}
+                  </Link>
                 ))}
                 <div className="flex flex-col gap-2 pt-4">
                   <Link to="/login" onClick={() => setIsOpen(false)}>
