@@ -4,7 +4,7 @@ import { ArrowRight, Play, Sparkles } from "lucide-react";
 
 const HeroSection = () => {
   return (
-    <section className="hero-gradient min-h-screen flex items-center pt-20">
+    <section className="hero-gradient min-h-screen flex items-center pt-32">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
         <div className="max-w-4xl mx-auto text-center">
           {/* Badge */}
