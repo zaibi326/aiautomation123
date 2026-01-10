@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,8 +8,20 @@ import {
   User, Bell, Shield, Key
 } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Settings = () => {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
+
+  const displayName = user?.user_metadata?.display_name || "";
+  const [firstName, lastName] = displayName.split(" ");
+
   return (
     <PageTransition>
       <div className="min-h-screen bg-surface-muted flex">
@@ -56,7 +68,10 @@ const Settings = () => {
           </nav>
 
           <div className="absolute bottom-0 left-0 w-64 p-4 border-t border-sidebar-border">
-            <button className="flex items-center gap-3 px-4 py-3 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors w-full">
+            <button 
+              onClick={handleSignOut}
+              className="flex items-center gap-3 px-4 py-3 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors w-full"
+            >
               <LogOut className="w-5 h-5" />
               Sign Out
             </button>
@@ -80,16 +95,16 @@ const Settings = () => {
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="firstName">First name</Label>
-                    <Input id="firstName" defaultValue="John" />
+                    <Input id="firstName" defaultValue={firstName || ""} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="lastName">Last name</Label>
-                    <Input id="lastName" defaultValue="Doe" />
+                    <Input id="lastName" defaultValue={lastName || ""} />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" defaultValue="john@example.com" />
+                  <Input id="email" type="email" defaultValue={user?.email || ""} disabled />
                 </div>
                 <Button variant="hero" className="w-fit">Save Changes</Button>
               </div>
