@@ -1,12 +1,21 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
   Zap, Home, Grid, Settings, CreditCard, LogOut,
   Check, ArrowRight
 } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Billing = () => {
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
+
   return (
     <PageTransition>
       <div className="min-h-screen bg-surface-muted flex">
@@ -53,7 +62,10 @@ const Billing = () => {
           </nav>
 
           <div className="absolute bottom-0 left-0 w-64 p-4 border-t border-sidebar-border">
-            <button className="flex items-center gap-3 px-4 py-3 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors w-full">
+            <button 
+              onClick={handleSignOut}
+              className="flex items-center gap-3 px-4 py-3 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors w-full"
+            >
               <LogOut className="w-5 h-5" />
               Sign Out
             </button>

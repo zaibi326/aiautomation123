@@ -1,9 +1,19 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Zap, Check } from "lucide-react";
+import { Zap, Check, Loader2 } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { z } from "zod";
+
+const signupSchema = z.object({
+  displayName: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
 
 const benefits = [
   "15,000+ ready-made automations",
@@ -12,9 +22,62 @@ const benefits = [
 ];
 
 const Signup = () => {
-  const handleSubmit = (e: React.FormEvent) => {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const { signUp, user } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  // Redirect if already logged in
+  if (user) {
+    navigate("/dashboard", { replace: true });
+    return null;
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    window.location.href = "/dashboard";
+    setIsLoading(true);
+
+    const displayName = `${firstName} ${lastName}`.trim();
+
+    // Validate input
+    const validation = signupSchema.safeParse({ displayName, email, password });
+    if (!validation.success) {
+      toast({
+        title: "Validation Error",
+        description: validation.error.errors[0].message,
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    const { error } = await signUp(email, password, displayName);
+
+    if (error) {
+      let message = "An error occurred during sign up";
+      if (error.message.includes("User already registered")) {
+        message = "An account with this email already exists";
+      } else if (error.message.includes("Password")) {
+        message = error.message;
+      }
+      toast({
+        title: "Sign Up Failed",
+        description: message,
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    toast({
+      title: "Account created!",
+      description: "Welcome to AutoFlow AI.",
+    });
+    navigate("/dashboard");
   };
 
   return (
@@ -57,7 +120,10 @@ const Signup = () => {
                     id="firstName"
                     placeholder="John"
                     className="h-12"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
                     required
+                    disabled={isLoading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -66,7 +132,10 @@ const Signup = () => {
                     id="lastName"
                     placeholder="Doe"
                     className="h-12"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
                     required
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -78,7 +147,10 @@ const Signup = () => {
                   type="email"
                   placeholder="you@example.com"
                   className="h-12"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
 
@@ -89,34 +161,24 @@ const Signup = () => {
                   type="password"
                   placeholder="Create a strong password"
                   className="h-12"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
 
-              <Button variant="hero" size="lg" className="w-full">
-                Create Account
+              <Button variant="hero" size="lg" className="w-full" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating account...
+                  </>
+                ) : (
+                  "Create Account"
+                )}
               </Button>
             </form>
-
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-border"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-card text-muted-foreground">
-                  Or continue with
-                </span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <Button variant="outline" size="lg">
-                Google
-              </Button>
-              <Button variant="outline" size="lg">
-                GitHub
-              </Button>
-            </div>
 
             <p className="text-center text-sm text-muted-foreground mt-6">
               Already have an account?{" "}
