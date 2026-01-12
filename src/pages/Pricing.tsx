@@ -334,20 +334,25 @@ const Pricing = () => {
                   <Sparkles className="w-5 h-5 text-primary" />
                   After Payment
                 </h4>
-                <ol className="space-y-2 text-sm text-muted-foreground">
+                <ol className="space-y-2 text-sm text-muted-foreground mb-6">
                   <li className="flex items-start gap-2">
                     <span className="w-5 h-5 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
                     Take a screenshot of your payment receipt
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="w-5 h-5 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
-                    Send the screenshot via WhatsApp or Email
+                    Fill out the payment confirmation form below
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="w-5 h-5 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
                     Get instant access within 24 hours
                   </li>
                 </ol>
+                <Link to="/payment-confirmation">
+                  <Button variant="hero" size="lg" className="w-full">
+                    Submit Payment Confirmation
+                  </Button>
+                </Link>
               </div>
             </div>
 

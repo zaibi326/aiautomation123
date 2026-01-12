@@ -10,6 +10,7 @@ import Automations from "./pages/Automations";
 import AutomationDetail from "./pages/AutomationDetail";
 import Courses from "./pages/Courses";
 import Pricing from "./pages/Pricing";
+import PaymentConfirmation from "./pages/PaymentConfirmation";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/automations/:id" element={<AutomationDetail />} />
             <Route path="/courses" element={<Courses />} />
             <Route path="/pricing" element={<Pricing />} />
+            <Route path="/payment-confirmation" element={<PaymentConfirmation />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
