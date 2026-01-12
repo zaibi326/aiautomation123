@@ -2,8 +2,9 @@ import { Link } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
-import { Check, Sparkles, Crown, Zap } from "lucide-react";
+import { Check, Sparkles, Crown, Zap, Building2, Copy, Globe } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
+import { toast } from "sonner";
 
 const plans = [
   {
@@ -182,6 +183,171 @@ const Pricing = () => {
                   <Check className="w-4 h-4 text-primary" />
                   <span>24/7 Support</span>
                 </div>
+              </div>
+            </div>
+
+            {/* Bank Transfer Payment Section */}
+            <div className="mt-20 max-w-4xl mx-auto">
+              <div className="text-center mb-10">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-green-500/20 to-green-500/10 text-green-600 dark:text-green-400 text-sm font-medium mb-4 border border-green-500/20">
+                  <Building2 className="w-4 h-4" />
+                  Bank Transfer Payment
+                </div>
+                <h2 className="text-3xl font-bold text-foreground mb-3">
+                  Pay via Bank Transfer
+                </h2>
+                <p className="text-muted-foreground max-w-lg mx-auto">
+                  Transfer your payment directly to our UBL bank account. Send screenshot of payment receipt via WhatsApp for instant access.
+                </p>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Local Transfer */}
+                <div className="p-6 rounded-2xl bg-card border border-border hover:border-primary/50 transition-all duration-300">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <Building2 className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-foreground">Local Transfer</h3>
+                      <p className="text-sm text-muted-foreground">Pakistan (PKR)</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="p-4 rounded-xl bg-muted/50">
+                      <p className="text-xs text-muted-foreground mb-1">Bank Name</p>
+                      <p className="font-semibold text-foreground">United Bank Limited (UBL)</p>
+                    </div>
+                    
+                    <div className="p-4 rounded-xl bg-muted/50">
+                      <p className="text-xs text-muted-foreground mb-1">Account Title</p>
+                      <div className="flex items-center justify-between">
+                        <p className="font-semibold text-foreground">Zohaib Anwar</p>
+                        <button 
+                          onClick={() => {
+                            navigator.clipboard.writeText("Zohaib Anwar");
+                            toast.success("Copied to clipboard!");
+                          }}
+                          className="p-1.5 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-muted/50">
+                      <p className="text-xs text-muted-foreground mb-1">IBAN</p>
+                      <div className="flex items-center justify-between">
+                        <p className="font-semibold text-foreground text-sm">PK52UNIL0109000318793263</p>
+                        <button 
+                          onClick={() => {
+                            navigator.clipboard.writeText("PK52UNIL0109000318793263");
+                            toast.success("Copied to clipboard!");
+                          }}
+                          className="p-1.5 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-muted/50">
+                      <p className="text-xs text-muted-foreground mb-1">Branch</p>
+                      <p className="font-semibold text-foreground text-sm">Sadiq Abad Gallah Mandi Branch</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* International Transfer */}
+                <div className="p-6 rounded-2xl bg-card border border-border hover:border-primary/50 transition-all duration-300">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                      <Globe className="w-6 h-6 text-blue-500" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-foreground">International Transfer</h3>
+                      <p className="text-sm text-muted-foreground">SWIFT/Wire Transfer (USD)</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="p-4 rounded-xl bg-muted/50">
+                      <p className="text-xs text-muted-foreground mb-1">SWIFT/BIC Code</p>
+                      <div className="flex items-center justify-between">
+                        <p className="font-semibold text-foreground">UNILPKKAXXX</p>
+                        <button 
+                          onClick={() => {
+                            navigator.clipboard.writeText("UNILPKKAXXX");
+                            toast.success("Copied to clipboard!");
+                          }}
+                          className="p-1.5 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="p-4 rounded-xl bg-muted/50">
+                      <p className="text-xs text-muted-foreground mb-1">Account Title</p>
+                      <div className="flex items-center justify-between">
+                        <p className="font-semibold text-foreground">Zohaib Anwar</p>
+                        <button 
+                          onClick={() => {
+                            navigator.clipboard.writeText("Zohaib Anwar");
+                            toast.success("Copied to clipboard!");
+                          }}
+                          className="p-1.5 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-muted/50">
+                      <p className="text-xs text-muted-foreground mb-1">IBAN</p>
+                      <div className="flex items-center justify-between">
+                        <p className="font-semibold text-foreground text-sm">PK52UNIL0109000318793263</p>
+                        <button 
+                          onClick={() => {
+                            navigator.clipboard.writeText("PK52UNIL0109000318793263");
+                            toast.success("Copied to clipboard!");
+                          }}
+                          className="p-1.5 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-muted/50">
+                      <p className="text-xs text-muted-foreground mb-1">Bank Address</p>
+                      <p className="font-semibold text-foreground text-sm">UBL, Sadiq Abad Gallah Mandi Branch, Pakistan</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Instructions */}
+              <div className="mt-8 p-6 rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20">
+                <h4 className="font-bold text-foreground mb-3 flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-primary" />
+                  After Payment
+                </h4>
+                <ol className="space-y-2 text-sm text-muted-foreground">
+                  <li className="flex items-start gap-2">
+                    <span className="w-5 h-5 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
+                    Take a screenshot of your payment receipt
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-5 h-5 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
+                    Send the screenshot via WhatsApp or Email
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-5 h-5 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
+                    Get instant access within 24 hours
+                  </li>
+                </ol>
               </div>
             </div>
 
