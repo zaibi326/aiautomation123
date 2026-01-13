@@ -14,6 +14,118 @@ export type Database = {
   }
   public: {
     Tables: {
+      automation_categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      automation_subcategories: {
+        Row: {
+          category_id: string
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_subcategories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "automation_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      automations: {
+        Row: {
+          created_at: string
+          description: string | null
+          download_url: string | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          subcategory_id: string
+          title: string
+          updated_at: string
+          uses_count: number | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          download_url?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          subcategory_id: string
+          title: string
+          updated_at?: string
+          uses_count?: number | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          download_url?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          subcategory_id?: string
+          title?: string
+          updated_at?: string
+          uses_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automations_subcategory_id_fkey"
+            columns: ["subcategory_id"]
+            isOneToOne: false
+            referencedRelation: "automation_subcategories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_submissions: {
         Row: {
           amount: string
