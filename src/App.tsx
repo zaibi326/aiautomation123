@@ -19,6 +19,7 @@ import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import Billing from "./pages/Billing";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminLogin from "./pages/AdminLogin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -78,6 +79,7 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route path="/admin-login" element={<AdminLogin />} />
             <Route
               path="/admin"
               element={
