@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Check, Sparkles, Crown, Zap, Building2, Copy, Globe } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
 import { toast } from "sonner";
+import CurrencyConverter from "@/components/pricing/CurrencyConverter";
+import InternationalPaymentGuide from "@/components/pricing/InternationalPaymentGuide";
+import PaymentStatusTracker from "@/components/pricing/PaymentStatusTracker";
 
 const plans = [
   {
@@ -353,6 +356,17 @@ const Pricing = () => {
                     Submit Payment Confirmation
                   </Button>
                 </Link>
+              </div>
+
+              {/* Currency Converter & Payment Tools */}
+              <div className="grid md:grid-cols-2 gap-6 mt-8">
+                <CurrencyConverter />
+                <PaymentStatusTracker />
+              </div>
+
+              {/* International Payment Guide */}
+              <div className="mt-8">
+                <InternationalPaymentGuide />
               </div>
             </div>
 
