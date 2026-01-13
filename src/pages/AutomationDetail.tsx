@@ -1,12 +1,34 @@
+import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Check, Zap, Clock, Users, Star, Play, Settings } from "lucide-react";
+import { ArrowLeft, Check, Zap, Clock, Users, Star, Download, Settings, Loader2 } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
+import { useSubscription } from "@/hooks/useSubscription";
+import PaymentRequiredModal from "@/components/PaymentRequiredModal";
+import { toast } from "sonner";
 
 const AutomationDetail = () => {
   const { id } = useParams();
+  const { hasPaid, loading: subscriptionLoading } = useSubscription();
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = () => {
+    if (!hasPaid) {
+      setShowPaymentModal(true);
+      return;
+    }
+    
+    // If paid, proceed with download
+    setDownloading(true);
+    // Simulate download - in real app, this would download the actual file
+    setTimeout(() => {
+      setDownloading(false);
+      toast.success("Automation downloaded successfully!");
+    }, 1500);
+  };
 
   // Mock automation data
   const automation = {
@@ -158,12 +180,25 @@ const AutomationDetail = () => {
                   </div>
 
                   <div className="space-y-3">
-                    <Link to="/signup">
-                      <Button variant="hero" size="lg" className="w-full">
-                        <Play className="w-4 h-4" />
-                        Activate Automation
-                      </Button>
-                    </Link>
+                    <Button 
+                      variant="hero" 
+                      size="lg" 
+                      className="w-full"
+                      onClick={handleDownload}
+                      disabled={subscriptionLoading || downloading}
+                    >
+                      {downloading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Downloading...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="w-4 h-4" />
+                          Download Automation
+                        </>
+                      )}
+                    </Button>
                     <Button variant="outline" size="lg" className="w-full">
                       <Settings className="w-4 h-4" />
                       Preview Setup
@@ -171,9 +206,15 @@ const AutomationDetail = () => {
                   </div>
 
                   <div className="mt-6 pt-6 border-t border-border">
-                    <p className="text-xs text-muted-foreground text-center">
-                      Free plan includes 100 runs/month
-                    </p>
+                    {hasPaid ? (
+                      <p className="text-xs text-green-600 dark:text-green-400 text-center">
+                        ✓ Premium Access - Unlimited Downloads
+                      </p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground text-center">
+                        Download کے لیے Premium Plan ضروری ہے
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -182,6 +223,11 @@ const AutomationDetail = () => {
         </main>
 
         <Footer />
+        
+        <PaymentRequiredModal 
+          open={showPaymentModal} 
+          onOpenChange={setShowPaymentModal} 
+        />
       </div>
     </PageTransition>
   );
