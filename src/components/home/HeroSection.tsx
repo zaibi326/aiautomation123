@@ -31,7 +31,7 @@ const HeroSection = () => {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-up delay-300">
             <Link to="/signup">
               <Button variant="hero" size="xl" className="w-full sm:w-auto">
-                Get Started Free
+                Get Started
                 <ArrowRight className="w-5 h-5" />
               </Button>
             </Link>
