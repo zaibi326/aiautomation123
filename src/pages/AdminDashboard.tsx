@@ -28,6 +28,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageTransition } from "@/components/PageTransition";
 import {
   Search,
@@ -42,10 +43,13 @@ import {
   Users,
   DollarSign,
   TrendingUp,
+  CreditCard,
+  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import AutomationManager from "@/components/admin/AutomationManager";
 
 interface PaymentSubmission {
   id: string;
@@ -181,14 +185,31 @@ const AdminDashboard = () => {
                   Admin Dashboard
                 </div>
                 <h1 className="text-3xl font-bold text-foreground">
-                  Payment Submissions
+                  Admin Control Panel
                 </h1>
               </div>
-              <Button onClick={fetchSubmissions} variant="outline" disabled={loading}>
-                <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-                Refresh
-              </Button>
             </div>
+
+            {/* Admin Tabs */}
+            <Tabs defaultValue="payments" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-8">
+                <TabsTrigger value="payments" className="gap-2">
+                  <CreditCard className="w-4 h-4" />
+                  Payment Submissions
+                </TabsTrigger>
+                <TabsTrigger value="automations" className="gap-2">
+                  <Zap className="w-4 h-4" />
+                  Automations
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="payments">
+                <div className="flex justify-end mb-6">
+                  <Button onClick={fetchSubmissions} variant="outline" disabled={loading}>
+                    <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+                    Refresh
+                  </Button>
+                </div>
 
             {/* Stats Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -330,6 +351,12 @@ const AdminDashboard = () => {
                 </div>
               )}
             </div>
+              </TabsContent>
+
+              <TabsContent value="automations">
+                <AutomationManager />
+              </TabsContent>
+            </Tabs>
           </div>
         </main>
 
