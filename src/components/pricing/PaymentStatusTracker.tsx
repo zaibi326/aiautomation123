@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Clock, CheckCircle2, XCircle, Loader2, Mail, Bitcoin, Building2, Copy, MessageCircle } from "lucide-react";
+import { Search, Clock, CheckCircle2, XCircle, Loader2, Mail, Bitcoin, Building2, Copy, MessageCircle, Paperclip, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,7 +16,7 @@ interface PaymentStatus {
   transaction_id: string | null;
 }
 
-type PaymentOption = "binance" | "bank_transfer" | null;
+type PaymentOption = "binance" | "bank_transfer" | "show_bank_details" | null;
 
 const WHATSAPP_NUMBER = "923059694651";
 
@@ -94,6 +94,13 @@ const PaymentStatusTracker = () => {
   const sendWhatsAppNotification = (payment: PaymentStatus) => {
     const message = encodeURIComponent(
       `🔴 Payment Rejected\n\nHi, my payment was rejected.\n\nDetails:\n- Name: ${payment.name}\n- Email: ${payment.email}\n- Plan: ${payment.plan_selected}\n- Amount: ${payment.amount}\n- Date: ${formatDate(payment.created_at)}\n\nI would like to retry payment. Please assist.`
+    );
+    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, "_blank");
+  };
+
+  const openWhatsAppWithAttachment = (payment: PaymentStatus) => {
+    const message = encodeURIComponent(
+      `💳 Bank Transfer Payment\n\nHi, I've made a bank transfer payment.\n\nDetails:\n- Name: ${payment.name}\n- Email: ${payment.email}\n- Plan: ${payment.plan_selected}\n- Amount: ${payment.amount}\n\n📎 Please find my payment slip attached.`
     );
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, "_blank");
   };
@@ -268,9 +275,39 @@ const PaymentStatusTracker = () => {
                         </div>
                       )}
 
-                      {/* Bank Transfer Selected - Show Details */}
+                      {/* Bank Transfer Selected - Show WhatsApp First */}
                       {rejectedPaymentId === payment.id && selectedPaymentOption === "bank_transfer" && (
+                        <div className="mt-3 space-y-3">
+                          <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                            <p className="text-xs text-green-600 dark:text-green-400 mb-2">
+                              📱 WhatsApp پر آئیں اور payment slip بھیجیں
+                            </p>
+                            <Button
+                              size="sm"
+                              className="w-full gap-2 bg-green-600 hover:bg-green-700"
+                              onClick={() => openWhatsAppWithAttachment(payment)}
+                            >
+                              <Paperclip className="w-4 h-4" />
+                              WhatsApp پر Slip بھیجیں
+                            </Button>
+                          </div>
+                          
+                          <button 
+                            className="w-full flex items-center justify-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors py-2"
+                            onClick={() => handlePaymentOptionSelect("show_bank_details", payment)}
+                          >
+                            <ChevronDown className="w-4 h-4" />
+                            International Bank Transfer Details دیکھیں
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Show Bank Details for International */}
+                      {rejectedPaymentId === payment.id && selectedPaymentOption === "show_bank_details" && (
                         <div className="mt-3 space-y-2">
+                          <p className="text-xs text-blue-600 dark:text-blue-400 mb-2">
+                            🌍 International Bank Transfer Details:
+                          </p>
                           <div className="p-2 rounded-lg bg-muted/50">
                             <p className="text-xs text-muted-foreground">Bank</p>
                             <p className="text-xs font-medium text-foreground">United Bank Limited (UBL)</p>
@@ -298,16 +335,27 @@ const PaymentStatusTracker = () => {
                             </div>
                           </div>
                           <div className="p-2 rounded-lg bg-muted/50">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-xs text-muted-foreground">SWIFT/BIC Code</p>
+                                <p className="text-xs font-medium text-foreground">UNLORUPKXXX</p>
+                              </div>
+                              <button onClick={() => copyToClipboard("UNLORUPKXXX")} className="p-1 rounded hover:bg-primary/10">
+                                <Copy className="w-3 h-3 text-muted-foreground" />
+                              </button>
+                            </div>
+                          </div>
+                          <div className="p-2 rounded-lg bg-muted/50">
                             <p className="text-xs text-muted-foreground">Branch</p>
-                            <p className="text-xs font-medium text-foreground">Sadiq Abad Gallah Mandi Branch</p>
+                            <p className="text-xs font-medium text-foreground">Sadiq Abad Gallah Mandi Branch, Pakistan</p>
                           </div>
                           <Button
                             size="sm"
                             className="w-full mt-2 gap-2 bg-green-600 hover:bg-green-700"
-                            onClick={() => sendWhatsAppNotification(payment)}
+                            onClick={() => openWhatsAppWithAttachment(payment)}
                           >
-                            <MessageCircle className="w-4 h-4" />
-                            Confirm on WhatsApp
+                            <Paperclip className="w-4 h-4" />
+                            WhatsApp پر Slip بھیجیں
                           </Button>
                         </div>
                       )}
