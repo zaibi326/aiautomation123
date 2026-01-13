@@ -11,7 +11,10 @@ export const AdminRoute = ({ children }: AdminRouteProps) => {
   const { user, loading: authLoading } = useAuth();
   const { isAdmin, loading: roleLoading } = useUserRole();
 
-  if (authLoading || roleLoading) {
+  // Wait for both auth and role to finish loading
+  const isLoading = authLoading || roleLoading;
+
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -19,11 +22,14 @@ export const AdminRoute = ({ children }: AdminRouteProps) => {
     );
   }
 
+  // Only check auth after loading is complete
   if (!user) {
     return <Navigate to="/login" replace />;
   }
 
+  // Only check admin after loading is complete
   if (!isAdmin) {
+    console.log("User is not admin, redirecting to dashboard");
     return <Navigate to="/dashboard" replace />;
   }
 
