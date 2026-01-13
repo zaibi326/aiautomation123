@@ -18,7 +18,7 @@ interface PaymentStatus {
 
 type PaymentOption = "binance" | "bank_transfer" | null;
 
-const WHATSAPP_NUMBER = "923001234567"; // Replace with your actual WhatsApp number
+const WHATSAPP_NUMBER = "923059694651";
 
 const PaymentStatusTracker = () => {
   const [email, setEmail] = useState("");
