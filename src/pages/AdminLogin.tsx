@@ -40,6 +40,26 @@ const AdminLogin = () => {
     checkAdminStatus();
   }, [user, navigate]);
 
+  const logLoginAttempt = async (
+    emailUsed: string,
+    success: boolean,
+    userId?: string,
+    failureReason?: string
+  ) => {
+    try {
+      await supabase.from("login_attempts").insert({
+        email: emailUsed,
+        user_id: userId || null,
+        success,
+        user_agent: navigator.userAgent,
+        login_type: "admin",
+        failure_reason: failureReason || null,
+      });
+    } catch (error) {
+      console.error("Failed to log login attempt:", error);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -52,6 +72,7 @@ const AdminLogin = () => {
         description: validation.error.errors[0].message,
         variant: "destructive",
       });
+      await logLoginAttempt(email, false, undefined, "Validation failed");
       setIsLoading(false);
       return;
     }
@@ -65,6 +86,7 @@ const AdminLogin = () => {
       } else if (error.message.includes("Email not confirmed")) {
         message = "Please confirm your email before signing in";
       }
+      await logLoginAttempt(email, false, undefined, error.message);
       toast({
         title: "Sign In Failed",
         description: message,
@@ -85,6 +107,7 @@ const AdminLogin = () => {
 
       if (roleError || !roles?.some((r) => r.role === "admin")) {
         // Not an admin, sign out and show error
+        await logLoginAttempt(email, false, currentUser.id, "Not an admin");
         await signOut();
         toast({
           title: "Access Denied",
@@ -96,6 +119,7 @@ const AdminLogin = () => {
       }
 
       // User is admin, redirect to admin panel
+      await logLoginAttempt(email, true, currentUser.id);
       toast({
         title: "Welcome Admin!",
         description: "You have successfully signed in.",

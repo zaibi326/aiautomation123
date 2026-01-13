@@ -7,6 +7,7 @@ import { Zap, Loader2 } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 
 const loginSchema = z.object({
@@ -29,6 +30,26 @@ const Login = () => {
     }
   }, [user, navigate]);
 
+  const logLoginAttempt = async (
+    emailUsed: string,
+    success: boolean,
+    userId?: string,
+    failureReason?: string
+  ) => {
+    try {
+      await supabase.from("login_attempts").insert({
+        email: emailUsed,
+        user_id: userId || null,
+        success,
+        user_agent: navigator.userAgent,
+        login_type: "user",
+        failure_reason: failureReason || null,
+      });
+    } catch (error) {
+      console.error("Failed to log login attempt:", error);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -41,6 +62,7 @@ const Login = () => {
         description: validation.error.errors[0].message,
         variant: "destructive",
       });
+      await logLoginAttempt(email, false, undefined, "Validation failed");
       setIsLoading(false);
       return;
     }
@@ -54,6 +76,7 @@ const Login = () => {
       } else if (error.message.includes("Email not confirmed")) {
         message = "Please confirm your email before signing in";
       }
+      await logLoginAttempt(email, false, undefined, error.message);
       toast({
         title: "Sign In Failed",
         description: message,
@@ -63,6 +86,9 @@ const Login = () => {
       return;
     }
 
+    // Get the current user for logging
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    await logLoginAttempt(email, true, currentUser?.id);
     toast({
       title: "Welcome back!",
       description: "You have successfully signed in.",
