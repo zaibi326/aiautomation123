@@ -45,6 +45,7 @@ import {
   TrendingUp,
   CreditCard,
   Zap,
+  Activity,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -67,6 +68,18 @@ interface PaymentSubmission {
   updated_at: string;
 }
 
+interface LoginAttempt {
+  id: string;
+  email: string;
+  user_id: string | null;
+  success: boolean;
+  ip_address: string | null;
+  user_agent: string | null;
+  login_type: string;
+  failure_reason: string | null;
+  created_at: string;
+}
+
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   pending: { label: "Pending", color: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20", icon: <Clock className="w-3 h-3" /> },
   approved: { label: "Approved", color: "bg-green-500/10 text-green-600 border-green-500/20", icon: <CheckCircle className="w-3 h-3" /> },
@@ -76,9 +89,14 @@ const statusConfig: Record<string, { label: string; color: string; icon: React.R
 const AdminDashboard = () => {
   const [submissions, setSubmissions] = useState<PaymentSubmission[]>([]);
   const [filteredSubmissions, setFilteredSubmissions] = useState<PaymentSubmission[]>([]);
+  const [loginAttempts, setLoginAttempts] = useState<LoginAttempt[]>([]);
+  const [filteredLoginAttempts, setFilteredLoginAttempts] = useState<LoginAttempt[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingLogs, setLoadingLogs] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [logSearchQuery, setLogSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [logTypeFilter, setLogTypeFilter] = useState<string>("all");
   const [selectedSubmission, setSelectedSubmission] = useState<PaymentSubmission | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -106,8 +124,33 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchLoginAttempts = async () => {
+    setLoadingLogs(true);
+    try {
+      const { data, error } = await supabase
+        .from("login_attempts")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(100);
+
+      if (error) {
+        console.error("Error fetching login attempts:", error);
+        toast.error("Failed to load login logs");
+      } else {
+        setLoginAttempts(data || []);
+        setFilteredLoginAttempts(data || []);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("Failed to load login logs");
+    } finally {
+      setLoadingLogs(false);
+    }
+  };
+
   useEffect(() => {
     fetchSubmissions();
+    fetchLoginAttempts();
   }, []);
 
   useEffect(() => {
@@ -131,6 +174,31 @@ const AdminDashboard = () => {
 
     setFilteredSubmissions(filtered);
   }, [searchQuery, statusFilter, submissions]);
+
+  useEffect(() => {
+    let filtered = loginAttempts;
+
+    // Apply search filter
+    if (logSearchQuery) {
+      const query = logSearchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (l) => l.email.toLowerCase().includes(query)
+      );
+    }
+
+    // Apply type filter
+    if (logTypeFilter !== "all") {
+      if (logTypeFilter === "success") {
+        filtered = filtered.filter((l) => l.success);
+      } else if (logTypeFilter === "failed") {
+        filtered = filtered.filter((l) => !l.success);
+      } else {
+        filtered = filtered.filter((l) => l.login_type === logTypeFilter);
+      }
+    }
+
+    setFilteredLoginAttempts(filtered);
+  }, [logSearchQuery, logTypeFilter, loginAttempts]);
 
   const updateStatus = async (id: string, newStatus: string) => {
     setIsUpdating(true);
@@ -192,14 +260,18 @@ const AdminDashboard = () => {
 
             {/* Admin Tabs */}
             <Tabs defaultValue="payments" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-8">
+              <TabsList className="grid w-full grid-cols-3 mb-8">
                 <TabsTrigger value="payments" className="gap-2">
                   <CreditCard className="w-4 h-4" />
-                  Payment Submissions
+                  Payments
                 </TabsTrigger>
                 <TabsTrigger value="automations" className="gap-2">
                   <Zap className="w-4 h-4" />
                   Automations
+                </TabsTrigger>
+                <TabsTrigger value="security" className="gap-2">
+                  <Activity className="w-4 h-4" />
+                  Security Logs
                 </TabsTrigger>
               </TabsList>
 
@@ -355,6 +427,160 @@ const AdminDashboard = () => {
 
               <TabsContent value="automations">
                 <AutomationManager />
+              </TabsContent>
+
+              <TabsContent value="security">
+                <div className="flex justify-end mb-6">
+                  <Button onClick={fetchLoginAttempts} variant="outline" disabled={loadingLogs}>
+                    <RefreshCw className={`w-4 h-4 mr-2 ${loadingLogs ? "animate-spin" : ""}`} />
+                    Refresh Logs
+                  </Button>
+                </div>
+
+                {/* Security Stats */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                  <div className="p-5 rounded-2xl bg-card border border-border">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                        <Activity className="w-5 h-5 text-primary" />
+                      </div>
+                    </div>
+                    <p className="text-2xl font-bold text-foreground">{loginAttempts.length}</p>
+                    <p className="text-sm text-muted-foreground">Total Attempts</p>
+                  </div>
+
+                  <div className="p-5 rounded-2xl bg-card border border-border">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center">
+                        <CheckCircle className="w-5 h-5 text-green-600" />
+                      </div>
+                    </div>
+                    <p className="text-2xl font-bold text-foreground">
+                      {loginAttempts.filter((l) => l.success).length}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Successful</p>
+                  </div>
+
+                  <div className="p-5 rounded-2xl bg-card border border-border">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center">
+                        <XCircle className="w-5 h-5 text-red-600" />
+                      </div>
+                    </div>
+                    <p className="text-2xl font-bold text-foreground">
+                      {loginAttempts.filter((l) => !l.success).length}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Failed</p>
+                  </div>
+
+                  <div className="p-5 rounded-2xl bg-card border border-border">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                        <Shield className="w-5 h-5 text-blue-600" />
+                      </div>
+                    </div>
+                    <p className="text-2xl font-bold text-foreground">
+                      {loginAttempts.filter((l) => l.login_type === "admin").length}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Admin Attempts</p>
+                  </div>
+                </div>
+
+                {/* Filters */}
+                <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search by email..."
+                      value={logSearchQuery}
+                      onChange={(e) => setLogSearchQuery(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                  <Select value={logTypeFilter} onValueChange={setLogTypeFilter}>
+                    <SelectTrigger className="w-full sm:w-48">
+                      <SelectValue placeholder="Filter by type" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      <SelectItem value="all">All Attempts</SelectItem>
+                      <SelectItem value="success">Successful</SelectItem>
+                      <SelectItem value="failed">Failed</SelectItem>
+                      <SelectItem value="user">User Login</SelectItem>
+                      <SelectItem value="admin">Admin Login</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Table */}
+                <div className="rounded-2xl border border-border bg-card overflow-hidden">
+                  {loadingLogs ? (
+                    <div className="flex items-center justify-center py-20">
+                      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    </div>
+                  ) : filteredLoginAttempts.length === 0 ? (
+                    <div className="text-center py-20">
+                      <p className="text-muted-foreground">No login attempts found</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Email</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Failure Reason</TableHead>
+                            <TableHead>Date/Time</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredLoginAttempts.map((attempt) => (
+                            <TableRow key={attempt.id}>
+                              <TableCell>
+                                <p className="font-medium text-foreground">{attempt.email}</p>
+                              </TableCell>
+                              <TableCell>
+                                <Badge 
+                                  variant="outline" 
+                                  className={attempt.login_type === "admin" 
+                                    ? "bg-blue-500/10 text-blue-600 border-blue-500/20" 
+                                    : ""}
+                                >
+                                  {attempt.login_type}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge 
+                                  className={attempt.success 
+                                    ? "bg-green-500/10 text-green-600 border-green-500/20 border gap-1" 
+                                    : "bg-red-500/10 text-red-600 border-red-500/20 border gap-1"}
+                                >
+                                  {attempt.success ? (
+                                    <>
+                                      <CheckCircle className="w-3 h-3" />
+                                      Success
+                                    </>
+                                  ) : (
+                                    <>
+                                      <XCircle className="w-3 h-3" />
+                                      Failed
+                                    </>
+                                  )}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
+                                {attempt.failure_reason || "-"}
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground">
+                                {format(new Date(attempt.created_at), "MMM d, yyyy h:mm a")}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </div>
               </TabsContent>
             </Tabs>
           </div>
