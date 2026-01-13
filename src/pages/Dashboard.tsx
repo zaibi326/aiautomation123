@@ -2,11 +2,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
   Zap, Home, Grid, Settings, CreditCard, LogOut, 
-  Plus, ArrowUpRight, BarChart3, Clock, CheckCircle, AlertCircle 
+  Plus, ArrowUpRight, BarChart3, Clock, CheckCircle, AlertCircle, Shield 
 } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
 import { useAuth } from "@/contexts/AuthContext";
-
+import { useUserRole } from "@/hooks/useUserRole";
 const stats = [
   { label: "Total Runs", value: "1,247", change: "+12%", icon: BarChart3 },
   { label: "Active Automations", value: "8", change: "+2", icon: Zap },
@@ -24,6 +24,7 @@ const recentAutomations = [
 const Dashboard = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { isAdmin } = useUserRole();
 
   const handleSignOut = async () => {
     await signOut();
@@ -75,6 +76,15 @@ const Dashboard = () => {
               <CreditCard className="w-5 h-5" />
               Billing
             </Link>
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className="flex items-center gap-3 px-4 py-3 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+              >
+                <Shield className="w-5 h-5" />
+                Admin Panel
+              </Link>
+            )}
           </nav>
 
           <div className="absolute bottom-0 left-0 w-64 p-4 border-t border-sidebar-border">
