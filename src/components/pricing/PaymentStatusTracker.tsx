@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Clock, CheckCircle2, XCircle, Loader2, Mail } from "lucide-react";
+import { Search, Clock, CheckCircle2, XCircle, Loader2, Mail, Bitcoin, Building2, Copy, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,11 +16,17 @@ interface PaymentStatus {
   transaction_id: string | null;
 }
 
+type PaymentOption = "binance" | "bank_transfer" | null;
+
+const WHATSAPP_NUMBER = "923001234567"; // Replace with your actual WhatsApp number
+
 const PaymentStatusTracker = () => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [payments, setPayments] = useState<PaymentStatus[]>([]);
   const [searched, setSearched] = useState(false);
+  const [selectedPaymentOption, setSelectedPaymentOption] = useState<PaymentOption>(null);
+  const [rejectedPaymentId, setRejectedPaymentId] = useState<string | null>(null);
 
   const searchPayments = async () => {
     if (!email.trim()) {
@@ -83,6 +89,31 @@ const PaymentStatusTracker = () => {
       default:
         return "bg-muted text-muted-foreground border-border";
     }
+  };
+
+  const sendWhatsAppNotification = (payment: PaymentStatus) => {
+    const message = encodeURIComponent(
+      `🔴 Payment Rejected\n\nHi, my payment was rejected.\n\nDetails:\n- Name: ${payment.name}\n- Email: ${payment.email}\n- Plan: ${payment.plan_selected}\n- Amount: ${payment.amount}\n- Date: ${formatDate(payment.created_at)}\n\nI would like to retry payment. Please assist.`
+    );
+    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, "_blank");
+  };
+
+  const handlePaymentOptionSelect = (option: PaymentOption, payment: PaymentStatus) => {
+    setSelectedPaymentOption(option);
+    setRejectedPaymentId(payment.id);
+    
+    if (option === "binance") {
+      // Show Binance option and then WhatsApp
+      setTimeout(() => {
+        sendWhatsAppNotification(payment);
+      }, 500);
+    }
+    // For bank_transfer, the component will show bank details
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success("Copied to clipboard!");
   };
 
   const formatDate = (dateString: string) => {
@@ -186,6 +217,101 @@ const PaymentStatusTracker = () => {
                     <p className="text-xs text-amber-600 dark:text-amber-400">
                       ⏳ Your payment is being verified. This usually takes 24-48 hours.
                     </p>
+                  </div>
+                )}
+
+                {payment.status.toLowerCase() === "rejected" && (
+                  <div className="mt-3 space-y-3">
+                    <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                      <p className="text-xs text-red-600 dark:text-red-400 mb-3">
+                        ❌ Your payment was not approved. Please select a payment method to retry:
+                      </p>
+                      
+                      {/* Payment Options */}
+                      {rejectedPaymentId !== payment.id && (
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex items-center gap-2 border-amber-500/30 text-amber-600 hover:bg-amber-500/10"
+                            onClick={() => handlePaymentOptionSelect("binance", payment)}
+                          >
+                            <Bitcoin className="w-4 h-4" />
+                            Binance
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex items-center gap-2 border-blue-500/30 text-blue-600 hover:bg-blue-500/10"
+                            onClick={() => handlePaymentOptionSelect("bank_transfer", payment)}
+                          >
+                            <Building2 className="w-4 h-4" />
+                            Bank Transfer
+                          </Button>
+                        </div>
+                      )}
+
+                      {/* Binance Selected */}
+                      {rejectedPaymentId === payment.id && selectedPaymentOption === "binance" && (
+                        <div className="mt-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                          <p className="text-xs text-amber-600 dark:text-amber-400 mb-2">
+                            💰 Contact us on WhatsApp for Binance payment details
+                          </p>
+                          <Button
+                            size="sm"
+                            className="w-full gap-2 bg-green-600 hover:bg-green-700"
+                            onClick={() => sendWhatsAppNotification(payment)}
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                            Open WhatsApp
+                          </Button>
+                        </div>
+                      )}
+
+                      {/* Bank Transfer Selected - Show Details */}
+                      {rejectedPaymentId === payment.id && selectedPaymentOption === "bank_transfer" && (
+                        <div className="mt-3 space-y-2">
+                          <div className="p-2 rounded-lg bg-muted/50">
+                            <p className="text-xs text-muted-foreground">Bank</p>
+                            <p className="text-xs font-medium text-foreground">United Bank Limited (UBL)</p>
+                          </div>
+                          <div className="p-2 rounded-lg bg-muted/50">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-xs text-muted-foreground">Account Title</p>
+                                <p className="text-xs font-medium text-foreground">Zohaib Anwar</p>
+                              </div>
+                              <button onClick={() => copyToClipboard("Zohaib Anwar")} className="p-1 rounded hover:bg-primary/10">
+                                <Copy className="w-3 h-3 text-muted-foreground" />
+                              </button>
+                            </div>
+                          </div>
+                          <div className="p-2 rounded-lg bg-muted/50">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-xs text-muted-foreground">IBAN</p>
+                                <p className="text-xs font-medium text-foreground">PK52UNIL0109000318793263</p>
+                              </div>
+                              <button onClick={() => copyToClipboard("PK52UNIL0109000318793263")} className="p-1 rounded hover:bg-primary/10">
+                                <Copy className="w-3 h-3 text-muted-foreground" />
+                              </button>
+                            </div>
+                          </div>
+                          <div className="p-2 rounded-lg bg-muted/50">
+                            <p className="text-xs text-muted-foreground">Branch</p>
+                            <p className="text-xs font-medium text-foreground">Sadiq Abad Gallah Mandi Branch</p>
+                          </div>
+                          <Button
+                            size="sm"
+                            className="w-full mt-2 gap-2 bg-green-600 hover:bg-green-700"
+                            onClick={() => sendWhatsAppNotification(payment)}
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                            Confirm on WhatsApp
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
