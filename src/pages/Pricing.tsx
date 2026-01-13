@@ -3,14 +3,21 @@ import { Link } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
-import { Check, Sparkles, Crown, Zap, Building2, Copy, Globe, MessageCircle, Paperclip, ChevronDown } from "lucide-react";
+import { Check, Sparkles, Crown, Zap, Building2, Copy, Globe, MessageCircle, Paperclip, ChevronDown, ExternalLink, Phone } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
 import { toast } from "sonner";
 import CurrencyConverter from "@/components/pricing/CurrencyConverter";
 import InternationalPaymentGuide from "@/components/pricing/InternationalPaymentGuide";
 import PaymentStatusTracker from "@/components/pricing/PaymentStatusTracker";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const WHATSAPP_NUMBER = "923059694651";
+const WHATSAPP_DISPLAY = "+92 305 969 4651";
 
 const plans = [
   {
@@ -63,15 +70,14 @@ const plans = [
 
 const Pricing = () => {
   const [showBankDetails, setShowBankDetails] = useState(false);
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
 
-  const getWhatsAppLink = () => {
-    const message = encodeURIComponent(
-      `💳 Bank Transfer Payment\n\nHi, I want to make a payment via bank transfer.\n\n📎 I'll attach my payment slip here.`
-    );
+  const message = encodeURIComponent(
+    `💳 Bank Transfer Payment\n\nHi, I want to make a payment via bank transfer.\n\n📎 I'll attach my payment slip here.`
+  );
 
-    // Use WhatsApp Web directly to avoid redirects that some environments block.
-    return `https://web.whatsapp.com/send?phone=${WHATSAPP_NUMBER}&text=${message}`;
-  };
+  const getWhatsAppWebLink = () => `https://web.whatsapp.com/send?phone=${WHATSAPP_NUMBER}&text=${message}`;
+  const getWaMeLink = () => `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`;
 
   return (
     <PageTransition>
@@ -231,32 +237,13 @@ const Pricing = () => {
                     Payment slip attach کریں اور instant access حاصل کریں۔ ہم آپ کو bank details بھی provide کر دیں گے۔
                   </p>
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                    <a
-                      href={getWhatsAppLink()}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <Button
-                        size="lg"
-                        className="gap-2 bg-green-600 hover:bg-green-700 text-white px-8"
-                      >
-                        <Paperclip className="w-5 h-5" />
-                        WhatsApp پر Slip بھیجیں
-                      </Button>
-                    </a>
-
                     <Button
-                      type="button"
-                      variant="outline"
                       size="lg"
-                      className="gap-2"
-                      onClick={() => {
-                        navigator.clipboard.writeText(getWhatsAppLink());
-                        toast.success("WhatsApp link copied!");
-                      }}
+                      className="gap-2 bg-green-600 hover:bg-green-700 text-white px-8"
+                      onClick={() => setShowWhatsAppModal(true)}
                     >
-                      <Copy className="w-5 h-5" />
-                      Copy Link
+                      <Paperclip className="w-5 h-5" />
+                      WhatsApp پر Slip بھیجیں
                     </Button>
                   </div>
                 </div>
@@ -405,19 +392,14 @@ const Pricing = () => {
 
                   {/* WhatsApp Button After Bank Details */}
                   <div className="text-center">
-                    <a
-                      href={getWhatsAppLink()}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <Button
+                      size="lg"
+                      className="gap-2 bg-green-600 hover:bg-green-700 text-white"
+                      onClick={() => setShowWhatsAppModal(true)}
                     >
-                      <Button
-                        size="lg"
-                        className="gap-2 bg-green-600 hover:bg-green-700 text-white"
-                      >
-                        <Paperclip className="w-5 h-5" />
-                        WhatsApp پر Slip بھیجیں
-                      </Button>
-                    </a>
+                      <Paperclip className="w-5 h-5" />
+                      WhatsApp پر Slip بھیجیں
+                    </Button>
                   </div>
                 </div>
               )}
@@ -478,6 +460,83 @@ const Pricing = () => {
         </main>
 
         <Footer />
+
+        {/* WhatsApp Fallback Modal */}
+        <Dialog open={showWhatsAppModal} onOpenChange={setShowWhatsAppModal}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <MessageCircle className="w-5 h-5 text-green-500" />
+                WhatsApp پر رابطہ کریں
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {/* WhatsApp Number */}
+              <div className="p-4 rounded-xl bg-muted/50">
+                <p className="text-xs text-muted-foreground mb-1">WhatsApp Number</p>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-green-500" />
+                    <p className="font-semibold text-foreground">{WHATSAPP_DISPLAY}</p>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(WHATSAPP_NUMBER);
+                      toast.success("Number copied!");
+                    }}
+                    className="p-1.5 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Link Options */}
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">اگر ایک لنک کام نہ کرے تو دوسرا try کریں:</p>
+                
+                <a
+                  href={getWaMeLink()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between p-3 rounded-lg border border-border hover:border-green-500/50 hover:bg-green-500/5 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <MessageCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-sm font-medium">wa.me (Mobile App)</span>
+                  </div>
+                  <ExternalLink className="w-4 h-4 text-muted-foreground" />
+                </a>
+
+                <a
+                  href={getWhatsAppWebLink()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between p-3 rounded-lg border border-border hover:border-green-500/50 hover:bg-green-500/5 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-green-500" />
+                    <span className="text-sm font-medium">WhatsApp Web</span>
+                  </div>
+                  <ExternalLink className="w-4 h-4 text-muted-foreground" />
+                </a>
+              </div>
+
+              {/* Copy Full Link */}
+              <Button
+                variant="outline"
+                className="w-full gap-2"
+                onClick={() => {
+                  navigator.clipboard.writeText(getWaMeLink());
+                  toast.success("Link copied! Paste in new tab");
+                }}
+              >
+                <Copy className="w-4 h-4" />
+                Copy Link
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </PageTransition>
   );
