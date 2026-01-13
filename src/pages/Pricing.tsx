@@ -1,13 +1,16 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
-import { Check, Sparkles, Crown, Zap, Building2, Copy, Globe } from "lucide-react";
+import { Check, Sparkles, Crown, Zap, Building2, Copy, Globe, MessageCircle, Paperclip, ChevronDown } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
 import { toast } from "sonner";
 import CurrencyConverter from "@/components/pricing/CurrencyConverter";
 import InternationalPaymentGuide from "@/components/pricing/InternationalPaymentGuide";
 import PaymentStatusTracker from "@/components/pricing/PaymentStatusTracker";
+
+const WHATSAPP_NUMBER = "923059694651";
 
 const plans = [
   {
@@ -59,6 +62,15 @@ const plans = [
 ];
 
 const Pricing = () => {
+  const [showBankDetails, setShowBankDetails] = useState(false);
+
+  const openWhatsAppWithAttachment = () => {
+    const message = encodeURIComponent(
+      `💳 Bank Transfer Payment\n\nHi, I want to make a payment via bank transfer.\n\n📎 I'll attach my payment slip here.`
+    );
+    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, "_blank");
+  };
+
   return (
     <PageTransition>
       <div className="min-h-screen bg-background">
@@ -200,136 +212,187 @@ const Pricing = () => {
                   Pay via Bank Transfer
                 </h2>
                 <p className="text-muted-foreground max-w-lg mx-auto">
-                  Transfer your payment directly to our UBL bank account. Send screenshot of payment receipt via WhatsApp for instant access.
+                  WhatsApp پر آئیں اور payment slip بھیجیں۔ Instant access حاصل کریں!
                 </p>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-6">
-                {/* Local Transfer */}
-                <div className="p-6 rounded-2xl bg-card border border-border hover:border-primary/50 transition-all duration-300">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                      <Building2 className="w-6 h-6 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-foreground">Local Transfer</h3>
-                      <p className="text-sm text-muted-foreground">Pakistan (PKR)</p>
-                    </div>
+              {/* WhatsApp First - Main CTA */}
+              <div className="p-8 rounded-2xl bg-gradient-to-r from-green-500/10 via-green-500/5 to-transparent border border-green-500/20 mb-6">
+                <div className="text-center">
+                  <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4">
+                    <MessageCircle className="w-8 h-8 text-green-500" />
                   </div>
-
-                  <div className="space-y-4">
-                    <div className="p-4 rounded-xl bg-muted/50">
-                      <p className="text-xs text-muted-foreground mb-1">Bank Name</p>
-                      <p className="font-semibold text-foreground">United Bank Limited (UBL)</p>
-                    </div>
-                    
-                    <div className="p-4 rounded-xl bg-muted/50">
-                      <p className="text-xs text-muted-foreground mb-1">Account Title</p>
-                      <div className="flex items-center justify-between">
-                        <p className="font-semibold text-foreground">Zohaib Anwar</p>
-                        <button 
-                          onClick={() => {
-                            navigator.clipboard.writeText("Zohaib Anwar");
-                            toast.success("Copied to clipboard!");
-                          }}
-                          className="p-1.5 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
-                        >
-                          <Copy className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="p-4 rounded-xl bg-muted/50">
-                      <p className="text-xs text-muted-foreground mb-1">IBAN</p>
-                      <div className="flex items-center justify-between">
-                        <p className="font-semibold text-foreground text-sm">PK52UNIL0109000318793263</p>
-                        <button 
-                          onClick={() => {
-                            navigator.clipboard.writeText("PK52UNIL0109000318793263");
-                            toast.success("Copied to clipboard!");
-                          }}
-                          className="p-1.5 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
-                        >
-                          <Copy className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="p-4 rounded-xl bg-muted/50">
-                      <p className="text-xs text-muted-foreground mb-1">Branch</p>
-                      <p className="font-semibold text-foreground text-sm">Sadiq Abad Gallah Mandi Branch</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* International Transfer */}
-                <div className="p-6 rounded-2xl bg-card border border-border hover:border-primary/50 transition-all duration-300">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                      <Globe className="w-6 h-6 text-blue-500" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-foreground">International Transfer</h3>
-                      <p className="text-sm text-muted-foreground">SWIFT/Wire Transfer (USD)</p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="p-4 rounded-xl bg-muted/50">
-                      <p className="text-xs text-muted-foreground mb-1">SWIFT/BIC Code</p>
-                      <div className="flex items-center justify-between">
-                        <p className="font-semibold text-foreground">UNILPKKAXXX</p>
-                        <button 
-                          onClick={() => {
-                            navigator.clipboard.writeText("UNILPKKAXXX");
-                            toast.success("Copied to clipboard!");
-                          }}
-                          className="p-1.5 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
-                        >
-                          <Copy className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                    
-                    <div className="p-4 rounded-xl bg-muted/50">
-                      <p className="text-xs text-muted-foreground mb-1">Account Title</p>
-                      <div className="flex items-center justify-between">
-                        <p className="font-semibold text-foreground">Zohaib Anwar</p>
-                        <button 
-                          onClick={() => {
-                            navigator.clipboard.writeText("Zohaib Anwar");
-                            toast.success("Copied to clipboard!");
-                          }}
-                          className="p-1.5 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
-                        >
-                          <Copy className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="p-4 rounded-xl bg-muted/50">
-                      <p className="text-xs text-muted-foreground mb-1">IBAN</p>
-                      <div className="flex items-center justify-between">
-                        <p className="font-semibold text-foreground text-sm">PK52UNIL0109000318793263</p>
-                        <button 
-                          onClick={() => {
-                            navigator.clipboard.writeText("PK52UNIL0109000318793263");
-                            toast.success("Copied to clipboard!");
-                          }}
-                          className="p-1.5 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
-                        >
-                          <Copy className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="p-4 rounded-xl bg-muted/50">
-                      <p className="text-xs text-muted-foreground mb-1">Bank Address</p>
-                      <p className="font-semibold text-foreground text-sm">UBL, Sadiq Abad Gallah Mandi Branch, Pakistan</p>
-                    </div>
-                  </div>
+                  <h3 className="text-xl font-bold text-foreground mb-2">
+                    WhatsApp پر آئیں
+                  </h3>
+                  <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                    Payment slip attach کریں اور instant access حاصل کریں۔ ہم آپ کو bank details بھی provide کر دیں گے۔
+                  </p>
+                  <Button
+                    size="lg"
+                    className="gap-2 bg-green-600 hover:bg-green-700 text-white px-8"
+                    onClick={openWhatsAppWithAttachment}
+                  >
+                    <Paperclip className="w-5 h-5" />
+                    WhatsApp پر Slip بھیجیں
+                  </Button>
                 </div>
               </div>
+
+              {/* Show Bank Details Toggle */}
+              {!showBankDetails && (
+                <button 
+                  className="w-full flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-4 rounded-xl border border-dashed border-border hover:border-primary/50"
+                  onClick={() => setShowBankDetails(true)}
+                >
+                  <ChevronDown className="w-4 h-4" />
+                  International Bank Transfer Details دیکھیں
+                </button>
+              )}
+
+              {/* Bank Details - Hidden by Default */}
+              {showBankDetails && (
+                <div className="space-y-6 animate-in slide-in-from-top-4 duration-300">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {/* Local Transfer */}
+                    <div className="p-6 rounded-2xl bg-card border border-border hover:border-primary/50 transition-all duration-300">
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                          <Building2 className="w-6 h-6 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-foreground">Local Transfer</h3>
+                          <p className="text-sm text-muted-foreground">Pakistan (PKR)</p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="p-4 rounded-xl bg-muted/50">
+                          <p className="text-xs text-muted-foreground mb-1">Bank Name</p>
+                          <p className="font-semibold text-foreground">United Bank Limited (UBL)</p>
+                        </div>
+                        
+                        <div className="p-4 rounded-xl bg-muted/50">
+                          <p className="text-xs text-muted-foreground mb-1">Account Title</p>
+                          <div className="flex items-center justify-between">
+                            <p className="font-semibold text-foreground">Zohaib Anwar</p>
+                            <button 
+                              onClick={() => {
+                                navigator.clipboard.writeText("Zohaib Anwar");
+                                toast.success("Copied to clipboard!");
+                              }}
+                              className="p-1.5 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                            >
+                              <Copy className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-muted/50">
+                          <p className="text-xs text-muted-foreground mb-1">IBAN</p>
+                          <div className="flex items-center justify-between">
+                            <p className="font-semibold text-foreground text-sm">PK52UNIL0109000318793263</p>
+                            <button 
+                              onClick={() => {
+                                navigator.clipboard.writeText("PK52UNIL0109000318793263");
+                                toast.success("Copied to clipboard!");
+                              }}
+                              className="p-1.5 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                            >
+                              <Copy className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-muted/50">
+                          <p className="text-xs text-muted-foreground mb-1">Branch</p>
+                          <p className="font-semibold text-foreground text-sm">Sadiq Abad Gallah Mandi Branch</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* International Transfer */}
+                    <div className="p-6 rounded-2xl bg-card border border-border hover:border-primary/50 transition-all duration-300">
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                          <Globe className="w-6 h-6 text-blue-500" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-foreground">International Transfer</h3>
+                          <p className="text-sm text-muted-foreground">SWIFT/Wire Transfer (USD)</p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="p-4 rounded-xl bg-muted/50">
+                          <p className="text-xs text-muted-foreground mb-1">SWIFT/BIC Code</p>
+                          <div className="flex items-center justify-between">
+                            <p className="font-semibold text-foreground">UNILPKKAXXX</p>
+                            <button 
+                              onClick={() => {
+                                navigator.clipboard.writeText("UNILPKKAXXX");
+                                toast.success("Copied to clipboard!");
+                              }}
+                              className="p-1.5 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                            >
+                              <Copy className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        
+                        <div className="p-4 rounded-xl bg-muted/50">
+                          <p className="text-xs text-muted-foreground mb-1">Account Title</p>
+                          <div className="flex items-center justify-between">
+                            <p className="font-semibold text-foreground">Zohaib Anwar</p>
+                            <button 
+                              onClick={() => {
+                                navigator.clipboard.writeText("Zohaib Anwar");
+                                toast.success("Copied to clipboard!");
+                              }}
+                              className="p-1.5 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                            >
+                              <Copy className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-muted/50">
+                          <p className="text-xs text-muted-foreground mb-1">IBAN</p>
+                          <div className="flex items-center justify-between">
+                            <p className="font-semibold text-foreground text-sm">PK52UNIL0109000318793263</p>
+                            <button 
+                              onClick={() => {
+                                navigator.clipboard.writeText("PK52UNIL0109000318793263");
+                                toast.success("Copied to clipboard!");
+                              }}
+                              className="p-1.5 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                            >
+                              <Copy className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-muted/50">
+                          <p className="text-xs text-muted-foreground mb-1">Bank Address</p>
+                          <p className="font-semibold text-foreground text-sm">UBL, Sadiq Abad Gallah Mandi Branch, Pakistan</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* WhatsApp Button After Bank Details */}
+                  <div className="text-center">
+                    <Button
+                      size="lg"
+                      className="gap-2 bg-green-600 hover:bg-green-700 text-white"
+                      onClick={openWhatsAppWithAttachment}
+                    >
+                      <Paperclip className="w-5 h-5" />
+                      WhatsApp پر Slip بھیجیں
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               {/* Payment Instructions */}
               <div className="mt-8 p-6 rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20">
