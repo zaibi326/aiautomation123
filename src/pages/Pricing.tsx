@@ -64,11 +64,11 @@ const plans = [
 const Pricing = () => {
   const [showBankDetails, setShowBankDetails] = useState(false);
 
-  const openWhatsAppWithAttachment = () => {
+  const getWhatsAppLink = () => {
     const message = encodeURIComponent(
       `💳 Bank Transfer Payment\n\nHi, I want to make a payment via bank transfer.\n\n📎 I'll attach my payment slip here.`
     );
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, "_blank");
+    return `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`;
   };
 
   return (
@@ -228,14 +228,19 @@ const Pricing = () => {
                   <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                     Payment slip attach کریں اور instant access حاصل کریں۔ ہم آپ کو bank details بھی provide کر دیں گے۔
                   </p>
-                  <Button
-                    size="lg"
-                    className="gap-2 bg-green-600 hover:bg-green-700 text-white px-8"
-                    onClick={openWhatsAppWithAttachment}
+                  <a
+                    href={getWhatsAppLink()}
+                    target="_blank"
+                    rel="noopener noreferrer"
                   >
-                    <Paperclip className="w-5 h-5" />
-                    WhatsApp پر Slip بھیجیں
-                  </Button>
+                    <Button
+                      size="lg"
+                      className="gap-2 bg-green-600 hover:bg-green-700 text-white px-8"
+                    >
+                      <Paperclip className="w-5 h-5" />
+                      WhatsApp پر Slip بھیجیں
+                    </Button>
+                  </a>
                 </div>
               </div>
 
@@ -382,14 +387,19 @@ const Pricing = () => {
 
                   {/* WhatsApp Button After Bank Details */}
                   <div className="text-center">
-                    <Button
-                      size="lg"
-                      className="gap-2 bg-green-600 hover:bg-green-700 text-white"
-                      onClick={openWhatsAppWithAttachment}
+                    <a
+                      href={getWhatsAppLink()}
+                      target="_blank"
+                      rel="noopener noreferrer"
                     >
-                      <Paperclip className="w-5 h-5" />
-                      WhatsApp پر Slip بھیجیں
-                    </Button>
+                      <Button
+                        size="lg"
+                        className="gap-2 bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        <Paperclip className="w-5 h-5" />
+                        WhatsApp پر Slip بھیجیں
+                      </Button>
+                    </a>
                   </div>
                 </div>
               )}
