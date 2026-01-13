@@ -24,13 +24,13 @@ export const AdminRoute = ({ children }: AdminRouteProps) => {
 
   // Only check auth after loading is complete
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/admin-login" replace />;
   }
 
   // Only check admin after loading is complete
   if (!isAdmin) {
-    console.log("User is not admin, redirecting to dashboard");
-    return <Navigate to="/dashboard" replace />;
+    console.log("User is not admin, redirecting to admin login");
+    return <Navigate to="/admin-login" replace />;
   }
 
   return <>{children}</>;
