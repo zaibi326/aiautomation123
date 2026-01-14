@@ -41,6 +41,10 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAutomations, AutomationCategory, AutomationSubcategory, Automation } from "@/hooks/useAutomations";
 import * as XLSX from "xlsx";
+import JSZip from "jszip";
+
+// GitHub raw URL base for workflow templates
+const GITHUB_RAW_BASE = "https://raw.githubusercontent.com/n8n-io/n8n/master/packages/%40n8n/n8n-nodes-base/nodes";
 
 const AutomationManager = () => {
   const { categories, subcategories, automations, loading, refetch } = useAutomations();
@@ -380,6 +384,86 @@ const AutomationManager = () => {
     }
   };
 
+  // ZIP file upload - extract workflow templates
+  const handleZipUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsLoading(true);
+    try {
+      const zip = await JSZip.loadAsync(file);
+      const automationsData: any[] = [];
+      
+      // Parse ZIP structure: root/category/id-name/workflow.json
+      const entries = Object.entries(zip.files);
+      
+      for (const [path, zipEntry] of entries) {
+        // Skip directories and non-workflow files
+        if (zipEntry.dir || !path.endsWith('workflow.json')) continue;
+        
+        // Parse path: root/category/id-name/workflow.json
+        const parts = path.split('/');
+        if (parts.length < 4) continue;
+        
+        const rootFolder = parts[0]; // e.g., "2182-workflow-templates--main"
+        const category = parts[1]; // e.g., "analytics"
+        const folderName = parts[2]; // e.g., "1690-markdown-report-generation"
+        
+        // Extract title from folder name (remove ID prefix)
+        const titleMatch = folderName.match(/^\d+-(.+)$/);
+        const title = titleMatch 
+          ? titleMatch[1].replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+          : folderName.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        
+        // Try to get description from README.md if exists
+        const readmePath = `${parts.slice(0, 3).join('/')}/README.md`;
+        let description = '';
+        try {
+          const readmeFile = zip.file(readmePath);
+          if (readmeFile) {
+            const readmeContent = await readmeFile.async('text');
+            // Extract first paragraph after title
+            const lines = readmeContent.split('\n').filter(l => l.trim() && !l.startsWith('#'));
+            description = lines[0]?.substring(0, 500) || '';
+          }
+        } catch (e) {
+          // Ignore README parsing errors
+        }
+        
+        // Create GitHub download URL
+        // Format: https://raw.githubusercontent.com/USER/REPO/BRANCH/path/to/workflow.json
+        const downloadUrl = `https://raw.githubusercontent.com/n8n-io/n8n-workflow-templates/main/${category}/${folderName}/workflow.json`;
+        
+        automationsData.push({
+          title,
+          category: category.charAt(0).toUpperCase() + category.slice(1).replace(/-/g, ' '),
+          subcategory: 'Workflows',
+          description,
+          download_url: downloadUrl,
+          icon: 'zap',
+          uses_count: 0,
+        });
+      }
+      
+      if (automationsData.length === 0) {
+        toast.error("No workflow.json files found in ZIP");
+        setIsLoading(false);
+        return;
+      }
+      
+      const created = await processAutomationsData(automationsData);
+      toast.success(
+        `Imported from ZIP: ${created.automations} automations, ${created.categories} categories, ${created.subcategories} subcategories`
+      );
+      refetch();
+      setUploadDialog(false);
+    } catch (error: any) {
+      toast.error("Failed to process ZIP: " + error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const getCategoryName = (categoryId: string) => {
     return categories.find(c => c.id === categoryId)?.name || "Unknown";
   };
@@ -647,31 +731,33 @@ const AutomationManager = () => {
           <DialogHeader>
             <DialogTitle>Import Automations</DialogTitle>
             <DialogDescription>
-              Upload Excel/JSON file or import from URL. Categories & subcategories are auto-created!
+              Upload ZIP/Excel/JSON file or import from URL. Categories & subcategories are auto-created!
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6">
             {/* Format Info */}
             <div className="p-4 rounded-xl bg-muted/50 text-sm">
-              <p className="font-medium mb-2">📋 Simple Format (Auto-match):</p>
-              <p className="text-muted-foreground mb-2">
-                Just list automations - categories/subcategories auto-create if missing:
-              </p>
-              <code className="block p-2 rounded bg-background text-xs">
-                title, category, subcategory, description, download_url
-              </code>
+              <p className="font-medium mb-2">📦 Supported Formats:</p>
+              <ul className="text-muted-foreground space-y-1 text-xs">
+                <li>• <strong>ZIP:</strong> GitHub workflow templates (auto-extracts categories from folder structure)</li>
+                <li>• <strong>Excel/JSON:</strong> title, category, subcategory, description, download_url</li>
+              </ul>
             </div>
 
             {/* File Upload Section */}
             <div className="space-y-3">
               <p className="text-sm font-medium">Upload File:</p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1">Excel (.xlsx, .xls)</p>
+                  <p className="text-xs text-muted-foreground mb-1">ZIP (Workflows)</p>
+                  <Input type="file" accept=".zip" onChange={handleZipUpload} disabled={isLoading} />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Excel (.xlsx)</p>
                   <Input type="file" accept=".xlsx,.xls" onChange={handleExcelUpload} disabled={isLoading} />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1">JSON (.json)</p>
+                  <p className="text-xs text-muted-foreground mb-1">JSON</p>
                   <Input type="file" accept=".json" onChange={handleJsonUpload} disabled={isLoading} />
                 </div>
               </div>
@@ -696,6 +782,13 @@ const AutomationManager = () => {
                 </Button>
               </div>
             </div>
+
+            {isLoading && (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="w-6 h-6 animate-spin text-primary mr-2" />
+                <span className="text-sm text-muted-foreground">Processing... This may take a moment</span>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setUploadDialog(false); setJsonUrl(""); }} disabled={isLoading}>
