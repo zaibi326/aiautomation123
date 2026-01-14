@@ -191,7 +191,84 @@ const AutomationManager = () => {
     }
   };
 
-  // Excel Upload
+  const [jsonUrl, setJsonUrl] = useState("");
+
+  // Smart import - auto-create categories/subcategories
+  const processAutomationsData = async (automationsData: any[]) => {
+    // Get current categories and subcategories
+    const { data: currentCategories } = await supabase.from("automation_categories").select("*");
+    const { data: currentSubcategories } = await supabase.from("automation_subcategories").select("*");
+    
+    const categoryMap = new Map(currentCategories?.map(c => [c.name.toLowerCase(), c.id]) || []);
+    const subcategoryMap = new Map(currentSubcategories?.map(s => [`${s.name.toLowerCase()}_${s.category_id}`, s.id]) || []);
+
+    let created = { categories: 0, subcategories: 0, automations: 0 };
+
+    for (const auto of automationsData) {
+      if (!auto.title) continue;
+
+      const categoryName = auto.category || "General";
+      const subcategoryName = auto.subcategory || "Default";
+      
+      // Auto-create category if doesn't exist
+      let categoryId = categoryMap.get(categoryName.toLowerCase());
+      if (!categoryId) {
+        const { data: newCat, error } = await supabase
+          .from("automation_categories")
+          .insert({ name: categoryName, description: "", icon: auto.category_icon || "folder" })
+          .select()
+          .single();
+        
+        if (!error && newCat) {
+          categoryId = newCat.id;
+          categoryMap.set(categoryName.toLowerCase(), categoryId);
+          created.categories++;
+        }
+      }
+
+      if (!categoryId) continue;
+
+      // Auto-create subcategory if doesn't exist
+      const subKey = `${subcategoryName.toLowerCase()}_${categoryId}`;
+      let subcategoryId = subcategoryMap.get(subKey);
+      if (!subcategoryId) {
+        const { data: newSub, error } = await supabase
+          .from("automation_subcategories")
+          .insert({ 
+            name: subcategoryName, 
+            description: "", 
+            icon: auto.subcategory_icon || "file",
+            category_id: categoryId 
+          })
+          .select()
+          .single();
+        
+        if (!error && newSub) {
+          subcategoryId = newSub.id;
+          subcategoryMap.set(subKey, subcategoryId);
+          created.subcategories++;
+        }
+      }
+
+      if (!subcategoryId) continue;
+
+      // Create automation
+      const { error } = await supabase.from("automations").insert({
+        title: auto.title,
+        description: auto.description || "",
+        icon: auto.icon || "zap",
+        subcategory_id: subcategoryId,
+        download_url: auto.download_url || auto.link || auto.url || "",
+        uses_count: parseInt(auto.uses_count) || 0,
+      });
+
+      if (!error) created.automations++;
+    }
+
+    return created;
+  };
+
+  // Excel Upload with smart matching
   const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -204,69 +281,22 @@ const AutomationManager = () => {
           const data = new Uint8Array(event.target?.result as ArrayBuffer);
           const workbook = XLSX.read(data, { type: "array" });
 
-          // Process Categories sheet
-          const categoriesSheet = workbook.Sheets["Categories"];
-          if (categoriesSheet) {
-            const categoriesData = XLSX.utils.sheet_to_json<any>(categoriesSheet);
-            for (const cat of categoriesData) {
-              if (cat.name) {
-                await supabase.from("automation_categories").upsert(
-                  { name: cat.name, description: cat.description || "", icon: cat.icon || "folder" },
-                  { onConflict: "name", ignoreDuplicates: false }
-                );
-              }
-            }
-          }
-
-          // Fetch updated categories
-          const { data: updatedCategories } = await supabase.from("automation_categories").select("*");
-          const categoryMap = new Map(updatedCategories?.map(c => [c.name, c.id]) || []);
-
-          // Process Subcategories sheet
-          const subcategoriesSheet = workbook.Sheets["Subcategories"];
-          if (subcategoriesSheet) {
-            const subcategoriesData = XLSX.utils.sheet_to_json<any>(subcategoriesSheet);
-            for (const sub of subcategoriesData) {
-              const categoryId = categoryMap.get(sub.category);
-              if (sub.name && categoryId) {
-                await supabase.from("automation_subcategories").insert({
-                  name: sub.name,
-                  description: sub.description || "",
-                  icon: sub.icon || "file",
-                  category_id: categoryId,
-                });
-              }
-            }
-          }
-
-          // Fetch updated subcategories
-          const { data: updatedSubcategories } = await supabase.from("automation_subcategories").select("*");
-          const subcategoryMap = new Map(updatedSubcategories?.map(s => [s.name, s.id]) || []);
-
-          // Process Automations sheet
-          const automationsSheet = workbook.Sheets["Automations"];
+          // Check for simple format (single "Automations" sheet with category/subcategory columns)
+          const automationsSheet = workbook.Sheets["Automations"] || workbook.Sheets[workbook.SheetNames[0]];
+          
           if (automationsSheet) {
             const automationsData = XLSX.utils.sheet_to_json<any>(automationsSheet);
-            for (const auto of automationsData) {
-              const subcategoryId = subcategoryMap.get(auto.subcategory);
-              if (auto.title && subcategoryId) {
-                await supabase.from("automations").insert({
-                  title: auto.title,
-                  description: auto.description || "",
-                  icon: auto.icon || "zap",
-                  subcategory_id: subcategoryId,
-                  download_url: auto.download_url || "",
-                  uses_count: parseInt(auto.uses_count) || 0,
-                });
-              }
-            }
+            const created = await processAutomationsData(automationsData);
+            
+            toast.success(
+              `Imported: ${created.automations} automations, ${created.categories} categories, ${created.subcategories} subcategories`
+            );
           }
 
-          toast.success("Excel data imported successfully!");
           refetch();
           setUploadDialog(false);
         } catch (err: any) {
-          toast.error("Failed to process Excel file: " + err.message);
+          toast.error("Failed to process file: " + err.message);
         } finally {
           setIsLoading(false);
         }
@@ -274,6 +304,78 @@ const AutomationManager = () => {
       reader.readAsArrayBuffer(file);
     } catch (error: any) {
       toast.error("Failed to read file");
+      setIsLoading(false);
+    }
+  };
+
+  // JSON file upload
+  const handleJsonUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsLoading(true);
+    try {
+      const text = await file.text();
+      const jsonData = JSON.parse(text);
+      const automationsArray = Array.isArray(jsonData) ? jsonData : jsonData.automations || [jsonData];
+      
+      const created = await processAutomationsData(automationsArray);
+      toast.success(
+        `Imported: ${created.automations} automations, ${created.categories} categories, ${created.subcategories} subcategories`
+      );
+      refetch();
+      setUploadDialog(false);
+    } catch (error: any) {
+      toast.error("Failed to parse JSON: " + error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Import from URL (Google Drive, etc.)
+  const handleUrlImport = async () => {
+    if (!jsonUrl.trim()) return;
+
+    setIsLoading(true);
+    try {
+      // Convert Google Drive link to direct download
+      let fetchUrl = jsonUrl;
+      if (jsonUrl.includes("drive.google.com")) {
+        const fileId = jsonUrl.match(/\/d\/([^/]+)/)?.[1] || jsonUrl.match(/id=([^&]+)/)?.[1];
+        if (fileId) {
+          fetchUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+        }
+      }
+
+      const response = await fetch(fetchUrl);
+      const contentType = response.headers.get("content-type") || "";
+      
+      if (contentType.includes("json") || jsonUrl.endsWith(".json")) {
+        const jsonData = await response.json();
+        const automationsArray = Array.isArray(jsonData) ? jsonData : jsonData.automations || [jsonData];
+        const created = await processAutomationsData(automationsArray);
+        toast.success(
+          `Imported: ${created.automations} automations, ${created.categories} categories, ${created.subcategories} subcategories`
+        );
+      } else {
+        // Try as Excel
+        const arrayBuffer = await response.arrayBuffer();
+        const data = new Uint8Array(arrayBuffer);
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheet = workbook.Sheets["Automations"] || workbook.Sheets[workbook.SheetNames[0]];
+        const automationsData = XLSX.utils.sheet_to_json<any>(sheet);
+        const created = await processAutomationsData(automationsData);
+        toast.success(
+          `Imported: ${created.automations} automations, ${created.categories} categories, ${created.subcategories} subcategories`
+        );
+      }
+
+      refetch();
+      setUploadDialog(false);
+      setJsonUrl("");
+    } catch (error: any) {
+      toast.error("Failed to import from URL: " + error.message);
+    } finally {
       setIsLoading(false);
     }
   };
@@ -541,26 +643,62 @@ const AutomationManager = () => {
 
       {/* Upload Dialog */}
       <Dialog open={uploadDialog} onOpenChange={setUploadDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Import from Excel</DialogTitle>
+            <DialogTitle>Import Automations</DialogTitle>
             <DialogDescription>
-              Upload an Excel file with sheets: Categories, Subcategories, Automations
+              Upload Excel/JSON file or import from URL. Categories & subcategories are auto-created!
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-6">
+            {/* Format Info */}
             <div className="p-4 rounded-xl bg-muted/50 text-sm">
-              <p className="font-medium mb-2">Excel Format:</p>
-              <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                <li><strong>Categories</strong>: name, description, icon</li>
-                <li><strong>Subcategories</strong>: name, category, description, icon</li>
-                <li><strong>Automations</strong>: title, subcategory, description, icon, download_url, uses_count</li>
-              </ul>
+              <p className="font-medium mb-2">📋 Simple Format (Auto-match):</p>
+              <p className="text-muted-foreground mb-2">
+                Just list automations - categories/subcategories auto-create if missing:
+              </p>
+              <code className="block p-2 rounded bg-background text-xs">
+                title, category, subcategory, description, download_url
+              </code>
             </div>
-            <Input type="file" accept=".xlsx,.xls" onChange={handleExcelUpload} disabled={isLoading} />
+
+            {/* File Upload Section */}
+            <div className="space-y-3">
+              <p className="text-sm font-medium">Upload File:</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Excel (.xlsx, .xls)</p>
+                  <Input type="file" accept=".xlsx,.xls" onChange={handleExcelUpload} disabled={isLoading} />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">JSON (.json)</p>
+                  <Input type="file" accept=".json" onChange={handleJsonUpload} disabled={isLoading} />
+                </div>
+              </div>
+            </div>
+
+            {/* URL Import Section */}
+            <div className="space-y-3">
+              <p className="text-sm font-medium">Or Import from URL:</p>
+              <p className="text-xs text-muted-foreground">
+                Google Drive link, direct Excel/JSON URL
+              </p>
+              <div className="flex gap-2">
+                <Input 
+                  placeholder="https://drive.google.com/... or direct URL"
+                  value={jsonUrl}
+                  onChange={(e) => setJsonUrl(e.target.value)}
+                  disabled={isLoading}
+                />
+                <Button onClick={handleUrlImport} disabled={isLoading || !jsonUrl.trim()}>
+                  {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Import
+                </Button>
+              </div>
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setUploadDialog(false)} disabled={isLoading}>
+            <Button variant="outline" onClick={() => { setUploadDialog(false); setJsonUrl(""); }} disabled={isLoading}>
               Cancel
             </Button>
           </DialogFooter>
