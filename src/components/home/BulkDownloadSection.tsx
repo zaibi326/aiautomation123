@@ -7,6 +7,7 @@ import { useFreeAccess } from "@/hooks/useFreeAccess";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import PaymentRequiredModal from "@/components/PaymentRequiredModal";
 
 const templateBundles = [
   {
@@ -15,7 +16,7 @@ const templateBundles = [
     title: "200 Professional Templates",
     subtitle: "with 🎥 Video Support",
     tags: ["Business Automation", "Content Creation", "Lead Generation"],
-    downloadUrl: "/uploads/professional-templates-200.zip",
+    downloadUrl: "/uploads/professional-templates-200.xlsx",
     color: "from-blue-500 to-purple-600",
   },
   {
@@ -99,6 +100,7 @@ const BulkDownloadSection = () => {
   const { isAdmin } = useUserRole();
   const navigate = useNavigate();
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   const canDownload = isAdmin || hasPaid || hasFreeAccess;
   const isLoading = subscriptionLoading || freeAccessLoading;
@@ -111,8 +113,7 @@ const BulkDownloadSection = () => {
     }
 
     if (!canDownload) {
-      toast.error("Please subscribe to download templates");
-      navigate("/pricing");
+      setShowPaymentModal(true);
       return;
     }
 
@@ -126,7 +127,11 @@ const BulkDownloadSection = () => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${bundle.title.replace(/[^a-zA-Z0-9]/g, "-")}.zip`;
+      
+      // Get file extension from URL
+      const fileExtension = bundle.downloadUrl.split('.').pop() || 'zip';
+      a.download = `${bundle.title.replace(/[^a-zA-Z0-9]/g, "-")}.${fileExtension}`;
+      
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -266,6 +271,12 @@ const BulkDownloadSection = () => {
           </div>
         )}
       </div>
+      
+      {/* Payment Modal for non-paid users */}
+      <PaymentRequiredModal 
+        open={showPaymentModal} 
+        onOpenChange={setShowPaymentModal} 
+      />
     </section>
   );
 };
