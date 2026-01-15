@@ -209,10 +209,15 @@ const AutomationManager = () => {
     let created = { categories: 0, subcategories: 0, automations: 0 };
 
     for (const auto of automationsData) {
-      if (!auto.title) continue;
+      // Support multiple column name formats: name/title, url/download_url/link
+      const automationTitle = auto.title || auto.name || auto.Name || auto.Title;
+      const automationUrl = auto.download_url || auto.url || auto.link || auto.URL || auto.Link || auto.Url || "";
+      const automationDescription = auto.description || auto.Description || "";
+      
+      if (!automationTitle) continue;
 
-      const categoryName = auto.category || "General";
-      const subcategoryName = auto.subcategory || "Default";
+      const categoryName = auto.category || auto.Category || "n8n Templates";
+      const subcategoryName = auto.subcategory || auto.Subcategory || "General Templates";
       
       // Auto-create category if doesn't exist
       let categoryId = categoryMap.get(categoryName.toLowerCase());
@@ -258,12 +263,12 @@ const AutomationManager = () => {
 
       // Create automation
       const { error } = await supabase.from("automations").insert({
-        title: auto.title,
-        description: auto.description || "",
+        title: automationTitle,
+        description: automationDescription,
         icon: auto.icon || "zap",
         subcategory_id: subcategoryId,
-        download_url: auto.download_url || auto.link || auto.url || "",
-        uses_count: parseInt(auto.uses_count) || 0,
+        download_url: automationUrl,
+        uses_count: parseInt(auto.uses_count || auto.score || "0") || 0,
       });
 
       if (!error) created.automations++;
