@@ -340,16 +340,20 @@ const AutomationManager = () => {
     return { category: 'General Automation', subcategory: 'Miscellaneous' };
   };
 
-  // Smart import - auto-create categories/subcategories with BATCH processing
+  // Smart import - auto-create categories/subcategories with BATCH processing & DUPLICATE DETECTION
   const processAutomationsData = async (automationsData: any[]) => {
-    // Get current categories and subcategories
+    // Get current categories, subcategories, and existing automations for duplicate detection
     const { data: currentCategories } = await supabase.from("automation_categories").select("*");
     const { data: currentSubcategories } = await supabase.from("automation_subcategories").select("*");
+    const { data: existingAutomations } = await supabase.from("automations").select("title");
     
     const categoryMap = new Map(currentCategories?.map(c => [c.name.toLowerCase(), c.id]) || []);
     const subcategoryMap = new Map(currentSubcategories?.map(s => [`${s.name.toLowerCase()}_${s.category_id}`, s.id]) || []);
+    
+    // Create a Set of existing automation titles (lowercase for case-insensitive comparison)
+    const existingTitles = new Set(existingAutomations?.map(a => a.title.toLowerCase().trim()) || []);
 
-    let created = { categories: 0, subcategories: 0, automations: 0 };
+    let created = { categories: 0, subcategories: 0, automations: 0, skippedDuplicates: 0 };
 
     // First pass: collect all unique categories and subcategories needed
     const neededCategories = new Set<string>();
@@ -415,14 +419,27 @@ const AutomationManager = () => {
       }
     }
 
-    // Prepare all automations for batch insert
+    // Prepare all automations for batch insert (with duplicate detection)
     const automationsToInsert: any[] = [];
+    const seenTitles = new Set<string>(); // Track titles within this import batch
+
     for (const auto of automationsData) {
       const automationTitle = auto.title || auto.name || auto.Name || auto.Title;
       const automationUrl = auto.download_url || auto.url || auto.link || auto.URL || auto.Link || auto.Url || "";
       const automationDescription = auto.description || auto.Description || "";
       
       if (!automationTitle) continue;
+
+      const titleKey = automationTitle.toLowerCase().trim();
+      
+      // Skip if already exists in database OR already seen in this batch
+      if (existingTitles.has(titleKey) || seenTitles.has(titleKey)) {
+        created.skippedDuplicates++;
+        continue;
+      }
+      
+      // Mark as seen in this batch
+      seenTitles.add(titleKey);
 
       const detected = detectCategory(automationTitle, automationDescription);
       const categoryName = auto.category || auto.Category || detected.category;
@@ -478,8 +495,9 @@ const AutomationManager = () => {
             const automationsData = XLSX.utils.sheet_to_json<any>(automationsSheet);
             const created = await processAutomationsData(automationsData);
             
+            const duplicateMsg = created.skippedDuplicates > 0 ? ` (${created.skippedDuplicates} duplicates skipped)` : '';
             toast.success(
-              `Imported: ${created.automations} automations, ${created.categories} categories, ${created.subcategories} subcategories`
+              `Imported: ${created.automations} automations, ${created.categories} categories, ${created.subcategories} subcategories${duplicateMsg}`
             );
           }
 
