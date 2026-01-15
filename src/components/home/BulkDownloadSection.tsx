@@ -25,7 +25,7 @@ const templateBundles = [
     title: "2,000+ Ready-to-Use Templates",
     subtitle: "for Every Need",
     tags: ["Lead Generation", "Email Marketing", "Data Analytics"],
-    downloadUrl: "/uploads/ready-to-use-templates-2000.zip",
+    downloadUrl: "/uploads/n8n-templates-2000.xlsx",
     color: "from-orange-500 to-red-600",
   },
   {
