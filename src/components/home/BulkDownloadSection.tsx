@@ -15,7 +15,7 @@ const templateBundles = [
     title: "200 Professional Templates",
     subtitle: "with 🎥 Video Support",
     tags: ["Business Automation", "Content Creation", "Lead Generation"],
-    downloadUrl: "/uploads/workflow-templates.zip",
+    downloadUrl: "/uploads/professional-templates-200.zip",
     color: "from-blue-500 to-purple-600",
   },
   {
@@ -24,7 +24,7 @@ const templateBundles = [
     title: "2,000+ Ready-to-Use Templates",
     subtitle: "for Every Need",
     tags: ["Lead Generation", "Email Marketing", "Data Analytics"],
-    downloadUrl: "/uploads/workflow-templates.zip",
+    downloadUrl: "/uploads/ready-to-use-templates-2000.zip",
     color: "from-orange-500 to-red-600",
   },
   {
@@ -33,7 +33,7 @@ const templateBundles = [
     title: "3,000+ Ready-to-Use Templates",
     subtitle: "for Every Workflow",
     tags: ["Content Creation", "Marketing", "Sales"],
-    downloadUrl: "/uploads/workflow-templates.zip",
+    downloadUrl: "/uploads/workflow-templates-3000.zip",
     color: "from-green-500 to-teal-600",
   },
   {
@@ -42,7 +42,7 @@ const templateBundles = [
     title: "2,000+ Powerful Templates",
     subtitle: "to Boost Productivity",
     tags: ["AI Workflows", "Generative", "Digital Agent"],
-    downloadUrl: "/uploads/workflow-templates.zip",
+    downloadUrl: "/uploads/productivity-templates-2000.zip",
     color: "from-pink-500 to-rose-600",
   },
   {
@@ -51,7 +51,7 @@ const templateBundles = [
     title: "2,200+ Templates",
     subtitle: "for Marketing, Sales & More",
     tags: ["Marketing", "Sales", "More"],
-    downloadUrl: "/uploads/workflow-templates.zip",
+    downloadUrl: "/uploads/marketing-sales-templates-2200.zip",
     color: "from-cyan-500 to-blue-600",
   },
   {
@@ -60,7 +60,7 @@ const templateBundles = [
     title: "300+ Templates",
     subtitle: "for WhatsApp Bots, Chatbots & Beyond! 🤖💬",
     tags: ["WhatsApp Chatbot", "Chatbots"],
-    downloadUrl: "/uploads/workflow-templates.zip",
+    downloadUrl: "/uploads/whatsapp-chatbot-templates-300.zip",
     color: "from-green-400 to-emerald-600",
   },
   {
@@ -69,7 +69,7 @@ const templateBundles = [
     title: "500+ n8n Templates",
     subtitle: "Automate & scale faster.",
     tags: ["Lead Generation", "Email Marketing", "Sales"],
-    downloadUrl: "/uploads/workflow-templates.zip",
+    downloadUrl: "/uploads/n8n-templates-500.zip",
     color: "from-violet-500 to-purple-600",
   },
   {
@@ -78,7 +78,7 @@ const templateBundles = [
     title: "2,182 Workflows",
     subtitle: "Covering all industries.",
     tags: ["AI Workflows", "Chatbots"],
-    downloadUrl: "/uploads/workflow-templates.zip",
+    downloadUrl: "/uploads/industry-workflows-2182.zip",
     color: "from-amber-500 to-orange-600",
   },
   {
@@ -87,7 +87,7 @@ const templateBundles = [
     title: "10+ Business Templates",
     subtitle: "Ready for your needs.",
     tags: ["Business Automation", "Workflow Automation", "Process Optimization"],
-    downloadUrl: "/uploads/workflow-templates.zip",
+    downloadUrl: "/uploads/business-templates-10.zip",
     color: "from-slate-500 to-gray-700",
   },
 ];
