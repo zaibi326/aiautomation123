@@ -75,7 +75,7 @@ const Navbar = () => {
               </Link>
               <Link to="/signup">
                 <Button variant="hero" size="sm">
-                  Get Started Free
+                  Get Started
                 </Button>
               </Link>
             </div>
@@ -117,7 +117,7 @@ const Navbar = () => {
                   </Link>
                   <Link to="/signup" onClick={() => setIsOpen(false)}>
                     <Button variant="hero" className="w-full">
-                      Get Started Free
+                      Get Started
                     </Button>
                   </Link>
                 </div>
