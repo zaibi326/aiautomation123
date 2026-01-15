@@ -44,7 +44,7 @@ const plans = [
   },
   {
     name: "Pro Plan",
-    price: "$50",
+    price: "$100",
     period: "Lifetime",
     description: "Complete AI automation mastery package",
     features: [
