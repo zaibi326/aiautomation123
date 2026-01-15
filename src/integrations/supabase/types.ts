@@ -267,6 +267,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_free_access: {
+        Row: {
+          created_at: string
+          granted_by: string
+          id: string
+          notes: string | null
+          user_email: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          granted_by: string
+          id?: string
+          notes?: string | null
+          user_email: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          granted_by?: string
+          id?: string
+          notes?: string | null
+          user_email?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string

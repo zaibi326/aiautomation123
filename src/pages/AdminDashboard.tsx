@@ -5,6 +5,8 @@ import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -49,9 +51,13 @@ import {
   Settings,
   Download,
   LayoutDashboard,
+  UserPlus,
+  Trash2,
+  Gift,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useAppSettings } from "@/hooks/useAppSettings";
+import { useFreeAccess } from "@/hooks/useFreeAccess";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -106,7 +112,12 @@ const AdminDashboard = () => {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const { settings, updateSetting, loading: settingsLoading } = useAppSettings();
+  const { freeAccessUsers, fetchFreeAccessUsers, grantFreeAccess, revokeFreeAccess } = useFreeAccess();
   const [updatingDownloadSetting, setUpdatingDownloadSetting] = useState(false);
+  const [newFreeAccessEmail, setNewFreeAccessEmail] = useState("");
+  const [newFreeAccessNotes, setNewFreeAccessNotes] = useState("");
+  const [grantingAccess, setGrantingAccess] = useState(false);
+  const [loadingFreeAccess, setLoadingFreeAccess] = useState(false);
 
   const fetchSubmissions = async () => {
     setLoading(true);
@@ -155,10 +166,45 @@ const AdminDashboard = () => {
     }
   };
 
+  const loadFreeAccessUsers = async () => {
+    setLoadingFreeAccess(true);
+    await fetchFreeAccessUsers();
+    setLoadingFreeAccess(false);
+  };
+
   useEffect(() => {
     fetchSubmissions();
     fetchLoginAttempts();
+    loadFreeAccessUsers();
   }, []);
+
+  const handleGrantFreeAccess = async () => {
+    if (!newFreeAccessEmail.trim()) {
+      toast.error("Please enter an email address");
+      return;
+    }
+
+    setGrantingAccess(true);
+    const result = await grantFreeAccess(newFreeAccessEmail.trim(), newFreeAccessNotes.trim() || undefined);
+    
+    if (result.success) {
+      toast.success("Free access granted successfully!");
+      setNewFreeAccessEmail("");
+      setNewFreeAccessNotes("");
+    } else {
+      toast.error(result.error || "Failed to grant access");
+    }
+    setGrantingAccess(false);
+  };
+
+  const handleRevokeFreeAccess = async (accessId: string, userEmail: string) => {
+    const result = await revokeFreeAccess(accessId);
+    if (result.success) {
+      toast.success(`Access revoked for ${userEmail}`);
+    } else {
+      toast.error(result.error || "Failed to revoke access");
+    }
+  };
 
   useEffect(() => {
     let filtered = submissions;
@@ -649,6 +695,115 @@ const AdminDashboard = () => {
                         />
                       </div>
                     </div>
+                  </div>
+
+                  {/* Grant Free Access */}
+                  <div className="p-6 rounded-2xl bg-card border border-border">
+                    <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                      <Gift className="w-5 h-5" />
+                      Grant Free Download Access
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Grant download access to specific users without requiring payment
+                    </p>
+                    
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="freeAccessEmail">User Email</Label>
+                        <Input
+                          id="freeAccessEmail"
+                          type="email"
+                          placeholder="user@example.com"
+                          value={newFreeAccessEmail}
+                          onChange={(e) => setNewFreeAccessEmail(e.target.value)}
+                          disabled={grantingAccess}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="freeAccessNotes">Notes (Optional)</Label>
+                        <Textarea
+                          id="freeAccessNotes"
+                          placeholder="Reason for granting access..."
+                          value={newFreeAccessNotes}
+                          onChange={(e) => setNewFreeAccessNotes(e.target.value)}
+                          disabled={grantingAccess}
+                          rows={2}
+                        />
+                      </div>
+                      <Button 
+                        onClick={handleGrantFreeAccess}
+                        disabled={grantingAccess || !newFreeAccessEmail.trim()}
+                        className="gap-2"
+                      >
+                        {grantingAccess ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Granting...
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus className="w-4 h-4" />
+                            Grant Free Access
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Users with Free Access */}
+                  <div className="p-6 rounded-2xl bg-card border border-border">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                        <Users className="w-5 h-5" />
+                        Users with Free Access
+                      </h3>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={loadFreeAccessUsers}
+                        disabled={loadingFreeAccess}
+                      >
+                        <RefreshCw className={`w-4 h-4 mr-2 ${loadingFreeAccess ? "animate-spin" : ""}`} />
+                        Refresh
+                      </Button>
+                    </div>
+                    
+                    {loadingFreeAccess ? (
+                      <div className="flex justify-center py-8">
+                        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : freeAccessUsers.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Gift className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                        <p>No users have been granted free access yet</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {freeAccessUsers.map((access) => (
+                          <div 
+                            key={access.id} 
+                            className="flex items-center justify-between p-4 rounded-xl bg-muted/50"
+                          >
+                            <div>
+                              <p className="font-medium text-foreground">{access.user_email}</p>
+                              <p className="text-xs text-muted-foreground">
+                                Granted on {format(new Date(access.created_at), "MMM d, yyyy")}
+                              </p>
+                              {access.notes && (
+                                <p className="text-sm text-muted-foreground mt-1">{access.notes}</p>
+                              )}
+                            </div>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleRevokeFreeAccess(access.id, access.user_email)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </TabsContent>
