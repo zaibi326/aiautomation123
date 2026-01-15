@@ -197,6 +197,149 @@ const AutomationManager = () => {
 
   const [jsonUrl, setJsonUrl] = useState("");
 
+  // Smart category detection based on keywords
+  const detectCategory = (title: string, description: string): { category: string; subcategory: string } => {
+    const text = `${title} ${description}`.toLowerCase();
+    
+    // Category detection rules with subcategories
+    const categoryRules = [
+      { 
+        keywords: ['instagram', 'facebook', 'twitter', 'linkedin', 'tiktok', 'youtube', 'social media', 'social post', 'threads', 'bluesky', 'pinterest'],
+        category: 'Social Media Management',
+        subcategoryRules: [
+          { keywords: ['post', 'publish', 'schedule', 'content'], subcategory: 'Content Publishing' },
+          { keywords: ['analytics', 'insight', 'report', 'stats'], subcategory: 'Analytics' },
+          { keywords: ['video', 'reel', 'short'], subcategory: 'Video Content' },
+          { keywords: ['comment', 'engage', 'reply'], subcategory: 'Engagement' },
+        ],
+        defaultSubcategory: 'Social Automation'
+      },
+      { 
+        keywords: ['email', 'gmail', 'outlook', 'mailchimp', 'newsletter', 'smtp', 'imap'],
+        category: 'Email Automation',
+        subcategoryRules: [
+          { keywords: ['campaign', 'marketing', 'newsletter'], subcategory: 'Email Marketing' },
+          { keywords: ['autorespond', 'reply', 'response'], subcategory: 'Auto-Response' },
+          { keywords: ['filter', 'sort', 'organize', 'archive'], subcategory: 'Email Management' },
+        ],
+        defaultSubcategory: 'Email Workflows'
+      },
+      { 
+        keywords: ['crm', 'hubspot', 'salesforce', 'pipedrive', 'zoho', 'lead', 'deal', 'contact', 'sales'],
+        category: 'CRM & Sales',
+        subcategoryRules: [
+          { keywords: ['lead', 'prospect', 'qualify'], subcategory: 'Lead Management' },
+          { keywords: ['deal', 'pipeline', 'opportunity'], subcategory: 'Deal Tracking' },
+          { keywords: ['contact', 'enrich', 'update'], subcategory: 'Contact Management' },
+        ],
+        defaultSubcategory: 'Sales Automation'
+      },
+      { 
+        keywords: ['ai', 'gpt', 'openai', 'chatgpt', 'gemini', 'claude', 'llm', 'langchain', 'chatbot', 'assistant'],
+        category: 'AI & Chatbots',
+        subcategoryRules: [
+          { keywords: ['chat', 'assistant', 'bot', 'conversation'], subcategory: 'Chatbots' },
+          { keywords: ['generate', 'create', 'write', 'content'], subcategory: 'Content Generation' },
+          { keywords: ['analyze', 'summary', 'extract'], subcategory: 'AI Analysis' },
+          { keywords: ['image', 'dall', 'vision', 'photo'], subcategory: 'AI Image' },
+          { keywords: ['voice', 'speech', 'transcri', 'audio'], subcategory: 'AI Voice' },
+        ],
+        defaultSubcategory: 'AI Automation'
+      },
+      { 
+        keywords: ['telegram', 'slack', 'discord', 'whatsapp', 'teams', 'mattermost'],
+        category: 'Messaging & Chat',
+        subcategoryRules: [
+          { keywords: ['telegram'], subcategory: 'Telegram Bots' },
+          { keywords: ['slack'], subcategory: 'Slack Integrations' },
+          { keywords: ['discord'], subcategory: 'Discord Bots' },
+          { keywords: ['whatsapp'], subcategory: 'WhatsApp Automation' },
+        ],
+        defaultSubcategory: 'Chat Automation'
+      },
+      { 
+        keywords: ['shopify', 'woocommerce', 'ecommerce', 'order', 'inventory', 'product', 'stripe', 'payment'],
+        category: 'E-commerce',
+        subcategoryRules: [
+          { keywords: ['order', 'fulfillment'], subcategory: 'Order Management' },
+          { keywords: ['inventory', 'stock'], subcategory: 'Inventory' },
+          { keywords: ['payment', 'stripe', 'invoice'], subcategory: 'Payments' },
+        ],
+        defaultSubcategory: 'E-commerce Automation'
+      },
+      { 
+        keywords: ['notion', 'airtable', 'google sheet', 'spreadsheet', 'database', 'trello', 'asana', 'clickup', 'project', 'task'],
+        category: 'Project Management',
+        subcategoryRules: [
+          { keywords: ['task', 'todo', 'assign'], subcategory: 'Task Management' },
+          { keywords: ['sync', 'integrate', 'connect'], subcategory: 'Data Sync' },
+          { keywords: ['report', 'status', 'update'], subcategory: 'Reporting' },
+        ],
+        defaultSubcategory: 'Productivity'
+      },
+      { 
+        keywords: ['scrape', 'crawl', 'extract', 'web data', 'scraping'],
+        category: 'Web Scraping & Data',
+        subcategoryRules: [
+          { keywords: ['scrape', 'crawl', 'extract'], subcategory: 'Web Scraping' },
+          { keywords: ['enrich', 'lookup'], subcategory: 'Data Enrichment' },
+        ],
+        defaultSubcategory: 'Data Extraction'
+      },
+      { 
+        keywords: ['calendar', 'meeting', 'schedule', 'appointment', 'booking'],
+        category: 'Calendar & Scheduling',
+        subcategoryRules: [
+          { keywords: ['meeting', 'appointment'], subcategory: 'Meeting Management' },
+          { keywords: ['schedule', 'book'], subcategory: 'Scheduling' },
+        ],
+        defaultSubcategory: 'Calendar Automation'
+      },
+      { 
+        keywords: ['github', 'gitlab', 'bitbucket', 'deploy', 'ci/cd', 'devops', 'code review'],
+        category: 'Developer Tools',
+        subcategoryRules: [
+          { keywords: ['github', 'gitlab', 'repo'], subcategory: 'Git Automation' },
+          { keywords: ['deploy', 'ci', 'cd'], subcategory: 'CI/CD' },
+        ],
+        defaultSubcategory: 'Dev Automation'
+      },
+      { 
+        keywords: ['seo', 'keyword', 'ranking', 'backlink', 'search engine'],
+        category: 'Marketing Automation',
+        subcategoryRules: [
+          { keywords: ['seo', 'keyword', 'ranking'], subcategory: 'SEO' },
+          { keywords: ['campaign', 'ads'], subcategory: 'Campaigns' },
+        ],
+        defaultSubcategory: 'Marketing'
+      },
+      { 
+        keywords: ['pdf', 'document', 'file', 'convert', 'google drive', 'dropbox'],
+        category: 'Document & Files',
+        subcategoryRules: [
+          { keywords: ['pdf', 'convert'], subcategory: 'PDF Processing' },
+          { keywords: ['drive', 'dropbox', 'storage'], subcategory: 'File Storage' },
+        ],
+        defaultSubcategory: 'File Automation'
+      },
+    ];
+
+    for (const rule of categoryRules) {
+      if (rule.keywords.some(kw => text.includes(kw))) {
+        let subcategory = rule.defaultSubcategory;
+        for (const subRule of rule.subcategoryRules) {
+          if (subRule.keywords.some(kw => text.includes(kw))) {
+            subcategory = subRule.subcategory;
+            break;
+          }
+        }
+        return { category: rule.category, subcategory };
+      }
+    }
+
+    return { category: 'General Automation', subcategory: 'Miscellaneous' };
+  };
+
   // Smart import - auto-create categories/subcategories
   const processAutomationsData = async (automationsData: any[]) => {
     // Get current categories and subcategories
@@ -216,8 +359,10 @@ const AutomationManager = () => {
       
       if (!automationTitle) continue;
 
-      const categoryName = auto.category || auto.Category || "n8n Templates";
-      const subcategoryName = auto.subcategory || auto.Subcategory || "General Templates";
+      // Auto-detect category if not provided
+      const detected = detectCategory(automationTitle, automationDescription);
+      const categoryName = auto.category || auto.Category || detected.category;
+      const subcategoryName = auto.subcategory || auto.Subcategory || detected.subcategory;
       
       // Auto-create category if doesn't exist
       let categoryId = categoryMap.get(categoryName.toLowerCase());
