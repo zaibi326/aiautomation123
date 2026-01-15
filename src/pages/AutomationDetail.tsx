@@ -7,6 +7,7 @@ import { ArrowLeft, Check, Zap, Clock, Users, Star, Download, Settings, Loader2 
 import { PageTransition } from "@/components/PageTransition";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAppSettings } from "@/hooks/useAppSettings";
 import PaymentRequiredModal from "@/components/PaymentRequiredModal";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +31,7 @@ const AutomationDetail = () => {
   const { id } = useParams();
   const { user } = useAuth();
   const { hasPaid, loading: subscriptionLoading } = useSubscription();
+  const { settings: appSettings, loading: settingsLoading } = useAppSettings();
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [automation, setAutomation] = useState<AutomationData | null>(null);
@@ -66,6 +68,12 @@ const AutomationDetail = () => {
   const handleDownload = async () => {
     if (!user) {
       toast.error("Please login first to download");
+      return;
+    }
+
+    // Check if downloads are enabled by admin
+    if (!appSettings.allow_user_downloads) {
+      toast.error("Downloads are currently disabled by admin");
       return;
     }
 
@@ -254,12 +262,17 @@ const AutomationDetail = () => {
                       size="lg" 
                       className="w-full"
                       onClick={handleDownload}
-                      disabled={subscriptionLoading || downloading}
+                      disabled={subscriptionLoading || settingsLoading || downloading || !appSettings.allow_user_downloads}
                     >
                       {downloading ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
                           Downloading...
+                        </>
+                      ) : !appSettings.allow_user_downloads ? (
+                        <>
+                          <Download className="w-4 h-4" />
+                          Downloads Disabled
                         </>
                       ) : (
                         <>
@@ -275,7 +288,11 @@ const AutomationDetail = () => {
                   </div>
 
                   <div className="mt-6 pt-6 border-t border-border">
-                    {hasPaid ? (
+                    {!appSettings.allow_user_downloads ? (
+                      <p className="text-xs text-red-600 dark:text-red-400 text-center">
+                        ⚠️ Downloads temporarily disabled
+                      </p>
+                    ) : hasPaid ? (
                       <p className="text-xs text-green-600 dark:text-green-400 text-center">
                         ✓ Premium Access - Unlimited Downloads
                       </p>

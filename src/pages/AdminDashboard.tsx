@@ -46,7 +46,12 @@ import {
   CreditCard,
   Zap,
   Activity,
+  Settings,
+  Download,
+  LayoutDashboard,
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { useAppSettings } from "@/hooks/useAppSettings";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -100,6 +105,8 @@ const AdminDashboard = () => {
   const [selectedSubmission, setSelectedSubmission] = useState<PaymentSubmission | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const { settings, updateSetting, loading: settingsLoading } = useAppSettings();
+  const [updatingDownloadSetting, setUpdatingDownloadSetting] = useState(false);
 
   const fetchSubmissions = async () => {
     setLoading(true);
@@ -260,7 +267,7 @@ const AdminDashboard = () => {
 
             {/* Admin Tabs */}
             <Tabs defaultValue="payments" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 mb-8">
+              <TabsList className="grid w-full grid-cols-4 mb-8">
                 <TabsTrigger value="payments" className="gap-2">
                   <CreditCard className="w-4 h-4" />
                   Payments
@@ -272,6 +279,10 @@ const AdminDashboard = () => {
                 <TabsTrigger value="security" className="gap-2">
                   <Activity className="w-4 h-4" />
                   Security Logs
+                </TabsTrigger>
+                <TabsTrigger value="settings" className="gap-2">
+                  <Settings className="w-4 h-4" />
+                  Settings
                 </TabsTrigger>
               </TabsList>
 
@@ -580,6 +591,65 @@ const AdminDashboard = () => {
                       </Table>
                     </div>
                   )}
+                </div>
+              </TabsContent>
+
+              {/* Settings Tab */}
+              <TabsContent value="settings">
+                <div className="space-y-6">
+                  {/* Quick Actions */}
+                  <div className="p-6 rounded-2xl bg-card border border-border">
+                    <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                      <LayoutDashboard className="w-5 h-5" />
+                      Quick Actions
+                    </h3>
+                    <div className="flex flex-wrap gap-3">
+                      <Link to="/automations">
+                        <Button variant="outline" className="gap-2">
+                          <Zap className="w-4 h-4" />
+                          View User Interface
+                        </Button>
+                      </Link>
+                      <Link to="/dashboard">
+                        <Button variant="outline" className="gap-2">
+                          <Users className="w-4 h-4" />
+                          View User Dashboard
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+
+                  {/* User Permissions */}
+                  <div className="p-6 rounded-2xl bg-card border border-border">
+                    <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                      <Download className="w-5 h-5" />
+                      User Permissions
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50">
+                        <div>
+                          <p className="font-medium text-foreground">Allow User Downloads</p>
+                          <p className="text-sm text-muted-foreground">
+                            Enable or disable automation downloads for all users
+                          </p>
+                        </div>
+                        <Switch
+                          checked={settings.allow_user_downloads}
+                          disabled={settingsLoading || updatingDownloadSetting}
+                          onCheckedChange={async (checked) => {
+                            setUpdatingDownloadSetting(true);
+                            const success = await updateSetting("allow_user_downloads", checked ? "true" : "false");
+                            if (success) {
+                              toast.success(checked ? "User downloads enabled" : "User downloads disabled");
+                            } else {
+                              toast.error("Failed to update setting");
+                            }
+                            setUpdatingDownloadSetting(false);
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </TabsContent>
             </Tabs>
