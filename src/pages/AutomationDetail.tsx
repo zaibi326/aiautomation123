@@ -8,6 +8,7 @@ import { PageTransition } from "@/components/PageTransition";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAppSettings } from "@/hooks/useAppSettings";
+import { useUserRole } from "@/hooks/useUserRole";
 import PaymentRequiredModal from "@/components/PaymentRequiredModal";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +31,7 @@ interface AutomationData {
 const AutomationDetail = () => {
   const { id } = useParams();
   const { user } = useAuth();
+  const { isAdmin } = useUserRole();
   const { hasPaid, loading: subscriptionLoading } = useSubscription();
   const { settings: appSettings, loading: settingsLoading } = useAppSettings();
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -71,15 +73,18 @@ const AutomationDetail = () => {
       return;
     }
 
-    // Check if downloads are enabled by admin
-    if (!appSettings.allow_user_downloads) {
-      toast.error("Downloads are currently disabled by admin");
-      return;
-    }
+    // Admin can always download - skip all checks
+    if (!isAdmin) {
+      // Check if downloads are enabled by admin
+      if (!appSettings.allow_user_downloads) {
+        toast.error("Downloads are currently disabled by admin");
+        return;
+      }
 
-    if (!hasPaid) {
-      setShowPaymentModal(true);
-      return;
+      if (!hasPaid) {
+        setShowPaymentModal(true);
+        return;
+      }
     }
     
     if (!automation?.download_url) {
@@ -262,14 +267,14 @@ const AutomationDetail = () => {
                       size="lg" 
                       className="w-full"
                       onClick={handleDownload}
-                      disabled={subscriptionLoading || settingsLoading || downloading || !appSettings.allow_user_downloads}
+                      disabled={subscriptionLoading || settingsLoading || downloading || (!isAdmin && !appSettings.allow_user_downloads)}
                     >
                       {downloading ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
                           Downloading...
                         </>
-                      ) : !appSettings.allow_user_downloads ? (
+                      ) : (!isAdmin && !appSettings.allow_user_downloads) ? (
                         <>
                           <Download className="w-4 h-4" />
                           Downloads Disabled
@@ -288,7 +293,11 @@ const AutomationDetail = () => {
                   </div>
 
                   <div className="mt-6 pt-6 border-t border-border">
-                    {!appSettings.allow_user_downloads ? (
+                    {isAdmin ? (
+                      <p className="text-xs text-blue-600 dark:text-blue-400 text-center">
+                        👑 Admin Access - Free Downloads
+                      </p>
+                    ) : !appSettings.allow_user_downloads ? (
                       <p className="text-xs text-red-600 dark:text-red-400 text-center">
                         ⚠️ Downloads temporarily disabled
                       </p>
