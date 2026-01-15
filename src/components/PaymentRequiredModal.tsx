@@ -51,7 +51,7 @@ const PaymentRequiredModal = ({ open, onOpenChange }: PaymentRequiredModalProps)
                 <Crown className="w-5 h-5 text-primary" />
                 <span className="font-semibold">Pro</span>
               </div>
-              <p className="text-2xl font-bold text-primary">$50</p>
+              <p className="text-2xl font-bold text-primary">$100</p>
               <p className="text-xs text-muted-foreground">Lifetime</p>
             </div>
           </div>
