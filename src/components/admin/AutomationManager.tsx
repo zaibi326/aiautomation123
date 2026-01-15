@@ -340,7 +340,7 @@ const AutomationManager = () => {
     return { category: 'General Automation', subcategory: 'Miscellaneous' };
   };
 
-  // Smart import - auto-create categories/subcategories
+  // Smart import - auto-create categories/subcategories with BATCH processing
   const processAutomationsData = async (automationsData: any[]) => {
     // Get current categories and subcategories
     const { data: currentCategories } = await supabase.from("automation_categories").select("*");
@@ -351,63 +351,91 @@ const AutomationManager = () => {
 
     let created = { categories: 0, subcategories: 0, automations: 0 };
 
+    // First pass: collect all unique categories and subcategories needed
+    const neededCategories = new Set<string>();
+    const neededSubcategories = new Map<string, string>(); // subcategoryName -> categoryName
+
     for (const auto of automationsData) {
-      // Support multiple column name formats: name/title, url/download_url/link
+      const automationTitle = auto.title || auto.name || auto.Name || auto.Title;
+      const automationDescription = auto.description || auto.Description || "";
+      if (!automationTitle) continue;
+
+      const detected = detectCategory(automationTitle, automationDescription);
+      const categoryName = auto.category || auto.Category || detected.category;
+      const subcategoryName = auto.subcategory || auto.Subcategory || detected.subcategory;
+      
+      if (!categoryMap.has(categoryName.toLowerCase())) {
+        neededCategories.add(categoryName);
+      }
+      neededSubcategories.set(`${subcategoryName}|||${categoryName}`, categoryName);
+    }
+
+    // Batch create missing categories
+    if (neededCategories.size > 0) {
+      const categoriesToInsert = Array.from(neededCategories).map(name => ({
+        name, description: "", icon: "folder"
+      }));
+      const { data: newCats } = await supabase
+        .from("automation_categories")
+        .insert(categoriesToInsert)
+        .select();
+      
+      if (newCats) {
+        newCats.forEach(c => categoryMap.set(c.name.toLowerCase(), c.id));
+        created.categories = newCats.length;
+      }
+    }
+
+    // Batch create missing subcategories
+    const subcatsToInsert: any[] = [];
+    for (const [key] of neededSubcategories) {
+      const [subName, catName] = key.split("|||");
+      const categoryId = categoryMap.get(catName.toLowerCase());
+      const subKey = `${subName.toLowerCase()}_${categoryId}`;
+      
+      if (categoryId && !subcategoryMap.has(subKey)) {
+        subcatsToInsert.push({
+          name: subName,
+          description: "",
+          icon: "file",
+          category_id: categoryId
+        });
+      }
+    }
+
+    if (subcatsToInsert.length > 0) {
+      const { data: newSubs } = await supabase
+        .from("automation_subcategories")
+        .insert(subcatsToInsert)
+        .select();
+      
+      if (newSubs) {
+        newSubs.forEach(s => subcategoryMap.set(`${s.name.toLowerCase()}_${s.category_id}`, s.id));
+        created.subcategories = newSubs.length;
+      }
+    }
+
+    // Prepare all automations for batch insert
+    const automationsToInsert: any[] = [];
+    for (const auto of automationsData) {
       const automationTitle = auto.title || auto.name || auto.Name || auto.Title;
       const automationUrl = auto.download_url || auto.url || auto.link || auto.URL || auto.Link || auto.Url || "";
       const automationDescription = auto.description || auto.Description || "";
       
       if (!automationTitle) continue;
 
-      // Auto-detect category if not provided
       const detected = detectCategory(automationTitle, automationDescription);
       const categoryName = auto.category || auto.Category || detected.category;
       const subcategoryName = auto.subcategory || auto.Subcategory || detected.subcategory;
       
-      // Auto-create category if doesn't exist
-      let categoryId = categoryMap.get(categoryName.toLowerCase());
-      if (!categoryId) {
-        const { data: newCat, error } = await supabase
-          .from("automation_categories")
-          .insert({ name: categoryName, description: "", icon: auto.category_icon || "folder" })
-          .select()
-          .single();
-        
-        if (!error && newCat) {
-          categoryId = newCat.id;
-          categoryMap.set(categoryName.toLowerCase(), categoryId);
-          created.categories++;
-        }
-      }
-
+      const categoryId = categoryMap.get(categoryName.toLowerCase());
       if (!categoryId) continue;
-
-      // Auto-create subcategory if doesn't exist
+      
       const subKey = `${subcategoryName.toLowerCase()}_${categoryId}`;
-      let subcategoryId = subcategoryMap.get(subKey);
-      if (!subcategoryId) {
-        const { data: newSub, error } = await supabase
-          .from("automation_subcategories")
-          .insert({ 
-            name: subcategoryName, 
-            description: "", 
-            icon: auto.subcategory_icon || "file",
-            category_id: categoryId 
-          })
-          .select()
-          .single();
-        
-        if (!error && newSub) {
-          subcategoryId = newSub.id;
-          subcategoryMap.set(subKey, subcategoryId);
-          created.subcategories++;
-        }
-      }
-
+      const subcategoryId = subcategoryMap.get(subKey);
       if (!subcategoryId) continue;
 
-      // Create automation
-      const { error } = await supabase.from("automations").insert({
+      automationsToInsert.push({
         title: automationTitle,
         description: automationDescription,
         icon: auto.icon || "zap",
@@ -415,8 +443,16 @@ const AutomationManager = () => {
         download_url: automationUrl,
         uses_count: parseInt(auto.uses_count || auto.score || "0") || 0,
       });
+    }
 
-      if (!error) created.automations++;
+    // Batch insert automations in chunks of 500
+    const BATCH_SIZE = 500;
+    for (let i = 0; i < automationsToInsert.length; i += BATCH_SIZE) {
+      const batch = automationsToInsert.slice(i, i + BATCH_SIZE);
+      const { data, error } = await supabase.from("automations").insert(batch).select();
+      if (!error && data) {
+        created.automations += data.length;
+      }
     }
 
     return created;
