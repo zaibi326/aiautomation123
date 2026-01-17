@@ -5,7 +5,6 @@ import FeaturesSection from "@/components/home/FeaturesSection";
 import StatsSection from "@/components/home/StatsSection";
 import HowItWorksSection from "@/components/home/HowItWorksSection";
 import TemplatesPreview from "@/components/home/TemplatesPreview";
-import BulkDownloadSection from "@/components/home/BulkDownloadSection";
 import TestimonialsSection from "@/components/home/TestimonialsSection";
 import CTASection from "@/components/home/CTASection";
 import { PageTransition } from "@/components/PageTransition";
@@ -21,7 +20,6 @@ const Index = () => {
           <StatsSection />
           <HowItWorksSection />
           <TemplatesPreview />
-          <BulkDownloadSection />
           <TestimonialsSection />
           <CTASection />
         </main>
