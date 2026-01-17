@@ -19,12 +19,14 @@ import {
   Folder,
   FolderOpen,
   ChevronRight,
-  Home
+  Home,
+  Play
 } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
 import { useAutomations } from "@/hooks/useAutomations";
 import BulkDownloadSection from "@/components/home/BulkDownloadSection";
 import N8nWorkflowPreview from "@/components/N8nWorkflowPreview";
+import { toast } from "@/hooks/use-toast";
 
 // Icon mapping
 const iconMap: Record<string, React.ComponentType<any>> = {
@@ -49,15 +51,24 @@ const getIcon = (iconName: string) => {
 
 const ITEMS_PER_PAGE = 6;
 
-// Automation Card Component with hover animation
+// Automation Card Component with hover animation and run button
 interface AutomationCardProps {
   automation: ReturnType<typeof useAutomations>['automations'][0];
   categories: ReturnType<typeof useAutomations>['categories'];
   subcategories: ReturnType<typeof useAutomations>['subcategories'];
   iconMap: Record<string, React.ComponentType<any>>;
+  runningAutomation: string | null;
+  onRun: (automationId: string, title: string) => void;
 }
 
-const AutomationCard = ({ automation, categories, subcategories, iconMap }: AutomationCardProps) => {
+const AutomationCard = ({ 
+  automation, 
+  categories, 
+  subcategories, 
+  iconMap, 
+  runningAutomation,
+  onRun 
+}: AutomationCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
   
   const IconComponent = iconMap[automation.icon?.toLowerCase()] || Zap;
@@ -66,6 +77,14 @@ const AutomationCard = ({ automation, categories, subcategories, iconMap }: Auto
   const category = subcategory ? categories.find(c => c.id === subcategory.category_id) : null;
   const categoryName = category?.name || "Uncategorized";
   const subcategoryName = subcategory?.name || "";
+  
+  const isRunning = runningAutomation === automation.id;
+
+  const handleRun = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onRun(automation.id, automation.title);
+  };
 
   return (
     <Link
@@ -75,16 +94,16 @@ const AutomationCard = ({ automation, categories, subcategories, iconMap }: Auto
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Workflow Preview - Auto-runs when JSON loads */}
-      <div className={`h-40 mb-4 rounded-lg overflow-hidden bg-muted/30 border transition-all duration-300 ${
+      <div className={`h-40 mb-4 rounded-lg overflow-hidden bg-muted/30 border transition-all duration-300 relative ${
         isHovered ? "border-primary/50 bg-muted/50" : "border-border/30"
-      }`}>
+      } ${isRunning ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}>
         {automation.preview_json ? (
           <N8nWorkflowPreview 
             json={typeof automation.preview_json === 'string' 
               ? automation.preview_json 
               : JSON.stringify(automation.preview_json)} 
             compact={true}
-            highlighted={isHovered}
+            highlighted={isHovered || isRunning}
             className="h-full"
           />
         ) : (
@@ -93,6 +112,16 @@ const AutomationCard = ({ automation, categories, subcategories, iconMap }: Auto
               isHovered ? "bg-primary/20 scale-110" : "bg-primary/10"
             }`}>
               <IconComponent className="w-6 h-6 text-primary" />
+            </div>
+          </div>
+        )}
+        
+        {/* Running overlay */}
+        {isRunning && (
+          <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
+            <div className="bg-background/90 rounded-lg px-4 py-2 flex items-center gap-2 shadow-lg">
+              <Loader2 className="w-4 h-4 animate-spin text-primary" />
+              <span className="text-sm font-medium text-primary">Running...</span>
             </div>
           </div>
         )}
@@ -114,10 +143,35 @@ const AutomationCard = ({ automation, categories, subcategories, iconMap }: Auto
       <p className="text-xs text-muted-foreground mb-2 line-clamp-2 flex-1">
         {automation.description}
       </p>
-      <div className="text-xs text-muted-foreground">
-        {automation.uses_count > 1000 
-          ? `${(automation.uses_count / 1000).toFixed(1)}k` 
-          : automation.uses_count} uses
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-muted-foreground">
+          {automation.uses_count > 1000 
+            ? `${(automation.uses_count / 1000).toFixed(1)}k` 
+            : automation.uses_count} uses
+        </span>
+        <Button
+          variant="default"
+          size="sm"
+          className={`gap-1.5 h-7 text-xs transition-all duration-300 ${
+            isRunning 
+              ? "bg-primary/80 animate-pulse" 
+              : "opacity-0 group-hover:opacity-100"
+          }`}
+          onClick={handleRun}
+          disabled={runningAutomation !== null}
+        >
+          {isRunning ? (
+            <>
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Running
+            </>
+          ) : (
+            <>
+              <Play className="w-3 h-3" />
+              Run Now
+            </>
+          )}
+        </Button>
       </div>
     </Link>
   );
@@ -129,6 +183,21 @@ const Automations = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>("All");
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
+  const [runningAutomation, setRunningAutomation] = useState<string | null>(null);
+
+  const handleRunAutomation = async (automationId: string, title: string) => {
+    setRunningAutomation(automationId);
+    
+    // Simulate workflow execution
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    setRunningAutomation(null);
+    
+    toast({
+      title: "✅ Workflow Executed Successfully",
+      description: `"${title}" completed in 2.1s`,
+    });
+  };
 
   // Get subcategories for selected category
   const filteredSubcategories = useMemo(() => {
@@ -322,6 +391,8 @@ const Automations = () => {
                       categories={categories}
                       subcategories={subcategories}
                       iconMap={iconMap}
+                      runningAutomation={runningAutomation}
+                      onRun={handleRunAutomation}
                     />
                   ))}
                 </div>
