@@ -82,14 +82,37 @@ export const WorkflowExecutionModal = ({
   const [executionLogs, setExecutionLogs] = useState<string[]>([]);
   const [totalTime, setTotalTime] = useState(0);
 
-  const workflow = useMemo<N8nWorkflow | null>(() => {
+  // Demo workflow to show when no preview_json is available
+  const demoWorkflow: N8nWorkflow = {
+    nodes: [
+      { name: "Trigger", type: "n8n-nodes-base.manualTrigger", position: [0, 0] },
+      { name: "Process Data", type: "n8n-nodes-base.function", position: [250, 0] },
+      { name: "API Request", type: "n8n-nodes-base.httpRequest", position: [500, -50] },
+      { name: "AI Processing", type: "n8n-nodes-base.openAi", position: [500, 50] },
+      { name: "Merge Results", type: "n8n-nodes-base.merge", position: [750, 0] },
+      { name: "Send Notification", type: "n8n-nodes-base.slack", position: [1000, 0] },
+    ],
+    connections: {
+      "Trigger": { main: [[{ node: "Process Data", type: "main", index: 0 }]] },
+      "Process Data": { main: [[{ node: "API Request", type: "main", index: 0 }, { node: "AI Processing", type: "main", index: 0 }]] },
+      "API Request": { main: [[{ node: "Merge Results", type: "main", index: 0 }]] },
+      "AI Processing": { main: [[{ node: "Merge Results", type: "main", index: 0 }]] },
+      "Merge Results": { main: [[{ node: "Send Notification", type: "main", index: 0 }]] },
+    }
+  };
+
+  const workflow = useMemo<N8nWorkflow>(() => {
     try {
-      if (typeof workflowJson === "string") {
-        return JSON.parse(workflowJson);
+      if (!workflowJson) {
+        return demoWorkflow;
       }
-      return workflowJson;
+      if (typeof workflowJson === "string") {
+        const parsed = JSON.parse(workflowJson);
+        return parsed?.nodes?.length > 0 ? parsed : demoWorkflow;
+      }
+      return workflowJson?.nodes?.length > 0 ? workflowJson : demoWorkflow;
     } catch {
-      return null;
+      return demoWorkflow;
     }
   }, [workflowJson]);
 
