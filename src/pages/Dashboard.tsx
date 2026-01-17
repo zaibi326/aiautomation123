@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
@@ -7,6 +8,9 @@ import {
 import { PageTransition } from "@/components/PageTransition";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useAutomations } from "@/hooks/useAutomations";
+import { N8nWorkflowPreview } from "@/components/N8nWorkflowPreview";
+
 const stats = [
   { label: "Total Runs", value: "1,247", change: "+12%", icon: BarChart3 },
   { label: "Active Automations", value: "8", change: "+2", icon: Zap },
@@ -14,17 +18,13 @@ const stats = [
   { label: "Success Rate", value: "99.2%", change: "+0.3%", icon: CheckCircle },
 ];
 
-const recentAutomations = [
-  { id: 1, name: "Email Marketing Automation", status: "active", runs: 324, lastRun: "2 min ago" },
-  { id: 2, name: "Lead Qualification", status: "active", runs: 156, lastRun: "15 min ago" },
-  { id: 3, name: "Customer Support Bot", status: "paused", runs: 89, lastRun: "1 hour ago" },
-  { id: 4, name: "Invoice Processing", status: "active", runs: 45, lastRun: "3 hours ago" },
-];
-
 const Dashboard = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { isAdmin } = useUserRole();
+  const { automations, loading } = useAutomations();
+  const [activeTab, setActiveTab] = useState<"overview" | "automations">("overview");
+  const [hoveredCard, setHoveredCard] = useState<string | null>(null);
 
   const handleSignOut = async () => {
     await signOut();
@@ -32,6 +32,9 @@ const Dashboard = () => {
   };
 
   const displayName = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "User";
+
+  // Get automations with preview_json
+  const automationsWithPreview = automations.filter(a => a.preview_json);
 
   return (
     <PageTransition>
@@ -48,20 +51,28 @@ const Dashboard = () => {
           </div>
 
           <nav className="px-4 space-y-1">
-            <Link
-              to="/dashboard"
-              className="flex items-center gap-3 px-4 py-3 rounded-lg bg-sidebar-accent text-sidebar-accent-foreground"
+            <button
+              onClick={() => setActiveTab("overview")}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg w-full text-left transition-colors ${
+                activeTab === "overview" 
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground" 
+                  : "text-sidebar-foreground hover:bg-sidebar-accent"
+              }`}
             >
               <Home className="w-5 h-5" />
               Dashboard
-            </Link>
-            <Link
-              to="/automations"
-              className="flex items-center gap-3 px-4 py-3 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+            </button>
+            <button
+              onClick={() => setActiveTab("automations")}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg w-full text-left transition-colors ${
+                activeTab === "automations" 
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground" 
+                  : "text-sidebar-foreground hover:bg-sidebar-accent"
+              }`}
             >
               <Grid className="w-5 h-5" />
               Automations
-            </Link>
+            </button>
             <Link
               to="/settings"
               className="flex items-center gap-3 px-4 py-3 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
@@ -100,108 +111,177 @@ const Dashboard = () => {
 
         {/* Main Content */}
         <main className="flex-1 p-6 lg:p-8 overflow-auto">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-              <p className="text-muted-foreground">Welcome back, {displayName}! Here's your automation overview.</p>
-            </div>
-            <Link to="/automations">
-              <Button variant="hero" className="gap-2">
-                <Plus className="w-4 h-4" />
-                New Automation
-              </Button>
-            </Link>
-          </div>
-
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {stats.map((stat) => (
-              <div
-                key={stat.label}
-                className="p-6 rounded-2xl bg-card border border-border glow-card"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <stat.icon className="w-6 h-6 text-primary" />
-                  </div>
-                  <span className="text-sm font-medium text-primary flex items-center gap-1">
-                    {stat.change}
-                    <ArrowUpRight className="w-3 h-3" />
-                  </span>
+          {activeTab === "overview" ? (
+            <>
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+                <div>
+                  <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+                  <p className="text-muted-foreground">Welcome back, {displayName}! Here's your automation overview.</p>
                 </div>
-                <div className="text-2xl font-bold text-foreground mb-1">
-                  {stat.value}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  {stat.label}
-                </div>
+                <Button variant="hero" className="gap-2" onClick={() => setActiveTab("automations")}>
+                  <Plus className="w-4 h-4" />
+                  New Automation
+                </Button>
               </div>
-            ))}
-          </div>
 
-          {/* Recent Automations */}
-          <div className="bg-card rounded-2xl border border-border p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold text-foreground">Recent Automations</h2>
-              <Link to="/automations" className="text-sm text-primary hover:underline">
-                View all
-              </Link>
-            </div>
+              {/* Stats Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                {stats.map((stat) => (
+                  <div
+                    key={stat.label}
+                    className="p-6 rounded-2xl bg-card border border-border glow-card"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                        <stat.icon className="w-6 h-6 text-primary" />
+                      </div>
+                      <span className="text-sm font-medium text-primary flex items-center gap-1">
+                        {stat.change}
+                        <ArrowUpRight className="w-3 h-3" />
+                      </span>
+                    </div>
+                    <div className="text-2xl font-bold text-foreground mb-1">
+                      {stat.value}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {stat.label}
+                    </div>
+                  </div>
+                ))}
+              </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Name</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Status</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Total Runs</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Last Run</th>
-                    <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentAutomations.map((automation) => (
-                    <tr key={automation.id} className="border-b border-border last:border-0">
-                      <td className="py-4 px-4">
-                        <Link
-                          to={`/automations/${automation.id}`}
-                          className="font-medium text-foreground hover:text-primary transition-colors"
-                        >
-                          {automation.name}
-                        </Link>
-                      </td>
-                      <td className="py-4 px-4">
-                        <span className={`inline-flex items-center gap-1.5 text-sm ${
-                          automation.status === "active" ? "text-green-600" : "text-yellow-600"
-                        }`}>
-                          {automation.status === "active" ? (
-                            <CheckCircle className="w-4 h-4" />
-                          ) : (
-                            <AlertCircle className="w-4 h-4" />
-                          )}
-                          {automation.status.charAt(0).toUpperCase() + automation.status.slice(1)}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4 text-muted-foreground">
-                        {automation.runs}
-                      </td>
-                      <td className="py-4 px-4 text-muted-foreground">
-                        {automation.lastRun}
-                      </td>
-                      <td className="py-4 px-4 text-right">
-                        <Link to={`/automations/${automation.id}`}>
-                          <Button variant="ghost" size="sm">
-                            View
-                          </Button>
-                        </Link>
-                      </td>
-                    </tr>
+              {/* Recent Automations with Preview */}
+              <div className="bg-card rounded-2xl border border-border p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-lg font-semibold text-foreground">Recent Automations</h2>
+                  <button 
+                    onClick={() => setActiveTab("automations")}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    View all
+                  </button>
+                </div>
+
+                {loading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  </div>
+                ) : automationsWithPreview.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {automationsWithPreview.slice(0, 6).map((automation) => (
+                      <Link
+                        key={automation.id}
+                        to={`/automations/${automation.id}`}
+                        className="block p-4 rounded-xl border border-border hover:border-primary/50 transition-all bg-muted/20 hover:bg-muted/40"
+                        onMouseEnter={() => setHoveredCard(automation.id)}
+                        onMouseLeave={() => setHoveredCard(null)}
+                      >
+                        <div className="h-32 mb-3 rounded-lg overflow-hidden bg-background border border-border/50">
+                          <N8nWorkflowPreview 
+                            json={automation.preview_json} 
+                            compact 
+                            highlighted={hoveredCard === automation.id}
+                            className="h-full"
+                          />
+                        </div>
+                        <h3 className="font-medium text-foreground truncate">{automation.title}</h3>
+                        <p className="text-xs text-muted-foreground mt-1">{automation.uses_count} uses</p>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Grid className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No automations with previews yet</p>
+                    <Button 
+                      variant="outline" 
+                      className="mt-4"
+                      onClick={() => setActiveTab("automations")}
+                    >
+                      Browse Automations
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Automations Tab */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+                <div>
+                  <h1 className="text-2xl font-bold text-foreground">Automations</h1>
+                  <p className="text-muted-foreground">Browse and run your automation workflows</p>
+                </div>
+                <Link to="/automations">
+                  <Button variant="outline" className="gap-2">
+                    View All Templates
+                    <ArrowUpRight className="w-4 h-4" />
+                  </Button>
+                </Link>
+              </div>
+
+              {loading ? (
+                <div className="flex items-center justify-center py-24">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                </div>
+              ) : automationsWithPreview.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {automationsWithPreview.map((automation) => (
+                    <Link
+                      key={automation.id}
+                      to={`/automations/${automation.id}`}
+                      className="group block rounded-2xl border border-border bg-card overflow-hidden hover:border-primary/50 hover:shadow-lg transition-all duration-300"
+                      onMouseEnter={() => setHoveredCard(automation.id)}
+                      onMouseLeave={() => setHoveredCard(null)}
+                    >
+                      {/* Workflow Preview - Auto Runs */}
+                      <div className="h-48 bg-muted/30 border-b border-border overflow-hidden">
+                        <N8nWorkflowPreview 
+                          json={automation.preview_json} 
+                          compact={false}
+                          highlighted={hoveredCard === automation.id}
+                          className="h-full w-full"
+                        />
+                      </div>
+                      
+                      {/* Card Content */}
+                      <div className="p-5">
+                        <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+                          {automation.title}
+                        </h3>
+                        {automation.description && (
+                          <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                            {automation.description}
+                          </p>
+                        )}
+                        <div className="flex items-center justify-between mt-4">
+                          <span className="text-xs text-muted-foreground">
+                            {automation.uses_count} uses
+                          </span>
+                          <span className="text-xs font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                            View Details →
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                </div>
+              ) : (
+                <div className="text-center py-24 bg-card rounded-2xl border border-border">
+                  <Grid className="w-16 h-16 mx-auto mb-6 text-muted-foreground/50" />
+                  <h3 className="text-xl font-semibold text-foreground mb-2">No automations yet</h3>
+                  <p className="text-muted-foreground mb-6">Start by browsing our template library</p>
+                  <Link to="/automations">
+                    <Button variant="hero" className="gap-2">
+                      <Plus className="w-4 h-4" />
+                      Browse Templates
+                    </Button>
+                  </Link>
+                </div>
+              )}
+            </>
+          )}
         </main>
       </div>
     </PageTransition>

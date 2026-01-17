@@ -76,9 +76,9 @@ const Signup = () => {
 
     toast({
       title: "Account created!",
-      description: "Welcome to AutoFlow AI.",
+      description: "Please sign in to continue.",
     });
-    navigate("/dashboard");
+    navigate("/login");
   };
 
   return (
