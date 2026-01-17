@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Check, Zap, Clock, Users, Star, Download, Settings, Loader2 } from "lucide-react";
+import { ArrowLeft, Check, Zap, Clock, Users, Star, Download, Settings, Loader2, Eye, Lock, ExternalLink } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/contexts/AuthContext";
@@ -291,11 +291,62 @@ const AutomationDetail = () => {
                         </>
                       )}
                     </Button>
-                    <Button variant="outline" size="lg" className="w-full">
-                      <Settings className="w-4 h-4" />
-                      Preview Setup
-                    </Button>
                   </div>
+
+                  {/* Preview Section - Only for paid/admin/free access users */}
+                  {canDownload && automation?.download_url && (
+                    <div className="mt-6 pt-6 border-t border-border">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Eye className="w-4 h-4 text-primary" />
+                        <h4 className="text-sm font-semibold text-foreground">Preview</h4>
+                      </div>
+                      <div className="rounded-lg border border-border overflow-hidden bg-muted/50">
+                        <div className="aspect-video relative">
+                          <iframe
+                            src={automation.download_url}
+                            className="w-full h-full"
+                            title="Automation Preview"
+                            sandbox="allow-scripts allow-same-origin"
+                          />
+                        </div>
+                      </div>
+                      <a 
+                        href={automation.download_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-2 mt-3 text-xs text-primary hover:underline"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        Open in new tab
+                      </a>
+                    </div>
+                  )}
+
+                  {/* Locked Preview for non-paid users */}
+                  {!canDownload && (
+                    <div className="mt-6 pt-6 border-t border-border">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Eye className="w-4 h-4 text-muted-foreground" />
+                        <h4 className="text-sm font-semibold text-foreground">Preview</h4>
+                      </div>
+                      <div className="rounded-lg border border-border overflow-hidden bg-muted/30 aspect-video flex items-center justify-center">
+                        <div className="text-center p-4">
+                          <Lock className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                          <p className="text-sm text-muted-foreground">
+                            Preview is available for Premium users
+                          </p>
+                          <Button 
+                            variant="link" 
+                            size="sm" 
+                            onClick={() => navigate("/pricing")}
+                            className="mt-2"
+                          >
+                            Upgrade to Premium
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="mt-6 pt-6 border-t border-border">
                     {isAdmin ? (
