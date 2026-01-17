@@ -70,7 +70,7 @@ const templateBundles = [
     title: "500+ n8n Templates",
     subtitle: "Automate & scale faster.",
     tags: ["Lead Generation", "Email Marketing", "Sales"],
-    downloadUrl: "/uploads/n8n-templates-500.zip",
+    downloadUrl: "/uploads/500-n8n-templates.zip",
     color: "from-violet-500 to-purple-600",
   },
   {
@@ -79,7 +79,7 @@ const templateBundles = [
     title: "2,182 Workflows",
     subtitle: "Covering all industries.",
     tags: ["AI Workflows", "Chatbots"],
-    downloadUrl: "/uploads/industry-workflows-2182.zip",
+    downloadUrl: "/uploads/2182-workflows.zip",
     color: "from-amber-500 to-orange-600",
   },
   {
@@ -88,7 +88,8 @@ const templateBundles = [
     title: "10+ Business Templates",
     subtitle: "Ready for your needs.",
     tags: ["Business Automation", "Workflow Automation", "Process Optimization"],
-    downloadUrl: "/uploads/business-templates-10.zip",
+    downloadUrl: "https://drive.google.com/drive/folders/1d2qlEO_4KZ1d43usufC2MDN0t7897IJS",
+    isExternalLink: true,
     color: "from-slate-500 to-gray-700",
   },
 ];
@@ -114,6 +115,13 @@ const BulkDownloadSection = () => {
 
     if (!canDownload) {
       setShowPaymentModal(true);
+      return;
+    }
+
+    // Handle external links (like Google Drive)
+    if (bundle.isExternalLink) {
+      window.open(bundle.downloadUrl, "_blank");
+      toast.success("Opening external link...");
       return;
     }
 
