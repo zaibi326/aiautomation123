@@ -69,7 +69,8 @@ const AutomationManager = () => {
     icon: "zap", 
     subcategory_id: "", 
     download_url: "",
-    uses_count: 0 
+    uses_count: 0,
+    preview_json: ""
   });
 
   // Category CRUD
@@ -158,22 +159,44 @@ const AutomationManager = () => {
   const handleSaveAutomation = async () => {
     setIsLoading(true);
     try {
+      // Parse preview_json if provided
+      let parsedPreviewJson = null;
+      if (automationForm.preview_json.trim()) {
+        try {
+          parsedPreviewJson = JSON.parse(automationForm.preview_json);
+        } catch (e) {
+          toast.error("Invalid JSON format in Preview JSON field");
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      const dataToSave = {
+        title: automationForm.title,
+        description: automationForm.description,
+        icon: automationForm.icon,
+        subcategory_id: automationForm.subcategory_id,
+        download_url: automationForm.download_url,
+        uses_count: automationForm.uses_count,
+        preview_json: parsedPreviewJson
+      };
+
       if (editingAutomation) {
         const { error } = await supabase
           .from("automations")
-          .update(automationForm)
+          .update(dataToSave)
           .eq("id", editingAutomation.id);
         if (error) throw error;
         toast.success("Automation updated");
       } else {
         const { error } = await supabase
           .from("automations")
-          .insert(automationForm);
+          .insert(dataToSave);
         if (error) throw error;
         toast.success("Automation created");
       }
       setAutomationDialog(false);
-      setAutomationForm({ title: "", description: "", icon: "zap", subcategory_id: "", download_url: "", uses_count: 0 });
+      setAutomationForm({ title: "", description: "", icon: "zap", subcategory_id: "", download_url: "", uses_count: 0, preview_json: "" });
       setEditingAutomation(null);
       refetch();
     } catch (error: any) {
@@ -791,7 +814,7 @@ const AutomationManager = () => {
         {/* Automations Tab */}
         <TabsContent value="automations">
           <div className="flex justify-end mb-4">
-            <Button onClick={() => { setEditingAutomation(null); setAutomationForm({ title: "", description: "", icon: "zap", subcategory_id: "", download_url: "", uses_count: 0 }); setAutomationDialog(true); }} className="gap-2">
+            <Button onClick={() => { setEditingAutomation(null); setAutomationForm({ title: "", description: "", icon: "zap", subcategory_id: "", download_url: "", uses_count: 0, preview_json: "" }); setAutomationDialog(true); }} className="gap-2">
               <Plus className="w-4 h-4" />
               Add Automation
             </Button>
@@ -827,9 +850,10 @@ const AutomationManager = () => {
                           icon: auto.icon, 
                           subcategory_id: auto.subcategory_id, 
                           download_url: auto.download_url || "",
-                          uses_count: auto.uses_count
+                          uses_count: auto.uses_count,
+                          preview_json: auto.preview_json ? JSON.stringify(auto.preview_json, null, 2) : ""
                         }); 
-                        setAutomationDialog(true); 
+                        setAutomationDialog(true);
                       }}>
                         <Pencil className="w-4 h-4" />
                       </Button>
@@ -915,7 +939,17 @@ const AutomationManager = () => {
             </Select>
             <Input placeholder="Title" value={automationForm.title} onChange={(e) => setAutomationForm({ ...automationForm, title: e.target.value })} />
             <Textarea placeholder="Description" value={automationForm.description} onChange={(e) => setAutomationForm({ ...automationForm, description: e.target.value })} />
-            <Input placeholder="Download URL" value={automationForm.download_url} onChange={(e) => setAutomationForm({ ...automationForm, download_url: e.target.value })} />
+            <Input placeholder="Download URL (Google Drive link)" value={automationForm.download_url} onChange={(e) => setAutomationForm({ ...automationForm, download_url: e.target.value })} />
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-foreground">Preview JSON (paste n8n/Make workflow JSON)</label>
+              <Textarea 
+                placeholder='{"nodes": [...], "connections": {...}}' 
+                value={automationForm.preview_json} 
+                onChange={(e) => setAutomationForm({ ...automationForm, preview_json: e.target.value })} 
+                className="min-h-[120px] font-mono text-xs"
+              />
+              <p className="text-xs text-muted-foreground">Paste the JSON content of the automation for preview. This will be shown to paid users.</p>
+            </div>
             <Input placeholder="Icon" value={automationForm.icon} onChange={(e) => setAutomationForm({ ...automationForm, icon: e.target.value })} />
             <Input type="number" placeholder="Uses Count" value={automationForm.uses_count} onChange={(e) => setAutomationForm({ ...automationForm, uses_count: parseInt(e.target.value) || 0 })} />
           </div>

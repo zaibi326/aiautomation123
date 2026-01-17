@@ -114,6 +114,7 @@ export type Database = {
           icon: string | null
           id: string
           is_active: boolean | null
+          preview_json: Json | null
           subcategory_id: string
           title: string
           updated_at: string
@@ -126,6 +127,7 @@ export type Database = {
           icon?: string | null
           id?: string
           is_active?: boolean | null
+          preview_json?: Json | null
           subcategory_id: string
           title: string
           updated_at?: string
@@ -138,6 +140,7 @@ export type Database = {
           icon?: string | null
           id?: string
           is_active?: boolean | null
+          preview_json?: Json | null
           subcategory_id?: string
           title?: string
           updated_at?: string
