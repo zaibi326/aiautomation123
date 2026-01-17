@@ -509,7 +509,7 @@ const AutomationDetail = () => {
                       variant="outline"
                       size="sm"
                       onClick={handleCopyJson}
-                      className="absolute top-4 right-4 z-10 gap-2"
+                      className="absolute top-4 right-4 z-10 gap-2 bg-background shadow-md border-border"
                     >
                       {copied ? (
                         <>
