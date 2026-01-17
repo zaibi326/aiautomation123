@@ -3,7 +3,8 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Check, Zap, Clock, Users, Star, Download, Settings, Loader2, Eye, Lock, ExternalLink } from "lucide-react";
+import { ArrowLeft, Check, Zap, Clock, Users, Star, Download, Settings, Loader2, Eye, Lock, ExternalLink, Maximize2, X } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { PageTransition } from "@/components/PageTransition";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/contexts/AuthContext";
@@ -39,6 +40,7 @@ const AutomationDetail = () => {
   const [downloading, setDownloading] = useState(false);
   const [automation, setAutomation] = useState<AutomationData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showFullscreenPreview, setShowFullscreenPreview] = useState(false);
 
   // Check if user can download (admin, paid, or has free access)
   const canDownload = isAdmin || hasPaid || hasFreeAccess;
@@ -296,18 +298,36 @@ const AutomationDetail = () => {
                   {/* Preview Section - Only for paid/admin/free access users */}
                   {canDownload && automation?.download_url && (
                     <div className="mt-6 pt-6 border-t border-border">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Eye className="w-4 h-4 text-primary" />
-                        <h4 className="text-sm font-semibold text-foreground">Preview</h4>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <Eye className="w-4 h-4 text-primary" />
+                          <h4 className="text-sm font-semibold text-foreground">Preview</h4>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowFullscreenPreview(true)}
+                          className="h-7 px-2"
+                        >
+                          <Maximize2 className="w-3.5 h-3.5" />
+                        </Button>
                       </div>
-                      <div className="rounded-lg border border-border overflow-hidden bg-muted/50">
+                      <div 
+                        className="rounded-lg border border-border overflow-hidden bg-muted/50 cursor-pointer hover:border-primary/50 transition-colors"
+                        onClick={() => setShowFullscreenPreview(true)}
+                      >
                         <div className="aspect-video relative">
                           <iframe
                             src={automation.download_url}
-                            className="w-full h-full"
+                            className="w-full h-full pointer-events-none"
                             title="Automation Preview"
                             sandbox="allow-scripts allow-same-origin"
                           />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/20 transition-colors">
+                            <div className="opacity-0 hover:opacity-100 transition-opacity">
+                              <Maximize2 className="w-8 h-8 text-white drop-shadow-lg" />
+                            </div>
+                          </div>
                         </div>
                       </div>
                       <a 
@@ -378,6 +398,55 @@ const AutomationDetail = () => {
         </main>
 
         <Footer />
+
+        {/* Fullscreen Preview Modal */}
+        <Dialog open={showFullscreenPreview} onOpenChange={setShowFullscreenPreview}>
+          <DialogContent className="max-w-[95vw] w-full h-[90vh] p-0 overflow-hidden">
+            <div className="relative w-full h-full">
+              {/* Header */}
+              <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-4 bg-gradient-to-b from-background/90 to-transparent">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <Zap className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-foreground">{automation?.title}</h3>
+                    <p className="text-xs text-muted-foreground">Preview</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <a 
+                    href={automation?.download_url || "#"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Button variant="outline" size="sm" className="gap-2">
+                      <ExternalLink className="w-4 h-4" />
+                      Open in new tab
+                    </Button>
+                  </a>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => setShowFullscreenPreview(false)}
+                  >
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Iframe */}
+              {automation?.download_url && (
+                <iframe
+                  src={automation.download_url}
+                  className="w-full h-full pt-16"
+                  title="Automation Preview Fullscreen"
+                  sandbox="allow-scripts allow-same-origin allow-popups"
+                />
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </PageTransition>
   );
