@@ -239,6 +239,7 @@ export const WorkflowExecutionModal = ({
   const [executionLogs, setExecutionLogs] = useState<Array<{ type: 'log' | 'output'; content: string; nodeName?: string }>>([]);
   const [totalTime, setTotalTime] = useState(0);
   const [selectedNodeOutput, setSelectedNodeOutput] = useState<string | null>(null);
+  const [selectedNodeFromPreview, setSelectedNodeFromPreview] = useState<string | null>(null);
 
   // Demo workflow to show when no preview_json is available
   const demoWorkflow: N8nWorkflow = {
@@ -336,6 +337,7 @@ export const WorkflowExecutionModal = ({
     setExecutionLogs([{ type: 'log', content: "🚀 Starting workflow execution..." }]);
     setNodeOutputs({});
     setSelectedNodeOutput(null);
+    setSelectedNodeFromPreview(null);
     
     const startTime = Date.now();
     
@@ -493,11 +495,19 @@ export const WorkflowExecutionModal = ({
                   const style = getNodeStyle(node.type);
                   const shortType = getShortType(node.type);
                   const status = nodeStatuses[node.name] || "pending";
+                  const hasOutput = nodeOutputs[node.name];
+                  const isSelected = selectedNodeFromPreview === node.name;
 
                   return (
                     <div
                       key={node.idx}
-                      className={`absolute rounded-lg border-2 shadow-sm transition-all duration-500 ${
+                      className={`absolute rounded-lg border-2 shadow-sm transition-all duration-300 ${
+                        hasOutput ? 'cursor-pointer hover:ring-2 hover:ring-primary/50' : ''
+                      } ${
+                        isSelected 
+                          ? 'ring-2 ring-primary ring-offset-2 ring-offset-background z-10'
+                          : ''
+                      } ${
                         status === "running" 
                           ? `${style.activeBg} border-white scale-110 shadow-lg animate-pulse` 
                           : status === "completed"
@@ -509,6 +519,11 @@ export const WorkflowExecutionModal = ({
                         top: node.y + 20,
                         width: nodeWidth,
                         height: nodeHeight,
+                      }}
+                      onClick={() => {
+                        if (hasOutput) {
+                          setSelectedNodeFromPreview(isSelected ? null : node.name);
+                        }
                       }}
                     >
                       <div className="flex items-center gap-2 p-2 h-full">
@@ -542,17 +557,49 @@ export const WorkflowExecutionModal = ({
           {/* Execution Logs & Output */}
           <div className="border border-border rounded-lg bg-card overflow-hidden flex flex-col">
             <div className="p-3 border-b border-border flex items-center justify-between">
-              <span className="text-sm font-medium">Execution Logs & Output</span>
-              {executionStatus === "completed" && (
-                <span className="text-xs text-green-500 flex items-center gap-1">
-                  <CheckCircle className="w-3 h-3" />
-                  Success
-                </span>
-              )}
+              <span className="text-sm font-medium">
+                {selectedNodeFromPreview ? `Output: ${selectedNodeFromPreview}` : 'Execution Logs & Output'}
+              </span>
+              <div className="flex items-center gap-2">
+                {selectedNodeFromPreview && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-2 text-xs"
+                    onClick={() => setSelectedNodeFromPreview(null)}
+                  >
+                    <X className="w-3 h-3 mr-1" />
+                    Clear
+                  </Button>
+                )}
+                {executionStatus === "completed" && !selectedNodeFromPreview && (
+                  <span className="text-xs text-green-500 flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3" />
+                    Success
+                  </span>
+                )}
+              </div>
             </div>
             <ScrollArea className="flex-1 h-[300px]">
               <div className="p-3 font-mono text-xs space-y-2">
-                {executionLogs.length === 0 ? (
+                {/* Show selected node output from preview click */}
+                {selectedNodeFromPreview && nodeOutputs[selectedNodeFromPreview] ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-muted-foreground border-b border-border pb-2">
+                      <span className="text-lg">{getNodeStyle(nodes.find(n => n.name === selectedNodeFromPreview)?.type || '').icon}</span>
+                      <div>
+                        <p className="font-medium text-foreground">{selectedNodeFromPreview}</p>
+                        <p className="text-[10px]">{nodeOutputs[selectedNodeFromPreview].items} item{nodeOutputs[selectedNodeFromPreview].items !== 1 ? 's' : ''} returned</p>
+                      </div>
+                    </div>
+                    <pre className="text-green-400 bg-muted/50 rounded p-3 overflow-auto max-h-60">
+                      {JSON.stringify(nodeOutputs[selectedNodeFromPreview].data, null, 2)}
+                    </pre>
+                    <p className="text-[10px] text-muted-foreground">
+                      💡 Click on other completed nodes in the preview to see their output
+                    </p>
+                  </div>
+                ) : executionLogs.length === 0 ? (
                   <p className="text-muted-foreground">Click "Run Workflow" to start execution...</p>
                 ) : (
                   executionLogs.map((log, idx) => (
