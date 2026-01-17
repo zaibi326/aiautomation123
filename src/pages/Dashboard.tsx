@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { 
   Zap, Home, Grid, Settings, CreditCard, LogOut, 
   Plus, ArrowUpRight, BarChart3, Clock, CheckCircle, AlertCircle, Shield,
-  Play, Loader2, Lock, ChevronLeft, ChevronRight
+  Play, Loader2, Lock, ChevronLeft, ChevronRight, Search, X
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { PageTransition } from "@/components/PageTransition";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -35,6 +36,7 @@ const Dashboard = () => {
   const [selectedAutomation, setSelectedAutomation] = useState<Automation | null>(null);
   const [executionModalOpen, setExecutionModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
   const itemsPerPage = 12;
 
   // Check if user has access to run automations
@@ -75,12 +77,24 @@ const Dashboard = () => {
   // Get automations with preview_json
   const automationsWithPreview = automations.filter(a => a.preview_json);
   
+  // Filter by search query
+  const filteredAutomations = automationsWithPreview.filter(a => 
+    a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    a.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  
   // Pagination for automations tab
-  const totalPages = Math.ceil(automationsWithPreview.length / itemsPerPage);
-  const paginatedAutomations = automationsWithPreview.slice(
+  const totalPages = Math.ceil(filteredAutomations.length / itemsPerPage);
+  const paginatedAutomations = filteredAutomations.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
+  
+  // Reset to page 1 when search changes
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
+  };
 
   return (
     <PageTransition>
@@ -267,11 +281,37 @@ const Dashboard = () => {
                 </Link>
               </div>
 
+              {/* Search Bar */}
+              <div className="relative mb-6">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search automations..."
+                  value={searchQuery}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                  className="pl-10 pr-10 bg-card border-border"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => handleSearchChange("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Results count */}
+              {searchQuery && (
+                <p className="text-sm text-muted-foreground mb-4">
+                  Found {filteredAutomations.length} automation{filteredAutomations.length !== 1 ? 's' : ''} matching "{searchQuery}"
+                </p>
+              )}
+
               {loading ? (
                 <div className="flex items-center justify-center py-24">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
                 </div>
-              ) : automationsWithPreview.length > 0 ? (
+              ) : filteredAutomations.length > 0 ? (
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {paginatedAutomations.map((automation) => (
