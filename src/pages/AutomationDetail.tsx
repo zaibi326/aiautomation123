@@ -3,9 +3,10 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Check, Zap, Clock, Users, Star, Download, Settings, Loader2, Eye, Lock, ExternalLink, Maximize2, X, Code, FileJson } from "lucide-react";
+import { ArrowLeft, Check, Zap, Clock, Users, Star, Download, Settings, Loader2, Eye, Lock, ExternalLink, Maximize2, X, Code, FileJson, Workflow } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageTransition } from "@/components/PageTransition";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,6 +15,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useFreeAccess } from "@/hooks/useFreeAccess";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import N8nWorkflowPreview from "@/components/N8nWorkflowPreview";
 
 interface AutomationData {
   id: string;
@@ -297,13 +299,13 @@ const AutomationDetail = () => {
                     </Button>
                   </div>
 
-                  {/* JSON Preview Section - Only for paid/admin/free access users */}
+                  {/* Visual Workflow Preview Section - Only for paid/admin/free access users */}
                   {canDownload && automation?.preview_json && (
                     <div className="mt-6 pt-6 border-t border-border">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
-                          <FileJson className="w-4 h-4 text-primary" />
-                          <h4 className="text-sm font-semibold text-foreground">Template Preview</h4>
+                          <Workflow className="w-4 h-4 text-primary" />
+                          <h4 className="text-sm font-semibold text-foreground">Workflow Preview</h4>
                         </div>
                         <Button
                           variant="ghost"
@@ -315,14 +317,20 @@ const AutomationDetail = () => {
                         </Button>
                       </div>
                       <div 
-                        className="rounded-lg border border-border overflow-hidden bg-muted/50 cursor-pointer hover:border-primary/50 transition-colors"
+                        className="rounded-lg border border-border overflow-hidden bg-gradient-to-br from-muted/30 to-muted/60 cursor-pointer hover:border-primary/50 transition-colors"
                         onClick={() => setShowFullscreenPreview(true)}
                       >
-                        <ScrollArea className="h-48">
-                          <pre className="p-3 text-xs text-muted-foreground overflow-x-auto">
-                            <code>{JSON.stringify(automation.preview_json, null, 2)}</code>
-                          </pre>
-                        </ScrollArea>
+                        <N8nWorkflowPreview 
+                          json={automation.preview_json} 
+                          className="h-48" 
+                          compact={true}
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 bg-background/50 transition-opacity">
+                          <div className="flex items-center gap-2 text-sm text-foreground bg-card px-3 py-1.5 rounded-lg shadow-lg">
+                            <Maximize2 className="w-4 h-4" />
+                            Click to expand
+                          </div>
+                        </div>
                       </div>
                       {automation.download_url && (
                         <a 
@@ -429,11 +437,11 @@ const AutomationDetail = () => {
               <div className="flex items-center justify-between p-4 border-b border-border bg-background">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <FileJson className="w-5 h-5 text-primary" />
+                    <Workflow className="w-5 h-5 text-primary" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-foreground">{automation?.title}</h3>
-                    <p className="text-xs text-muted-foreground">JSON Template Preview</p>
+                    <p className="text-xs text-muted-foreground">n8n Workflow Preview</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -459,36 +467,61 @@ const AutomationDetail = () => {
                 </div>
               </div>
               
-              {/* JSON Content */}
-              <ScrollArea className="flex-1 bg-muted/30">
-                {automation?.preview_json ? (
-                  <pre className="p-6 text-sm text-foreground font-mono">
-                    <code>{JSON.stringify(automation.preview_json, null, 2)}</code>
-                  </pre>
-                ) : (
-                  <div className="flex items-center justify-center h-full p-8">
-                    <div className="text-center">
-                      <Code className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-muted-foreground">
-                        JSON preview not available for this automation
-                      </p>
-                      {automation?.download_url && (
-                        <a 
-                          href={automation.download_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="mt-4 inline-block"
-                        >
-                          <Button variant="outline" className="gap-2">
-                            <ExternalLink className="w-4 h-4" />
-                            View on Google Drive
-                          </Button>
-                        </a>
-                      )}
-                    </div>
+              {/* Tabbed Content - Visual & JSON */}
+              {automation?.preview_json ? (
+                <Tabs defaultValue="visual" className="flex-1 flex flex-col">
+                  <div className="border-b border-border bg-muted/30 px-4">
+                    <TabsList className="h-10 bg-transparent">
+                      <TabsTrigger value="visual" className="gap-2 data-[state=active]:bg-background">
+                        <Workflow className="w-4 h-4" />
+                        Visual
+                      </TabsTrigger>
+                      <TabsTrigger value="json" className="gap-2 data-[state=active]:bg-background">
+                        <FileJson className="w-4 h-4" />
+                        JSON
+                      </TabsTrigger>
+                    </TabsList>
                   </div>
-                )}
-              </ScrollArea>
+                  <TabsContent value="visual" className="flex-1 m-0 overflow-hidden">
+                    <div className="h-full bg-gradient-to-br from-muted/20 via-background to-muted/30">
+                      <N8nWorkflowPreview 
+                        json={automation.preview_json} 
+                        className="h-full" 
+                        compact={false}
+                      />
+                    </div>
+                  </TabsContent>
+                  <TabsContent value="json" className="flex-1 m-0 overflow-hidden">
+                    <ScrollArea className="h-full bg-muted/30">
+                      <pre className="p-6 text-sm text-foreground font-mono">
+                        <code>{JSON.stringify(automation.preview_json, null, 2)}</code>
+                      </pre>
+                    </ScrollArea>
+                  </TabsContent>
+                </Tabs>
+              ) : (
+                <div className="flex-1 flex items-center justify-center p-8 bg-muted/30">
+                  <div className="text-center">
+                    <Code className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">
+                      Preview not available for this automation
+                    </p>
+                    {automation?.download_url && (
+                      <a 
+                        href={automation.download_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-4 inline-block"
+                      >
+                        <Button variant="outline" className="gap-2">
+                          <ExternalLink className="w-4 h-4" />
+                          View on Google Drive
+                        </Button>
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </DialogContent>
         </Dialog>
