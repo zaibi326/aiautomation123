@@ -118,9 +118,15 @@ const BulkDownloadSection = () => {
       return;
     }
 
-    // Handle external links (like Google Drive)
+    // Handle external links (like Google Drive) - use link element to bypass iframe restrictions
     if (bundle.isExternalLink) {
-      window.open(bundle.downloadUrl, "_blank");
+      const a = document.createElement("a");
+      a.href = bundle.downloadUrl;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
       toast.success("Opening external link...");
       return;
     }
