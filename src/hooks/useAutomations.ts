@@ -26,6 +26,7 @@ export interface Automation {
   icon: string;
   uses_count: number;
   download_url: string | null;
+  preview_json: any | null;
   is_active: boolean;
   created_at: string;
 }

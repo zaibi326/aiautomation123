@@ -3,8 +3,9 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Check, Zap, Clock, Users, Star, Download, Settings, Loader2, Eye, Lock, ExternalLink, Maximize2, X } from "lucide-react";
+import { ArrowLeft, Check, Zap, Clock, Users, Star, Download, Settings, Loader2, Eye, Lock, ExternalLink, Maximize2, X, Code, FileJson } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { PageTransition } from "@/components/PageTransition";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/contexts/AuthContext";
@@ -21,6 +22,7 @@ interface AutomationData {
   icon: string;
   uses_count: number;
   download_url: string | null;
+  preview_json: any | null;
   subcategory?: {
     name: string;
     category?: {
@@ -295,13 +297,13 @@ const AutomationDetail = () => {
                     </Button>
                   </div>
 
-                  {/* Preview Section - Only for paid/admin/free access users */}
-                  {canDownload && automation?.download_url && (
+                  {/* JSON Preview Section - Only for paid/admin/free access users */}
+                  {canDownload && automation?.preview_json && (
                     <div className="mt-6 pt-6 border-t border-border">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
-                          <Eye className="w-4 h-4 text-primary" />
-                          <h4 className="text-sm font-semibold text-foreground">Preview</h4>
+                          <FileJson className="w-4 h-4 text-primary" />
+                          <h4 className="text-sm font-semibold text-foreground">Template Preview</h4>
                         </div>
                         <Button
                           variant="ghost"
@@ -316,29 +318,49 @@ const AutomationDetail = () => {
                         className="rounded-lg border border-border overflow-hidden bg-muted/50 cursor-pointer hover:border-primary/50 transition-colors"
                         onClick={() => setShowFullscreenPreview(true)}
                       >
-                        <div className="aspect-video relative">
-                          <iframe
-                            src={automation.download_url}
-                            className="w-full h-full pointer-events-none"
-                            title="Automation Preview"
-                            sandbox="allow-scripts allow-same-origin"
-                          />
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/20 transition-colors">
-                            <div className="opacity-0 hover:opacity-100 transition-opacity">
-                              <Maximize2 className="w-8 h-8 text-white drop-shadow-lg" />
-                            </div>
-                          </div>
-                        </div>
+                        <ScrollArea className="h-48">
+                          <pre className="p-3 text-xs text-muted-foreground overflow-x-auto">
+                            <code>{JSON.stringify(automation.preview_json, null, 2)}</code>
+                          </pre>
+                        </ScrollArea>
                       </div>
-                      <a 
-                        href={automation.download_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center justify-center gap-2 mt-3 text-xs text-primary hover:underline"
-                      >
-                        <ExternalLink className="w-3 h-3" />
-                        Open in new tab
-                      </a>
+                      {automation.download_url && (
+                        <a 
+                          href={automation.download_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-2 mt-3 text-xs text-primary hover:underline"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          Open in Google Drive
+                        </a>
+                      )}
+                    </div>
+                  )}
+
+                  {/* No Preview Available - show download link only */}
+                  {canDownload && !automation?.preview_json && automation?.download_url && (
+                    <div className="mt-6 pt-6 border-t border-border">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Eye className="w-4 h-4 text-primary" />
+                        <h4 className="text-sm font-semibold text-foreground">Preview</h4>
+                      </div>
+                      <div className="rounded-lg border border-border overflow-hidden bg-muted/30 p-4 text-center">
+                        <Code className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Preview not available yet
+                        </p>
+                        <a 
+                          href={automation.download_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <Button variant="outline" size="sm" className="gap-2">
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            View on Google Drive
+                          </Button>
+                        </a>
+                      </div>
                     </div>
                   )}
 
@@ -402,29 +424,31 @@ const AutomationDetail = () => {
         {/* Fullscreen Preview Modal */}
         <Dialog open={showFullscreenPreview} onOpenChange={setShowFullscreenPreview}>
           <DialogContent className="max-w-[95vw] w-full h-[90vh] p-0 overflow-hidden">
-            <div className="relative w-full h-full">
+            <div className="relative w-full h-full flex flex-col">
               {/* Header */}
-              <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-4 bg-gradient-to-b from-background/90 to-transparent">
+              <div className="flex items-center justify-between p-4 border-b border-border bg-background">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <Zap className="w-5 h-5 text-primary" />
+                    <FileJson className="w-5 h-5 text-primary" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-foreground">{automation?.title}</h3>
-                    <p className="text-xs text-muted-foreground">Preview</p>
+                    <p className="text-xs text-muted-foreground">JSON Template Preview</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <a 
-                    href={automation?.download_url || "#"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <Button variant="outline" size="sm" className="gap-2">
-                      <ExternalLink className="w-4 h-4" />
-                      Open in new tab
-                    </Button>
-                  </a>
+                  {automation?.download_url && (
+                    <a 
+                      href={automation.download_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Button variant="outline" size="sm" className="gap-2">
+                        <ExternalLink className="w-4 h-4" />
+                        Open in Google Drive
+                      </Button>
+                    </a>
+                  )}
                   <Button 
                     variant="ghost" 
                     size="icon"
@@ -435,15 +459,36 @@ const AutomationDetail = () => {
                 </div>
               </div>
               
-              {/* Iframe */}
-              {automation?.download_url && (
-                <iframe
-                  src={automation.download_url}
-                  className="w-full h-full pt-16"
-                  title="Automation Preview Fullscreen"
-                  sandbox="allow-scripts allow-same-origin allow-popups"
-                />
-              )}
+              {/* JSON Content */}
+              <ScrollArea className="flex-1 bg-muted/30">
+                {automation?.preview_json ? (
+                  <pre className="p-6 text-sm text-foreground font-mono">
+                    <code>{JSON.stringify(automation.preview_json, null, 2)}</code>
+                  </pre>
+                ) : (
+                  <div className="flex items-center justify-center h-full p-8">
+                    <div className="text-center">
+                      <Code className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">
+                        JSON preview not available for this automation
+                      </p>
+                      {automation?.download_url && (
+                        <a 
+                          href={automation.download_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-4 inline-block"
+                        >
+                          <Button variant="outline" className="gap-2">
+                            <ExternalLink className="w-4 h-4" />
+                            View on Google Drive
+                          </Button>
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </ScrollArea>
             </div>
           </DialogContent>
         </Dialog>
