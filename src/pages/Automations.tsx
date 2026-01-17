@@ -18,7 +18,8 @@ import {
   Globe,
   Folder,
   FolderOpen,
-  ChevronRight
+  ChevronRight,
+  Home
 } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
 import { useAutomations } from "@/hooks/useAutomations";
@@ -124,6 +125,24 @@ const Automations = () => {
       <div className="min-h-screen bg-background">
         <main className="pt-8 pb-16">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            {/* Logo Header */}
+            <div className="flex items-center justify-between mb-8">
+              <Link to="/" className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
+                  <Zap className="w-5 h-5 text-primary-foreground" />
+                </div>
+                <span className="text-xl font-bold text-foreground">
+                  AutoFlow AI
+                </span>
+              </Link>
+              <Link to="/">
+                <Button variant="ghost" size="sm" className="gap-2">
+                  <Home className="w-4 h-4" />
+                  Home
+                </Button>
+              </Link>
+            </div>
+
             {/* Search and Filters */}
             <div className="flex flex-col md:flex-row gap-4 mb-8">
               <div className="relative flex-1">
