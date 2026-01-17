@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Check, Zap, Clock, Users, Star, Download, Settings, Loader2, Eye, Lock, ExternalLink, Maximize2, X, Code, FileJson, Workflow } from "lucide-react";
+import { ArrowLeft, Check, Zap, Clock, Users, Star, Download, Settings, Loader2, Eye, Lock, ExternalLink, Maximize2, X, Code, FileJson, Workflow, Copy, CheckCheck } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -45,6 +45,19 @@ const AutomationDetail = () => {
   const [automation, setAutomation] = useState<AutomationData | null>(null);
   const [loading, setLoading] = useState(true);
   const [showFullscreenPreview, setShowFullscreenPreview] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyJson = async () => {
+    if (!automation?.preview_json) return;
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(automation.preview_json, null, 2));
+      setCopied(true);
+      toast.success("JSON copied to clipboard!");
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      toast.error("Failed to copy JSON");
+    }
+  };
 
   // Check if user can download (admin, paid, or has free access)
   const canDownload = isAdmin || hasPaid || hasFreeAccess;
@@ -491,7 +504,25 @@ const AutomationDetail = () => {
                       />
                     </div>
                   </TabsContent>
-                  <TabsContent value="json" className="flex-1 m-0 overflow-hidden">
+                  <TabsContent value="json" className="flex-1 m-0 overflow-hidden relative">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCopyJson}
+                      className="absolute top-4 right-4 z-10 gap-2"
+                    >
+                      {copied ? (
+                        <>
+                          <CheckCheck className="w-4 h-4 text-green-500" />
+                          Copied!
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4" />
+                          Copy JSON
+                        </>
+                      )}
+                    </Button>
                     <ScrollArea className="h-full bg-muted/30">
                       <pre className="p-6 text-sm text-foreground font-mono">
                         <code>{JSON.stringify(automation.preview_json, null, 2)}</code>
