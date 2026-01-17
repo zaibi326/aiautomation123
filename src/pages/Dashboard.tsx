@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { 
   Zap, Home, Grid, Settings, CreditCard, LogOut, 
   Plus, ArrowUpRight, BarChart3, Clock, CheckCircle, AlertCircle, Shield,
-  Play, Loader2, Lock
+  Play, Loader2, Lock, ChevronLeft, ChevronRight
 } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
 import { useAuth } from "@/contexts/AuthContext";
@@ -34,6 +34,8 @@ const Dashboard = () => {
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const [selectedAutomation, setSelectedAutomation] = useState<Automation | null>(null);
   const [executionModalOpen, setExecutionModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
 
   // Check if user has access to run automations
   const hasAccess = hasPaid || hasFreeAccess || isAdmin;
@@ -72,6 +74,13 @@ const Dashboard = () => {
 
   // Get automations with preview_json
   const automationsWithPreview = automations.filter(a => a.preview_json);
+  
+  // Pagination for automations tab
+  const totalPages = Math.ceil(automationsWithPreview.length / itemsPerPage);
+  const paginatedAutomations = automationsWithPreview.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   return (
     <PageTransition>
@@ -263,64 +272,93 @@ const Dashboard = () => {
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
                 </div>
               ) : automationsWithPreview.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {automationsWithPreview.map((automation) => (
-                    <Link
-                      key={automation.id}
-                      to={`/automations/${automation.id}`}
-                      className="group block rounded-2xl border border-border bg-card overflow-hidden hover:border-primary/50 hover:shadow-lg transition-all duration-300"
-                      onMouseEnter={() => setHoveredCard(automation.id)}
-                      onMouseLeave={() => setHoveredCard(null)}
-                    >
-                      {/* Workflow Preview - Auto Runs */}
-                      <div className="h-48 bg-muted/30 border-b border-border overflow-hidden">
-                        <N8nWorkflowPreview 
-                          json={automation.preview_json} 
-                          compact={false}
-                          highlighted={hoveredCard === automation.id}
-                          className="h-full w-full"
-                        />
-                      </div>
-                      
-                      {/* Card Content */}
-                      <div className="p-5">
-                        <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors truncate">
-                          {automation.title}
-                        </h3>
-                        {automation.description && (
-                          <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                            {automation.description}
-                          </p>
-                        )}
-                        <div className="flex items-center justify-between mt-4">
-                          <span className="text-xs text-muted-foreground">
-                            {automation.uses_count} uses
-                          </span>
-                          <Button
-                            variant={hasAccess ? "default" : "outline"}
-                            size="sm"
-                            className={`gap-2 transition-all duration-300 opacity-0 group-hover:opacity-100 ${
-                              !hasAccess ? "border-amber-500/50 text-amber-600 hover:bg-amber-500/10" : ""
-                            }`}
-                            onClick={(e) => handleRunAutomation(e, automation)}
-                          >
-                            {hasAccess ? (
-                              <>
-                                <Play className="w-3 h-3" />
-                                Run Now
-                              </>
-                            ) : (
-                              <>
-                                <Lock className="w-3 h-3" />
-                                Upgrade
-                              </>
-                            )}
-                          </Button>
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {paginatedAutomations.map((automation) => (
+                      <Link
+                        key={automation.id}
+                        to={`/automations/${automation.id}`}
+                        className="group block rounded-2xl border border-border bg-card overflow-hidden hover:border-primary/50 hover:shadow-lg transition-all duration-300"
+                        onMouseEnter={() => setHoveredCard(automation.id)}
+                        onMouseLeave={() => setHoveredCard(null)}
+                      >
+                        {/* Workflow Preview */}
+                        <div className="h-48 bg-muted/30 border-b border-border overflow-hidden">
+                          <N8nWorkflowPreview 
+                            json={automation.preview_json} 
+                            compact={false}
+                            highlighted={hoveredCard === automation.id}
+                            className="h-full w-full"
+                          />
                         </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
+                        
+                        {/* Card Content */}
+                        <div className="p-5">
+                          <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+                            {automation.title}
+                          </h3>
+                          {automation.description && (
+                            <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                              {automation.description}
+                            </p>
+                          )}
+                          <div className="flex items-center justify-between mt-4">
+                            <span className="text-xs text-muted-foreground">
+                              {automation.uses_count} uses
+                            </span>
+                            <Button
+                              variant={hasAccess ? "default" : "outline"}
+                              size="sm"
+                              className={`gap-2 transition-all duration-300 opacity-0 group-hover:opacity-100 ${
+                                !hasAccess ? "border-amber-500/50 text-amber-600 hover:bg-amber-500/10" : ""
+                              }`}
+                              onClick={(e) => handleRunAutomation(e, automation)}
+                            >
+                              {hasAccess ? (
+                                <>
+                                  <Play className="w-3 h-3" />
+                                  Run Now
+                                </>
+                              ) : (
+                                <>
+                                  <Lock className="w-3 h-3" />
+                                  Upgrade
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                  
+                  {/* Pagination Controls */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-center gap-4 mt-8">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                      >
+                        <ChevronLeft className="w-4 h-4 mr-1" />
+                        Previous
+                      </Button>
+                      <span className="text-sm text-muted-foreground">
+                        Page {currentPage} of {totalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                      >
+                        Next
+                        <ChevronRight className="w-4 h-4 ml-1" />
+                      </Button>
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="text-center py-24 bg-card rounded-2xl border border-border">
                   <Grid className="w-16 h-16 mx-auto mb-6 text-muted-foreground/50" />
