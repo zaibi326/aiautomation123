@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +48,80 @@ const getIcon = (iconName: string) => {
 };
 
 const ITEMS_PER_PAGE = 6;
+
+// Automation Card Component with hover animation
+interface AutomationCardProps {
+  automation: ReturnType<typeof useAutomations>['automations'][0];
+  categories: ReturnType<typeof useAutomations>['categories'];
+  subcategories: ReturnType<typeof useAutomations>['subcategories'];
+  iconMap: Record<string, React.ComponentType<any>>;
+}
+
+const AutomationCard = ({ automation, categories, subcategories, iconMap }: AutomationCardProps) => {
+  const [isHovered, setIsHovered] = useState(false);
+  
+  const IconComponent = iconMap[automation.icon?.toLowerCase()] || Zap;
+  
+  const subcategory = subcategories.find(s => s.id === automation.subcategory_id);
+  const category = subcategory ? categories.find(c => c.id === subcategory.category_id) : null;
+  const categoryName = category?.name || "Uncategorized";
+  const subcategoryName = subcategory?.name || "";
+
+  return (
+    <Link
+      to={`/automations/${automation.id}`}
+      className="group p-4 rounded-2xl bg-card glow-card border border-border/50 flex flex-col transition-all duration-300 hover:border-primary/50 hover:shadow-lg"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* Workflow Preview - Auto-runs when JSON loads */}
+      <div className={`h-40 mb-4 rounded-lg overflow-hidden bg-muted/30 border transition-all duration-300 ${
+        isHovered ? "border-primary/50 bg-muted/50" : "border-border/30"
+      }`}>
+        {automation.preview_json ? (
+          <N8nWorkflowPreview 
+            json={typeof automation.preview_json === 'string' 
+              ? automation.preview_json 
+              : JSON.stringify(automation.preview_json)} 
+            compact={true}
+            highlighted={isHovered}
+            className="h-full"
+          />
+        ) : (
+          <div className="h-full flex items-center justify-center">
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${
+              isHovered ? "bg-primary/20 scale-110" : "bg-primary/10"
+            }`}>
+              <IconComponent className="w-6 h-6 text-primary" />
+            </div>
+          </div>
+        )}
+      </div>
+      
+      <div className="flex items-start justify-between mb-2">
+        <span className={`text-xs font-medium px-2 py-1 rounded-full transition-all duration-300 ${
+          isHovered ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"
+        }`}>
+          {categoryName}
+        </span>
+        {subcategoryName && (
+          <span className="text-xs text-muted-foreground">{subcategoryName}</span>
+        )}
+      </div>
+      <h3 className="text-base font-semibold text-foreground mb-1 group-hover:text-primary transition-colors line-clamp-1">
+        {automation.title}
+      </h3>
+      <p className="text-xs text-muted-foreground mb-2 line-clamp-2 flex-1">
+        {automation.description}
+      </p>
+      <div className="text-xs text-muted-foreground">
+        {automation.uses_count > 1000 
+          ? `${(automation.uses_count / 1000).toFixed(1)}k` 
+          : automation.uses_count} uses
+      </div>
+    </Link>
+  );
+};
 
 const Automations = () => {
   const { categories, subcategories, automations, loading } = useAutomations();
@@ -241,58 +315,15 @@ const Automations = () => {
               <>
                 {/* Automations Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {visibleAutomations.map((automation) => {
-                    const IconComponent = getIcon(automation.icon);
-                    const categoryName = getAutomationCategory(automation);
-                    const subcategoryName = getAutomationSubcategory(automation);
-                    
-                    return (
-                      <Link
-                        key={automation.id}
-                        to={`/automations/${automation.id}`}
-                        className="group p-4 rounded-2xl bg-card glow-card border border-border/50 flex flex-col"
-                      >
-                        {/* Workflow Preview - Auto-runs when JSON loads */}
-                        <div className="h-40 mb-4 rounded-lg overflow-hidden bg-muted/30 border border-border/30">
-                          {automation.preview_json ? (
-                            <N8nWorkflowPreview 
-                              json={typeof automation.preview_json === 'string' 
-                                ? automation.preview_json 
-                                : JSON.stringify(automation.preview_json)} 
-                              compact={true}
-                              className="h-full"
-                            />
-                          ) : (
-                            <div className="h-full flex items-center justify-center">
-                              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                                <IconComponent className="w-6 h-6 text-primary" />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div className="flex items-start justify-between mb-2">
-                          <span className="text-xs font-medium px-2 py-1 rounded-full bg-secondary text-secondary-foreground">
-                            {categoryName}
-                          </span>
-                          {subcategoryName && (
-                            <span className="text-xs text-muted-foreground">{subcategoryName}</span>
-                          )}
-                        </div>
-                        <h3 className="text-base font-semibold text-foreground mb-1 group-hover:text-primary transition-colors line-clamp-1">
-                          {automation.title}
-                        </h3>
-                        <p className="text-xs text-muted-foreground mb-2 line-clamp-2 flex-1">
-                          {automation.description}
-                        </p>
-                        <div className="text-xs text-muted-foreground">
-                          {automation.uses_count > 1000 
-                            ? `${(automation.uses_count / 1000).toFixed(1)}k` 
-                            : automation.uses_count} uses
-                        </div>
-                      </Link>
-                    );
-                  })}
+                  {visibleAutomations.map((automation) => (
+                    <AutomationCard 
+                      key={automation.id} 
+                      automation={automation}
+                      categories={categories}
+                      subcategories={subcategories}
+                      iconMap={iconMap}
+                    />
+                  ))}
                 </div>
 
                 {/* Browse More Button */}

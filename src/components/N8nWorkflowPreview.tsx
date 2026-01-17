@@ -24,6 +24,7 @@ interface N8nWorkflowPreviewProps {
   json: any;
   className?: string;
   compact?: boolean;
+  highlighted?: boolean;
 }
 
 // Map n8n node types to colors and icons
@@ -74,7 +75,7 @@ const getShortType = (type: string): string => {
   return name.replace(/([A-Z])/g, " $1").trim();
 };
 
-export const N8nWorkflowPreview = ({ json, className = "", compact = false }: N8nWorkflowPreviewProps) => {
+export const N8nWorkflowPreview = ({ json, className = "", compact = false, highlighted = false }: N8nWorkflowPreviewProps) => {
   const workflow = useMemo<N8nWorkflow | null>(() => {
     try {
       if (typeof json === "string") {
@@ -173,9 +174,9 @@ export const N8nWorkflowPreview = ({ json, className = "", compact = false }: N8
                 d={`M ${startX} ${startY} C ${midX} ${startY}, ${midX} ${endY}, ${endX} ${endY}`}
                 fill="none"
                 stroke="hsl(var(--primary))"
-                strokeWidth="2"
-                strokeOpacity="0.5"
-                className="transition-all"
+                strokeWidth={highlighted ? "3" : "2"}
+                strokeOpacity={highlighted ? "0.9" : "0.5"}
+                className="transition-all duration-300"
               />
             );
           })}
@@ -189,7 +190,9 @@ export const N8nWorkflowPreview = ({ json, className = "", compact = false }: N8
           return (
             <div
               key={node.idx}
-              className={`absolute rounded-lg border-2 ${style.bg} ${style.border} shadow-sm transition-all hover:shadow-md`}
+              className={`absolute rounded-lg border-2 ${style.bg} ${style.border} shadow-sm transition-all duration-300 ${
+                highlighted ? "scale-105 shadow-lg border-opacity-100" : "hover:shadow-md"
+              }`}
               style={{
                 left: node.x + 20,
                 top: node.y + 20,
