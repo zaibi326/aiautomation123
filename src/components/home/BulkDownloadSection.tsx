@@ -108,13 +108,13 @@ const BulkDownloadSection = () => {
 
   const handleDownload = async (bundle: typeof templateBundles[0]) => {
     if (!user) {
-      toast.error("Please login to download templates");
-      navigate("/login");
+      toast.info("Please signup to download templates");
+      navigate("/signup");
       return;
     }
 
     if (!canDownload) {
-      setShowPaymentModal(true);
+      navigate("/pricing");
       return;
     }
 
@@ -250,7 +250,7 @@ const BulkDownloadSection = () => {
                   ) : !user ? (
                     <>
                       <Lock className="w-4 h-4" />
-                      Login to Download
+                      Signup to Download
                     </>
                   ) : !canDownload && !isLoading ? (
                     <>

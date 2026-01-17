@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useAppSettings } from "@/hooks/useAppSettings";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useFreeAccess } from "@/hooks/useFreeAccess";
-import PaymentRequiredModal from "@/components/PaymentRequiredModal";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -31,12 +30,12 @@ interface AutomationData {
 
 const AutomationDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { isAdmin } = useUserRole();
   const { hasPaid, loading: subscriptionLoading } = useSubscription();
   const { settings: appSettings, loading: settingsLoading } = useAppSettings();
   const { hasFreeAccess, loading: freeAccessLoading } = useFreeAccess();
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [automation, setAutomation] = useState<AutomationData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -74,7 +73,8 @@ const AutomationDetail = () => {
 
   const handleDownload = async () => {
     if (!user) {
-      toast.error("Please login first to download");
+      toast.info("Please signup first to download");
+      navigate("/signup");
       return;
     }
 
@@ -87,7 +87,7 @@ const AutomationDetail = () => {
       }
 
       if (!hasPaid) {
-        setShowPaymentModal(true);
+        navigate("/pricing");
         return;
       }
     }
@@ -327,11 +327,6 @@ const AutomationDetail = () => {
         </main>
 
         <Footer />
-        
-        <PaymentRequiredModal 
-          open={showPaymentModal} 
-          onOpenChange={setShowPaymentModal} 
-        />
       </div>
     </PageTransition>
   );
