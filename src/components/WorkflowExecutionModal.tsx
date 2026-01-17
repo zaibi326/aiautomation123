@@ -70,6 +70,162 @@ const getShortType = (type: string): string => {
 
 type NodeStatus = "pending" | "running" | "completed" | "error";
 
+interface NodeOutput {
+  items: number;
+  data: any;
+}
+
+// Generate realistic sample output based on node type
+const generateNodeOutput = (nodeType: string, nodeName: string): NodeOutput => {
+  const lowerType = nodeType.toLowerCase();
+  
+  if (lowerType.includes("webhook") || lowerType.includes("trigger") || lowerType.includes("manual")) {
+    return {
+      items: 1,
+      data: {
+        body: { user_id: "usr_12345", action: "workflow_triggered", timestamp: new Date().toISOString() },
+        headers: { "content-type": "application/json" }
+      }
+    };
+  }
+  
+  if (lowerType.includes("httprequest") || lowerType.includes("http")) {
+    return {
+      items: 3,
+      data: [
+        { id: 1, name: "Product A", price: 299, status: "active" },
+        { id: 2, name: "Product B", price: 499, status: "active" },
+        { id: 3, name: "Product C", price: 199, status: "pending" }
+      ]
+    };
+  }
+  
+  if (lowerType.includes("gmail") || lowerType.includes("email")) {
+    return {
+      items: 1,
+      data: { 
+        messageId: "msg_abc123", 
+        to: "customer@example.com", 
+        subject: "Your order confirmation",
+        status: "sent",
+        timestamp: new Date().toISOString()
+      }
+    };
+  }
+  
+  if (lowerType.includes("googlesheets") || lowerType.includes("sheets")) {
+    return {
+      items: 5,
+      data: {
+        spreadsheetId: "1BxiM...kYJO",
+        range: "Sheet1!A1:D5",
+        rowsUpdated: 5,
+        values: [["Name", "Email", "Status", "Date"]]
+      }
+    };
+  }
+  
+  if (lowerType.includes("slack")) {
+    return {
+      items: 1,
+      data: {
+        channel: "#notifications",
+        message: "✅ Workflow completed successfully!",
+        ts: "1234567890.123456",
+        ok: true
+      }
+    };
+  }
+  
+  if (lowerType.includes("telegram") || lowerType.includes("whatsapp")) {
+    return {
+      items: 1,
+      data: {
+        chat_id: 123456789,
+        message_id: 4567,
+        text: "Your request has been processed.",
+        sent: true
+      }
+    };
+  }
+  
+  if (lowerType.includes("openai") || lowerType.includes("ai")) {
+    return {
+      items: 1,
+      data: {
+        model: "gpt-4",
+        response: "Based on the data analysis, I recommend focusing on Product A which shows the highest engagement rate of 78%.",
+        tokens: { prompt: 150, completion: 85, total: 235 }
+      }
+    };
+  }
+  
+  if (lowerType.includes("code") || lowerType.includes("function")) {
+    return {
+      items: 2,
+      data: [
+        { processed: true, originalId: 1, transformedValue: "PRODUCT_A_299" },
+        { processed: true, originalId: 2, transformedValue: "PRODUCT_B_499" }
+      ]
+    };
+  }
+  
+  if (lowerType.includes("if") || lowerType.includes("switch")) {
+    return {
+      items: 1,
+      data: { condition: "price > 200", result: true, branch: "true" }
+    };
+  }
+  
+  if (lowerType.includes("merge")) {
+    return {
+      items: 4,
+      data: {
+        mergedItems: 4,
+        sources: ["API Response", "AI Processing"],
+        mode: "append"
+      }
+    };
+  }
+  
+  if (lowerType.includes("notion")) {
+    return {
+      items: 1,
+      data: {
+        pageId: "abc-123-def",
+        title: "New Entry Created",
+        url: "https://notion.so/...",
+        created: true
+      }
+    };
+  }
+  
+  if (lowerType.includes("airtable")) {
+    return {
+      items: 2,
+      data: {
+        records: [
+          { id: "rec123", fields: { Name: "Task 1", Status: "Done" } },
+          { id: "rec456", fields: { Name: "Task 2", Status: "In Progress" } }
+        ]
+      }
+    };
+  }
+  
+  if (lowerType.includes("set")) {
+    return {
+      items: 1,
+      data: { key: "processedData", value: { status: "ready", count: 10 } }
+    };
+  }
+  
+  // Default output
+  return {
+    items: 1,
+    data: { executed: true, nodeName, timestamp: new Date().toISOString() }
+  };
+};
+
 export const WorkflowExecutionModal = ({
   open,
   onOpenChange,
@@ -79,8 +235,10 @@ export const WorkflowExecutionModal = ({
 }: WorkflowExecutionModalProps) => {
   const [executionStatus, setExecutionStatus] = useState<"idle" | "running" | "completed">("idle");
   const [nodeStatuses, setNodeStatuses] = useState<Record<string, NodeStatus>>({});
-  const [executionLogs, setExecutionLogs] = useState<string[]>([]);
+  const [nodeOutputs, setNodeOutputs] = useState<Record<string, NodeOutput>>({});
+  const [executionLogs, setExecutionLogs] = useState<Array<{ type: 'log' | 'output'; content: string; nodeName?: string }>>([]);
   const [totalTime, setTotalTime] = useState(0);
+  const [selectedNodeOutput, setSelectedNodeOutput] = useState<string | null>(null);
 
   // Demo workflow to show when no preview_json is available
   const demoWorkflow: N8nWorkflow = {
@@ -166,14 +324,18 @@ export const WorkflowExecutionModal = ({
     if (open) {
       setExecutionStatus("idle");
       setNodeStatuses({});
+      setNodeOutputs({});
       setExecutionLogs([]);
       setTotalTime(0);
+      setSelectedNodeOutput(null);
     }
   }, [open]);
 
   const startExecution = async () => {
     setExecutionStatus("running");
-    setExecutionLogs(["🚀 Starting workflow execution..."]);
+    setExecutionLogs([{ type: 'log', content: "🚀 Starting workflow execution..." }]);
+    setNodeOutputs({});
+    setSelectedNodeOutput(null);
     
     const startTime = Date.now();
     
@@ -191,15 +353,23 @@ export const WorkflowExecutionModal = ({
       
       // Set current node to running
       setNodeStatuses(prev => ({ ...prev, [nodeName]: "running" }));
-      setExecutionLogs(prev => [...prev, `⏳ Running: ${nodeName}...`]);
+      setExecutionLogs(prev => [...prev, { type: 'log', content: `⏳ Running: ${nodeName}...` }]);
       
       // Simulate execution time (500-1500ms per node)
       const executionTime = 500 + Math.random() * 1000;
       await new Promise(resolve => setTimeout(resolve, executionTime));
       
+      // Generate output for this node
+      const output = generateNodeOutput(node?.type || '', nodeName);
+      setNodeOutputs(prev => ({ ...prev, [nodeName]: output }));
+      
       // Set node to completed
       setNodeStatuses(prev => ({ ...prev, [nodeName]: "completed" }));
-      setExecutionLogs(prev => [...prev, `✅ Completed: ${nodeName} (${Math.round(executionTime)}ms)`]);
+      setExecutionLogs(prev => [
+        ...prev, 
+        { type: 'log', content: `✅ Completed: ${nodeName} (${Math.round(executionTime)}ms) → ${output.items} item${output.items !== 1 ? 's' : ''}` },
+        { type: 'output', content: JSON.stringify(output.data, null, 2), nodeName }
+      ]);
       
       // Update total time
       setTotalTime(Date.now() - startTime);
@@ -208,7 +378,7 @@ export const WorkflowExecutionModal = ({
     // Final completion
     const finalTime = (Date.now() - startTime) / 1000;
     setTotalTime(finalTime * 1000);
-    setExecutionLogs(prev => [...prev, `\n🎉 Workflow completed successfully in ${finalTime.toFixed(2)}s`]);
+    setExecutionLogs(prev => [...prev, { type: 'log', content: `\n🎉 Workflow completed successfully in ${finalTime.toFixed(2)}s` }]);
     setExecutionStatus("completed");
     
     onComplete?.();
@@ -369,10 +539,10 @@ export const WorkflowExecutionModal = ({
             </ScrollArea>
           </div>
 
-          {/* Execution Logs */}
+          {/* Execution Logs & Output */}
           <div className="border border-border rounded-lg bg-card overflow-hidden flex flex-col">
             <div className="p-3 border-b border-border flex items-center justify-between">
-              <span className="text-sm font-medium">Execution Logs</span>
+              <span className="text-sm font-medium">Execution Logs & Output</span>
               {executionStatus === "completed" && (
                 <span className="text-xs text-green-500 flex items-center gap-1">
                   <CheckCircle className="w-3 h-3" />
@@ -381,14 +551,40 @@ export const WorkflowExecutionModal = ({
               )}
             </div>
             <ScrollArea className="flex-1 h-[300px]">
-              <div className="p-3 font-mono text-xs space-y-1">
+              <div className="p-3 font-mono text-xs space-y-2">
                 {executionLogs.length === 0 ? (
                   <p className="text-muted-foreground">Click "Run Workflow" to start execution...</p>
                 ) : (
                   executionLogs.map((log, idx) => (
-                    <p key={idx} className="text-muted-foreground whitespace-pre-wrap">
-                      {log}
-                    </p>
+                    <div key={idx}>
+                      {log.type === 'log' ? (
+                        <p className="text-muted-foreground whitespace-pre-wrap">
+                          {log.content}
+                        </p>
+                      ) : (
+                        <div className="ml-4 mt-1 mb-2">
+                          <div 
+                            className="bg-muted/50 border border-border rounded p-2 cursor-pointer hover:bg-muted transition-colors"
+                            onClick={() => setSelectedNodeOutput(selectedNodeOutput === log.nodeName ? null : log.nodeName || null)}
+                          >
+                            <div className="flex items-center justify-between text-muted-foreground mb-1">
+                              <span className="text-[10px] uppercase tracking-wider">📤 Output: {log.nodeName}</span>
+                              <span className="text-[10px]">{selectedNodeOutput === log.nodeName ? '▼' : '▶'}</span>
+                            </div>
+                            {selectedNodeOutput === log.nodeName && (
+                              <pre className="text-[10px] text-green-400 overflow-x-auto max-h-32 overflow-y-auto">
+                                {log.content}
+                              </pre>
+                            )}
+                            {selectedNodeOutput !== log.nodeName && (
+                              <pre className="text-[10px] text-green-400 truncate">
+                                {log.content.split('\n')[0]}...
+                              </pre>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   ))
                 )}
               </div>
