@@ -1,12 +1,14 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Zap, Sparkles, ArrowRight } from "lucide-react";
+import { Menu, X, Zap, Sparkles, ArrowRight, LayoutDashboard } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const isHeroPage = location.pathname === "/";
+  const { user } = useAuth();
 
   const navLinks = [
     { name: "Automations", href: "/automations" },
@@ -68,16 +70,27 @@ const Navbar = () => {
 
             {/* Desktop Auth Buttons */}
             <div className="hidden md:flex items-center gap-3">
-              <Link to="/login">
-                <Button variant={isHeroPage ? "heroOutline" : "ghost"} size="sm">
-                  Log in
-                </Button>
-              </Link>
-              <Link to="/signup">
-                <Button variant="hero" size="sm">
-                  Get Started
-                </Button>
-              </Link>
+              {user ? (
+                <Link to="/dashboard">
+                  <Button variant="hero" size="sm" className="gap-2">
+                    <LayoutDashboard className="w-4 h-4" />
+                    Dashboard
+                  </Button>
+                </Link>
+              ) : (
+                <>
+                  <Link to="/login">
+                    <Button variant={isHeroPage ? "heroOutline" : "ghost"} size="sm">
+                      Log in
+                    </Button>
+                  </Link>
+                  <Link to="/signup">
+                    <Button variant="hero" size="sm">
+                      Get Started
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
 
             {/* Mobile Menu Button */}
@@ -110,16 +123,27 @@ const Navbar = () => {
                   </Link>
                 ))}
                 <div className="flex flex-col gap-2 pt-4">
-                  <Link to="/login" onClick={() => setIsOpen(false)}>
-                    <Button variant={isHeroPage ? "heroOutline" : "outline"} className="w-full">
-                      Log in
-                    </Button>
-                  </Link>
-                  <Link to="/signup" onClick={() => setIsOpen(false)}>
-                    <Button variant="hero" className="w-full">
-                      Get Started
-                    </Button>
-                  </Link>
+                  {user ? (
+                    <Link to="/dashboard" onClick={() => setIsOpen(false)}>
+                      <Button variant="hero" className="w-full gap-2">
+                        <LayoutDashboard className="w-4 h-4" />
+                        Dashboard
+                      </Button>
+                    </Link>
+                  ) : (
+                    <>
+                      <Link to="/login" onClick={() => setIsOpen(false)}>
+                        <Button variant={isHeroPage ? "heroOutline" : "outline"} className="w-full">
+                          Log in
+                        </Button>
+                      </Link>
+                      <Link to="/signup" onClick={() => setIsOpen(false)}>
+                        <Button variant="hero" className="w-full">
+                          Get Started
+                        </Button>
+                      </Link>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
