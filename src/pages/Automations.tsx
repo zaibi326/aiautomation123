@@ -47,11 +47,14 @@ const getIcon = (iconName: string) => {
   return iconMap[iconName.toLowerCase()] || Zap;
 };
 
+const ITEMS_PER_PAGE = 6;
+
 const Automations = () => {
   const { categories, subcategories, automations, loading } = useAutomations();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>("All");
+  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
 
   // Get subcategories for selected category
   const filteredSubcategories = useMemo(() => {
@@ -78,6 +81,34 @@ const Automations = () => {
     });
   }, [automations, subcategories, categories, searchQuery, selectedCategory, selectedSubcategory]);
 
+  // Get visible automations based on current count
+  const visibleAutomations = useMemo(() => {
+    return filteredAutomations.slice(0, visibleCount);
+  }, [filteredAutomations, visibleCount]);
+
+  const hasMore = visibleCount < filteredAutomations.length;
+
+  const handleBrowseMore = () => {
+    setVisibleCount(prev => prev + ITEMS_PER_PAGE);
+  };
+
+  // Reset visible count when filters change
+  const handleCategoryChange = (categoryName: string) => {
+    setSelectedCategory(categoryName);
+    setSelectedSubcategory("All");
+    setVisibleCount(ITEMS_PER_PAGE);
+  };
+
+  const handleSubcategoryChange = (subcategoryName: string) => {
+    setSelectedSubcategory(subcategoryName);
+    setVisibleCount(ITEMS_PER_PAGE);
+  };
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    setVisibleCount(ITEMS_PER_PAGE);
+  };
+
   // Get automation's category name
   const getAutomationCategory = (automation: typeof automations[0]) => {
     const subcategory = subcategories.find(s => s.id === automation.subcategory_id);
@@ -97,16 +128,6 @@ const Automations = () => {
         
         <main className="pt-24 pb-16">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            {/* Header */}
-            <div className="text-center max-w-3xl mx-auto mb-12">
-              <h1 className="text-4xl sm:text-5xl font-bold text-foreground mb-4">
-                AI Automation Library
-              </h1>
-              <p className="text-lg text-muted-foreground">
-                Browse our collection of ready-to-use AI workflows. Find the perfect automation for your needs.
-              </p>
-            </div>
-
             {/* Search and Filters */}
             <div className="flex flex-col md:flex-row gap-4 mb-8">
               <div className="relative flex-1">
@@ -114,7 +135,7 @@ const Automations = () => {
                 <Input
                   placeholder="Search automations..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => handleSearch(e.target.value)}
                   className="pl-10 h-12"
                 />
               </div>
@@ -127,7 +148,7 @@ const Automations = () => {
             {/* Categories */}
             <div className="flex flex-wrap gap-2 mb-4">
               <button
-                onClick={() => { setSelectedCategory("All"); setSelectedSubcategory("All"); }}
+                onClick={() => handleCategoryChange("All")}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                   selectedCategory === "All"
                     ? "bg-primary text-primary-foreground"
@@ -139,7 +160,7 @@ const Automations = () => {
               {categories.map((category) => (
                 <button
                   key={category.id}
-                  onClick={() => { setSelectedCategory(category.name); setSelectedSubcategory("All"); }}
+                  onClick={() => handleCategoryChange(category.name)}
                   className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                     selectedCategory === category.name
                       ? "bg-primary text-primary-foreground"
@@ -155,7 +176,7 @@ const Automations = () => {
             {selectedCategory !== "All" && filteredSubcategories.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-6">
                 <button
-                  onClick={() => setSelectedSubcategory("All")}
+                  onClick={() => handleSubcategoryChange("All")}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 ${
                     selectedSubcategory === "All"
                       ? "bg-primary/20 text-primary border border-primary/30"
@@ -168,7 +189,7 @@ const Automations = () => {
                 {filteredSubcategories.map((sub) => (
                   <button
                     key={sub.id}
-                    onClick={() => setSelectedSubcategory(sub.name)}
+                    onClick={() => handleSubcategoryChange(sub.name)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                       selectedSubcategory === sub.name
                         ? "bg-primary/20 text-primary border border-primary/30"
@@ -183,7 +204,7 @@ const Automations = () => {
 
             {/* Results Count */}
             <p className="text-sm text-muted-foreground mb-6">
-              Showing {filteredAutomations.length} automations
+              Showing {visibleAutomations.length} of {filteredAutomations.length} automations
             </p>
 
             {/* Loading State */}
@@ -201,47 +222,63 @@ const Automations = () => {
                 </p>
               </div>
             ) : (
-              /* Automations Grid */
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredAutomations.map((automation) => {
-                  const IconComponent = getIcon(automation.icon);
-                  const categoryName = getAutomationCategory(automation);
-                  const subcategoryName = getAutomationSubcategory(automation);
-                  
-                  return (
-                    <Link
-                      key={automation.id}
-                      to={`/automations/${automation.id}`}
-                      className="group p-6 rounded-2xl bg-card glow-card border border-border/50"
+              <>
+                {/* Automations Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {visibleAutomations.map((automation) => {
+                    const IconComponent = getIcon(automation.icon);
+                    const categoryName = getAutomationCategory(automation);
+                    const subcategoryName = getAutomationSubcategory(automation);
+                    
+                    return (
+                      <Link
+                        key={automation.id}
+                        to={`/automations/${automation.id}`}
+                        className="group p-6 rounded-2xl bg-card glow-card border border-border/50"
+                      >
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                            <IconComponent className="w-6 h-6 text-primary" />
+                          </div>
+                          <div className="text-right">
+                            <span className="text-xs font-medium px-2 py-1 rounded-full bg-secondary text-secondary-foreground">
+                              {categoryName}
+                            </span>
+                            {subcategoryName && (
+                              <p className="text-xs text-muted-foreground mt-1">{subcategoryName}</p>
+                            )}
+                          </div>
+                        </div>
+                        <h3 className="text-lg font-semibold text-foreground mb-2 group-hover:text-primary transition-colors">
+                          {automation.title}
+                        </h3>
+                        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                          {automation.description}
+                        </p>
+                        <div className="text-xs text-muted-foreground">
+                          {automation.uses_count > 1000 
+                            ? `${(automation.uses_count / 1000).toFixed(1)}k` 
+                            : automation.uses_count} uses
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+
+                {/* Browse More Button */}
+                {hasMore && (
+                  <div className="text-center mt-10">
+                    <Button
+                      onClick={handleBrowseMore}
+                      variant="outline"
+                      size="lg"
+                      className="px-8"
                     >
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                          <IconComponent className="w-6 h-6 text-primary" />
-                        </div>
-                        <div className="text-right">
-                          <span className="text-xs font-medium px-2 py-1 rounded-full bg-secondary text-secondary-foreground">
-                            {categoryName}
-                          </span>
-                          {subcategoryName && (
-                            <p className="text-xs text-muted-foreground mt-1">{subcategoryName}</p>
-                          )}
-                        </div>
-                      </div>
-                      <h3 className="text-lg font-semibold text-foreground mb-2 group-hover:text-primary transition-colors">
-                        {automation.title}
-                      </h3>
-                      <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                        {automation.description}
-                      </p>
-                      <div className="text-xs text-muted-foreground">
-                        {automation.uses_count > 1000 
-                          ? `${(automation.uses_count / 1000).toFixed(1)}k` 
-                          : automation.uses_count} uses
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
+                      Browse More ({filteredAutomations.length - visibleCount} remaining)
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
