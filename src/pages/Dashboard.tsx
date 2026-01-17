@@ -3,13 +3,15 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
   Zap, Home, Grid, Settings, CreditCard, LogOut, 
-  Plus, ArrowUpRight, BarChart3, Clock, CheckCircle, AlertCircle, Shield 
+  Plus, ArrowUpRight, BarChart3, Clock, CheckCircle, AlertCircle, Shield,
+  Play, Loader2
 } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAutomations } from "@/hooks/useAutomations";
 import { N8nWorkflowPreview } from "@/components/N8nWorkflowPreview";
+import { toast } from "@/hooks/use-toast";
 
 const stats = [
   { label: "Total Runs", value: "1,247", change: "+12%", icon: BarChart3 },
@@ -25,6 +27,24 @@ const Dashboard = () => {
   const { automations, loading } = useAutomations();
   const [activeTab, setActiveTab] = useState<"overview" | "automations">("overview");
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+  const [runningAutomation, setRunningAutomation] = useState<string | null>(null);
+
+  const handleRunAutomation = async (e: React.MouseEvent, automationId: string, title: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setRunningAutomation(automationId);
+    
+    // Simulate workflow execution
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    setRunningAutomation(null);
+    
+    toast({
+      title: "✅ Workflow Executed Successfully",
+      description: `"${title}" completed in 2.1s`,
+    });
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -259,9 +279,29 @@ const Dashboard = () => {
                           <span className="text-xs text-muted-foreground">
                             {automation.uses_count} uses
                           </span>
-                          <span className="text-xs font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                            View Details →
-                          </span>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            className={`gap-2 transition-all duration-300 ${
+                              runningAutomation === automation.id 
+                                ? "bg-primary/80 animate-pulse" 
+                                : "opacity-0 group-hover:opacity-100"
+                            }`}
+                            onClick={(e) => handleRunAutomation(e, automation.id, automation.title)}
+                            disabled={runningAutomation !== null}
+                          >
+                            {runningAutomation === automation.id ? (
+                              <>
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                                Running...
+                              </>
+                            ) : (
+                              <>
+                                <Play className="w-3 h-3" />
+                                Run Now
+                              </>
+                            )}
+                          </Button>
                         </div>
                       </div>
                     </Link>
