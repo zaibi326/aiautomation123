@@ -1,7 +1,5 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -124,9 +122,7 @@ const Automations = () => {
   return (
     <PageTransition>
       <div className="min-h-screen bg-background">
-        <Navbar />
-        
-        <main className="pt-24 pb-16">
+        <main className="pt-8 pb-16">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             {/* Search and Filters */}
             <div className="flex flex-col md:flex-row gap-4 mb-8">
@@ -285,8 +281,6 @@ const Automations = () => {
           {/* Bulk Download Section */}
           <BulkDownloadSection />
         </main>
-
-        <Footer />
       </div>
     </PageTransition>
   );
