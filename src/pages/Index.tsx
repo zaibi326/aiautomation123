@@ -6,7 +6,6 @@ import StatsSection from "@/components/home/StatsSection";
 import HowItWorksSection from "@/components/home/HowItWorksSection";
 import TemplatesPreview from "@/components/home/TemplatesPreview";
 import TestimonialsSection from "@/components/home/TestimonialsSection";
-import CTASection from "@/components/home/CTASection";
 import { PageTransition } from "@/components/PageTransition";
 
 const Index = () => {
@@ -21,7 +20,6 @@ const Index = () => {
           <HowItWorksSection />
           <TemplatesPreview />
           <TestimonialsSection />
-          <CTASection />
         </main>
         <Footer />
       </div>
