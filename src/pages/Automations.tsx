@@ -24,6 +24,7 @@ import {
 import { PageTransition } from "@/components/PageTransition";
 import { useAutomations } from "@/hooks/useAutomations";
 import BulkDownloadSection from "@/components/home/BulkDownloadSection";
+import N8nWorkflowPreview from "@/components/N8nWorkflowPreview";
 
 // Icon mapping
 const iconMap: Record<string, React.ComponentType<any>> = {
@@ -249,25 +250,39 @@ const Automations = () => {
                       <Link
                         key={automation.id}
                         to={`/automations/${automation.id}`}
-                        className="group p-6 rounded-2xl bg-card glow-card border border-border/50"
+                        className="group p-4 rounded-2xl bg-card glow-card border border-border/50 flex flex-col"
                       >
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                            <IconComponent className="w-6 h-6 text-primary" />
-                          </div>
-                          <div className="text-right">
-                            <span className="text-xs font-medium px-2 py-1 rounded-full bg-secondary text-secondary-foreground">
-                              {categoryName}
-                            </span>
-                            {subcategoryName && (
-                              <p className="text-xs text-muted-foreground mt-1">{subcategoryName}</p>
-                            )}
-                          </div>
+                        {/* Workflow Preview - Auto-runs when JSON loads */}
+                        <div className="h-40 mb-4 rounded-lg overflow-hidden bg-muted/30 border border-border/30">
+                          {automation.preview_json ? (
+                            <N8nWorkflowPreview 
+                              json={typeof automation.preview_json === 'string' 
+                                ? automation.preview_json 
+                                : JSON.stringify(automation.preview_json)} 
+                              compact={true}
+                              className="h-full"
+                            />
+                          ) : (
+                            <div className="h-full flex items-center justify-center">
+                              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                                <IconComponent className="w-6 h-6 text-primary" />
+                              </div>
+                            </div>
+                          )}
                         </div>
-                        <h3 className="text-lg font-semibold text-foreground mb-2 group-hover:text-primary transition-colors">
+                        
+                        <div className="flex items-start justify-between mb-2">
+                          <span className="text-xs font-medium px-2 py-1 rounded-full bg-secondary text-secondary-foreground">
+                            {categoryName}
+                          </span>
+                          {subcategoryName && (
+                            <span className="text-xs text-muted-foreground">{subcategoryName}</span>
+                          )}
+                        </div>
+                        <h3 className="text-base font-semibold text-foreground mb-1 group-hover:text-primary transition-colors line-clamp-1">
                           {automation.title}
                         </h3>
-                        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                        <p className="text-xs text-muted-foreground mb-2 line-clamp-2 flex-1">
                           {automation.description}
                         </p>
                         <div className="text-xs text-muted-foreground">
