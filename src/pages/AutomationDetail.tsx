@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Check, Zap, Clock, Users, Star, Download, Settings, Loader2, Eye, Lock, ExternalLink, Maximize2, X, Code, FileJson, Workflow, Copy, CheckCheck } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -161,9 +159,7 @@ const AutomationDetail = () => {
   return (
     <PageTransition>
       <div className="min-h-screen bg-background">
-        <Navbar />
-        
-        <main className="pt-24 pb-16">
+        <main className="pt-8 pb-16">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             {/* Back Link */}
             <Link
@@ -439,8 +435,6 @@ const AutomationDetail = () => {
             </div>
           </div>
         </main>
-
-        <Footer />
 
         {/* Fullscreen Preview Modal */}
         <Dialog open={showFullscreenPreview} onOpenChange={setShowFullscreenPreview}>
