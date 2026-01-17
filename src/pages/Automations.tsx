@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -20,10 +20,14 @@ import {
   FolderOpen,
   ChevronRight,
   Home,
-  Play
+  Play,
+  Lock
 } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
 import { useAutomations, Automation } from "@/hooks/useAutomations";
+import { useSubscription } from "@/hooks/useSubscription";
+import { useFreeAccess } from "@/hooks/useFreeAccess";
+import { useUserRole } from "@/hooks/useUserRole";
 import BulkDownloadSection from "@/components/home/BulkDownloadSection";
 import N8nWorkflowPreview from "@/components/N8nWorkflowPreview";
 import { WorkflowExecutionModal } from "@/components/WorkflowExecutionModal";
@@ -58,6 +62,7 @@ interface AutomationCardProps {
   categories: ReturnType<typeof useAutomations>['categories'];
   subcategories: ReturnType<typeof useAutomations>['subcategories'];
   iconMap: Record<string, React.ComponentType<any>>;
+  hasAccess: boolean;
   onRun: (automation: Automation) => void;
 }
 
@@ -65,7 +70,8 @@ const AutomationCard = ({
   automation, 
   categories, 
   subcategories, 
-  iconMap, 
+  iconMap,
+  hasAccess,
   onRun 
 }: AutomationCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -137,13 +143,24 @@ const AutomationCard = ({
             : automation.uses_count} uses
         </span>
         <Button
-          variant="default"
+          variant={hasAccess ? "default" : "outline"}
           size="sm"
-          className="gap-1.5 h-7 text-xs transition-all duration-300 opacity-0 group-hover:opacity-100"
+          className={`gap-1.5 h-7 text-xs transition-all duration-300 opacity-0 group-hover:opacity-100 ${
+            !hasAccess ? "border-amber-500/50 text-amber-600 hover:bg-amber-500/10" : ""
+          }`}
           onClick={handleRun}
         >
-          <Play className="w-3 h-3" />
-          Run Now
+          {hasAccess ? (
+            <>
+              <Play className="w-3 h-3" />
+              Run Now
+            </>
+          ) : (
+            <>
+              <Lock className="w-3 h-3" />
+              Upgrade
+            </>
+          )}
         </Button>
       </div>
     </Link>
@@ -151,7 +168,11 @@ const AutomationCard = ({
 };
 
 const Automations = () => {
+  const navigate = useNavigate();
   const { categories, subcategories, automations, loading } = useAutomations();
+  const { hasPaid } = useSubscription();
+  const { hasFreeAccess } = useFreeAccess();
+  const { isAdmin } = useUserRole();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>("All");
@@ -159,7 +180,20 @@ const Automations = () => {
   const [selectedAutomation, setSelectedAutomation] = useState<Automation | null>(null);
   const [executionModalOpen, setExecutionModalOpen] = useState(false);
 
+  // Check if user has access to run automations
+  const hasAccess = hasPaid || hasFreeAccess || isAdmin;
+
   const handleRunAutomation = (automation: Automation) => {
+    if (!hasAccess) {
+      toast({
+        title: "🔒 Premium Feature",
+        description: "Upgrade to run automations",
+        variant: "destructive",
+      });
+      navigate("/pricing");
+      return;
+    }
+    
     setSelectedAutomation(automation);
     setExecutionModalOpen(true);
   };
@@ -363,6 +397,7 @@ const Automations = () => {
                       categories={categories}
                       subcategories={subcategories}
                       iconMap={iconMap}
+                      hasAccess={hasAccess}
                       onRun={handleRunAutomation}
                     />
                   ))}

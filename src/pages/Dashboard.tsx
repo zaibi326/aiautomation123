@@ -4,12 +4,14 @@ import { Button } from "@/components/ui/button";
 import { 
   Zap, Home, Grid, Settings, CreditCard, LogOut, 
   Plus, ArrowUpRight, BarChart3, Clock, CheckCircle, AlertCircle, Shield,
-  Play, Loader2
+  Play, Loader2, Lock
 } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAutomations, Automation } from "@/hooks/useAutomations";
+import { useSubscription } from "@/hooks/useSubscription";
+import { useFreeAccess } from "@/hooks/useFreeAccess";
 import { N8nWorkflowPreview } from "@/components/N8nWorkflowPreview";
 import { WorkflowExecutionModal } from "@/components/WorkflowExecutionModal";
 import { toast } from "@/hooks/use-toast";
@@ -26,14 +28,29 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { isAdmin } = useUserRole();
   const { automations, loading } = useAutomations();
+  const { hasPaid } = useSubscription();
+  const { hasFreeAccess } = useFreeAccess();
   const [activeTab, setActiveTab] = useState<"overview" | "automations">("overview");
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const [selectedAutomation, setSelectedAutomation] = useState<Automation | null>(null);
   const [executionModalOpen, setExecutionModalOpen] = useState(false);
 
+  // Check if user has access to run automations
+  const hasAccess = hasPaid || hasFreeAccess || isAdmin;
+
   const handleRunAutomation = (e: React.MouseEvent, automation: Automation) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    if (!hasAccess) {
+      toast({
+        title: "🔒 Premium Feature",
+        description: "Upgrade to run automations",
+        variant: "destructive",
+      });
+      navigate("/pricing");
+      return;
+    }
     
     setSelectedAutomation(automation);
     setExecutionModalOpen(true);
@@ -280,13 +297,24 @@ const Dashboard = () => {
                             {automation.uses_count} uses
                           </span>
                           <Button
-                            variant="default"
+                            variant={hasAccess ? "default" : "outline"}
                             size="sm"
-                            className="gap-2 transition-all duration-300 opacity-0 group-hover:opacity-100"
+                            className={`gap-2 transition-all duration-300 opacity-0 group-hover:opacity-100 ${
+                              !hasAccess ? "border-amber-500/50 text-amber-600 hover:bg-amber-500/10" : ""
+                            }`}
                             onClick={(e) => handleRunAutomation(e, automation)}
                           >
-                            <Play className="w-3 h-3" />
-                            Run Now
+                            {hasAccess ? (
+                              <>
+                                <Play className="w-3 h-3" />
+                                Run Now
+                              </>
+                            ) : (
+                              <>
+                                <Lock className="w-3 h-3" />
+                                Upgrade
+                              </>
+                            )}
                           </Button>
                         </div>
                       </div>
