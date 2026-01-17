@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
 import { useAutomations } from "@/hooks/useAutomations";
+import BulkDownloadSection from "@/components/home/BulkDownloadSection";
 
 // Icon mapping
 const iconMap: Record<string, React.ComponentType<any>> = {
@@ -243,6 +244,9 @@ const Automations = () => {
               </div>
             )}
           </div>
+
+          {/* Bulk Download Section */}
+          <BulkDownloadSection />
         </main>
 
         <Footer />
