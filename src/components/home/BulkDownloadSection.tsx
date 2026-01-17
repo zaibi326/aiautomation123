@@ -85,11 +85,11 @@ const templateBundles = [
   {
     id: "bundle-9",
     emoji: "💼",
-    title: "10+ Business Templates",
+    title: "35+ Business Templates",
     subtitle: "Ready for your needs.",
     tags: ["Business Automation", "Workflow Automation", "Process Optimization"],
-    downloadUrl: "https://drive.google.com/drive/folders/1d2qlEO_4KZ1d43usufC2MDN0t7897IJS",
-    isExternalLink: true,
+    downloadUrl: "/uploads/business-templates-35.zip",
+    isExternalLink: false,
     color: "from-slate-500 to-gray-700",
   },
 ];
