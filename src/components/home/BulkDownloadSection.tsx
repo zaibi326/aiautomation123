@@ -34,7 +34,7 @@ const templateBundles = [
     title: "3,000+ Ready-to-Use Templates",
     subtitle: "for Every Workflow",
     tags: ["Content Creation", "Marketing", "Sales"],
-    downloadUrl: "/uploads/workflow-templates-3000.zip",
+    downloadUrl: "/uploads/3k-templates.zip",
     color: "from-green-500 to-teal-600",
   },
   {
@@ -43,7 +43,7 @@ const templateBundles = [
     title: "2,000+ Powerful Templates",
     subtitle: "to Boost Productivity",
     tags: ["AI Workflows", "Generative", "Digital Agent"],
-    downloadUrl: "/uploads/productivity-templates-2000.zip",
+    downloadUrl: "/uploads/2k-templates.zip",
     color: "from-pink-500 to-rose-600",
   },
   {
@@ -52,7 +52,7 @@ const templateBundles = [
     title: "2,200+ Templates",
     subtitle: "for Marketing, Sales & More",
     tags: ["Marketing", "Sales", "More"],
-    downloadUrl: "/uploads/marketing-sales-templates-2200.zip",
+    downloadUrl: "/uploads/2200-templates.zip",
     color: "from-cyan-500 to-blue-600",
   },
   {
@@ -61,7 +61,7 @@ const templateBundles = [
     title: "300+ Templates",
     subtitle: "for WhatsApp Bots, Chatbots & Beyond! 🤖💬",
     tags: ["WhatsApp Chatbot", "Chatbots"],
-    downloadUrl: "/uploads/whatsapp-chatbot-templates-300.zip",
+    downloadUrl: "/uploads/300-whatsapp-templates.zip",
     color: "from-green-400 to-emerald-600",
   },
   {
