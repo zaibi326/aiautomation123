@@ -23,9 +23,10 @@ import {
   Play
 } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
-import { useAutomations } from "@/hooks/useAutomations";
+import { useAutomations, Automation } from "@/hooks/useAutomations";
 import BulkDownloadSection from "@/components/home/BulkDownloadSection";
 import N8nWorkflowPreview from "@/components/N8nWorkflowPreview";
+import { WorkflowExecutionModal } from "@/components/WorkflowExecutionModal";
 import { toast } from "@/hooks/use-toast";
 
 // Icon mapping
@@ -53,12 +54,11 @@ const ITEMS_PER_PAGE = 6;
 
 // Automation Card Component with hover animation and run button
 interface AutomationCardProps {
-  automation: ReturnType<typeof useAutomations>['automations'][0];
+  automation: Automation;
   categories: ReturnType<typeof useAutomations>['categories'];
   subcategories: ReturnType<typeof useAutomations>['subcategories'];
   iconMap: Record<string, React.ComponentType<any>>;
-  runningAutomation: string | null;
-  onRun: (automationId: string, title: string) => void;
+  onRun: (automation: Automation) => void;
 }
 
 const AutomationCard = ({ 
@@ -66,7 +66,6 @@ const AutomationCard = ({
   categories, 
   subcategories, 
   iconMap, 
-  runningAutomation,
   onRun 
 }: AutomationCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -77,13 +76,11 @@ const AutomationCard = ({
   const category = subcategory ? categories.find(c => c.id === subcategory.category_id) : null;
   const categoryName = category?.name || "Uncategorized";
   const subcategoryName = subcategory?.name || "";
-  
-  const isRunning = runningAutomation === automation.id;
 
   const handleRun = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    onRun(automation.id, automation.title);
+    onRun(automation);
   };
 
   return (
@@ -96,14 +93,14 @@ const AutomationCard = ({
       {/* Workflow Preview - Auto-runs when JSON loads */}
       <div className={`h-40 mb-4 rounded-lg overflow-hidden bg-muted/30 border transition-all duration-300 relative ${
         isHovered ? "border-primary/50 bg-muted/50" : "border-border/30"
-      } ${isRunning ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}>
+      }`}>
         {automation.preview_json ? (
           <N8nWorkflowPreview 
             json={typeof automation.preview_json === 'string' 
               ? automation.preview_json 
               : JSON.stringify(automation.preview_json)} 
             compact={true}
-            highlighted={isHovered || isRunning}
+            highlighted={isHovered}
             className="h-full"
           />
         ) : (
@@ -112,16 +109,6 @@ const AutomationCard = ({
               isHovered ? "bg-primary/20 scale-110" : "bg-primary/10"
             }`}>
               <IconComponent className="w-6 h-6 text-primary" />
-            </div>
-          </div>
-        )}
-        
-        {/* Running overlay */}
-        {isRunning && (
-          <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
-            <div className="bg-background/90 rounded-lg px-4 py-2 flex items-center gap-2 shadow-lg">
-              <Loader2 className="w-4 h-4 animate-spin text-primary" />
-              <span className="text-sm font-medium text-primary">Running...</span>
             </div>
           </div>
         )}
@@ -152,25 +139,11 @@ const AutomationCard = ({
         <Button
           variant="default"
           size="sm"
-          className={`gap-1.5 h-7 text-xs transition-all duration-300 ${
-            isRunning 
-              ? "bg-primary/80 animate-pulse" 
-              : "opacity-0 group-hover:opacity-100"
-          }`}
+          className="gap-1.5 h-7 text-xs transition-all duration-300 opacity-0 group-hover:opacity-100"
           onClick={handleRun}
-          disabled={runningAutomation !== null}
         >
-          {isRunning ? (
-            <>
-              <Loader2 className="w-3 h-3 animate-spin" />
-              Running
-            </>
-          ) : (
-            <>
-              <Play className="w-3 h-3" />
-              Run Now
-            </>
-          )}
+          <Play className="w-3 h-3" />
+          Run Now
         </Button>
       </div>
     </Link>
@@ -183,19 +156,18 @@ const Automations = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>("All");
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
-  const [runningAutomation, setRunningAutomation] = useState<string | null>(null);
+  const [selectedAutomation, setSelectedAutomation] = useState<Automation | null>(null);
+  const [executionModalOpen, setExecutionModalOpen] = useState(false);
 
-  const handleRunAutomation = async (automationId: string, title: string) => {
-    setRunningAutomation(automationId);
-    
-    // Simulate workflow execution
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    setRunningAutomation(null);
-    
+  const handleRunAutomation = (automation: Automation) => {
+    setSelectedAutomation(automation);
+    setExecutionModalOpen(true);
+  };
+
+  const handleExecutionComplete = () => {
     toast({
       title: "✅ Workflow Executed Successfully",
-      description: `"${title}" completed in 2.1s`,
+      description: `"${selectedAutomation?.title}" completed`,
     });
   };
 
@@ -391,7 +363,6 @@ const Automations = () => {
                       categories={categories}
                       subcategories={subcategories}
                       iconMap={iconMap}
-                      runningAutomation={runningAutomation}
                       onRun={handleRunAutomation}
                     />
                   ))}
@@ -418,6 +389,17 @@ const Automations = () => {
           <BulkDownloadSection />
         </main>
       </div>
+
+      {/* Workflow Execution Modal */}
+      {selectedAutomation && (
+        <WorkflowExecutionModal
+          open={executionModalOpen}
+          onOpenChange={setExecutionModalOpen}
+          workflowJson={selectedAutomation.preview_json}
+          workflowTitle={selectedAutomation.title}
+          onComplete={handleExecutionComplete}
+        />
+      )}
     </PageTransition>
   );
 };

@@ -1,0 +1,415 @@
+import { useState, useEffect, useMemo } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { CheckCircle, Loader2, Play, X, Clock, Zap } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
+interface N8nNode {
+  id?: string;
+  name: string;
+  type: string;
+  position: [number, number];
+  parameters?: Record<string, any>;
+}
+
+interface N8nWorkflow {
+  nodes?: N8nNode[];
+  connections?: Record<string, { main?: { node: string; type: string; index: number }[][] }>;
+}
+
+interface WorkflowExecutionModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  workflowJson: any;
+  workflowTitle: string;
+  onComplete?: () => void;
+}
+
+// Get node style based on type
+const getNodeStyle = (type: string): { bg: string; border: string; activeBg: string; icon: string } => {
+  const typeMap: Record<string, { bg: string; border: string; activeBg: string; icon: string }> = {
+    webhook: { bg: "bg-purple-500/20", border: "border-purple-500", activeBg: "bg-purple-500", icon: "🔗" },
+    httpRequest: { bg: "bg-blue-500/20", border: "border-blue-500", activeBg: "bg-blue-500", icon: "🌐" },
+    gmail: { bg: "bg-red-500/20", border: "border-red-500", activeBg: "bg-red-500", icon: "📧" },
+    googleSheets: { bg: "bg-green-500/20", border: "border-green-500", activeBg: "bg-green-500", icon: "📊" },
+    slack: { bg: "bg-violet-500/20", border: "border-violet-500", activeBg: "bg-violet-500", icon: "💬" },
+    telegram: { bg: "bg-sky-500/20", border: "border-sky-500", activeBg: "bg-sky-500", icon: "✈️" },
+    discord: { bg: "bg-indigo-500/20", border: "border-indigo-500", activeBg: "bg-indigo-500", icon: "🎮" },
+    openAi: { bg: "bg-emerald-500/20", border: "border-emerald-500", activeBg: "bg-emerald-500", icon: "🤖" },
+    code: { bg: "bg-yellow-500/20", border: "border-yellow-500", activeBg: "bg-yellow-500", icon: "💻" },
+    function: { bg: "bg-orange-500/20", border: "border-orange-500", activeBg: "bg-orange-500", icon: "⚡" },
+    if: { bg: "bg-amber-500/20", border: "border-amber-500", activeBg: "bg-amber-500", icon: "🔀" },
+    switch: { bg: "bg-amber-500/20", border: "border-amber-500", activeBg: "bg-amber-500", icon: "🔀" },
+    merge: { bg: "bg-teal-500/20", border: "border-teal-500", activeBg: "bg-teal-500", icon: "🔗" },
+    set: { bg: "bg-cyan-500/20", border: "border-cyan-500", activeBg: "bg-cyan-500", icon: "📝" },
+    start: { bg: "bg-green-500/20", border: "border-green-500", activeBg: "bg-green-500", icon: "▶️" },
+    cron: { bg: "bg-pink-500/20", border: "border-pink-500", activeBg: "bg-pink-500", icon: "⏰" },
+    scheduleTrigger: { bg: "bg-pink-500/20", border: "border-pink-500", activeBg: "bg-pink-500", icon: "⏰" },
+    manualTrigger: { bg: "bg-green-500/20", border: "border-green-500", activeBg: "bg-green-500", icon: "👆" },
+    whatsapp: { bg: "bg-green-600/20", border: "border-green-600", activeBg: "bg-green-600", icon: "📱" },
+    notion: { bg: "bg-neutral-500/20", border: "border-neutral-500", activeBg: "bg-neutral-500", icon: "📔" },
+    airtable: { bg: "bg-blue-600/20", border: "border-blue-600", activeBg: "bg-blue-600", icon: "📋" },
+  };
+
+  const lowerType = type.toLowerCase();
+  for (const [key, value] of Object.entries(typeMap)) {
+    if (lowerType.includes(key.toLowerCase())) {
+      return value;
+    }
+  }
+
+  return { bg: "bg-primary/20", border: "border-primary", activeBg: "bg-primary", icon: "⚙️" };
+};
+
+// Get short name from node type
+const getShortType = (type: string): string => {
+  const parts = type.split(".");
+  const name = parts[parts.length - 1] || type;
+  return name.replace(/([A-Z])/g, " $1").trim();
+};
+
+type NodeStatus = "pending" | "running" | "completed" | "error";
+
+export const WorkflowExecutionModal = ({
+  open,
+  onOpenChange,
+  workflowJson,
+  workflowTitle,
+  onComplete,
+}: WorkflowExecutionModalProps) => {
+  const [executionStatus, setExecutionStatus] = useState<"idle" | "running" | "completed">("idle");
+  const [nodeStatuses, setNodeStatuses] = useState<Record<string, NodeStatus>>({});
+  const [executionLogs, setExecutionLogs] = useState<string[]>([]);
+  const [totalTime, setTotalTime] = useState(0);
+
+  const workflow = useMemo<N8nWorkflow | null>(() => {
+    try {
+      if (typeof workflowJson === "string") {
+        return JSON.parse(workflowJson);
+      }
+      return workflowJson;
+    } catch {
+      return null;
+    }
+  }, [workflowJson]);
+
+  const nodes = workflow?.nodes || [];
+
+  // Build execution order based on connections
+  const executionOrder = useMemo(() => {
+    if (!workflow?.nodes) return [];
+    
+    const connections = workflow.connections || {};
+    const nodeNames = workflow.nodes.map(n => n.name);
+    
+    // Find nodes with no incoming connections (start nodes)
+    const hasIncoming = new Set<string>();
+    Object.values(connections).forEach(targets => {
+      targets.main?.forEach(mainConns => {
+        mainConns.forEach(conn => {
+          hasIncoming.add(conn.node);
+        });
+      });
+    });
+    
+    // Simple topological sort
+    const startNodes = nodeNames.filter(name => !hasIncoming.has(name));
+    const visited = new Set<string>();
+    const order: string[] = [];
+    
+    const visit = (nodeName: string) => {
+      if (visited.has(nodeName)) return;
+      visited.add(nodeName);
+      order.push(nodeName);
+      
+      const nodeConnections = connections[nodeName]?.main?.[0] || [];
+      nodeConnections.forEach(conn => visit(conn.node));
+    };
+    
+    startNodes.forEach(visit);
+    
+    // Add any remaining nodes
+    nodeNames.forEach(name => {
+      if (!visited.has(name)) {
+        order.push(name);
+      }
+    });
+    
+    return order;
+  }, [workflow]);
+
+  // Reset state when modal opens
+  useEffect(() => {
+    if (open) {
+      setExecutionStatus("idle");
+      setNodeStatuses({});
+      setExecutionLogs([]);
+      setTotalTime(0);
+    }
+  }, [open]);
+
+  const startExecution = async () => {
+    setExecutionStatus("running");
+    setExecutionLogs(["🚀 Starting workflow execution..."]);
+    
+    const startTime = Date.now();
+    
+    // Initialize all nodes as pending
+    const initialStatuses: Record<string, NodeStatus> = {};
+    nodes.forEach(node => {
+      initialStatuses[node.name] = "pending";
+    });
+    setNodeStatuses(initialStatuses);
+
+    // Execute nodes in order with animation
+    for (let i = 0; i < executionOrder.length; i++) {
+      const nodeName = executionOrder[i];
+      const node = nodes.find(n => n.name === nodeName);
+      
+      // Set current node to running
+      setNodeStatuses(prev => ({ ...prev, [nodeName]: "running" }));
+      setExecutionLogs(prev => [...prev, `⏳ Running: ${nodeName}...`]);
+      
+      // Simulate execution time (500-1500ms per node)
+      const executionTime = 500 + Math.random() * 1000;
+      await new Promise(resolve => setTimeout(resolve, executionTime));
+      
+      // Set node to completed
+      setNodeStatuses(prev => ({ ...prev, [nodeName]: "completed" }));
+      setExecutionLogs(prev => [...prev, `✅ Completed: ${nodeName} (${Math.round(executionTime)}ms)`]);
+      
+      // Update total time
+      setTotalTime(Date.now() - startTime);
+    }
+    
+    // Final completion
+    const finalTime = (Date.now() - startTime) / 1000;
+    setTotalTime(finalTime * 1000);
+    setExecutionLogs(prev => [...prev, `\n🎉 Workflow completed successfully in ${finalTime.toFixed(2)}s`]);
+    setExecutionStatus("completed");
+    
+    onComplete?.();
+  };
+
+  // Calculate bounds for workflow preview
+  const positions = nodes.map(n => n.position || [0, 0]);
+  const minX = Math.min(...positions.map(p => p[0]), 0);
+  const minY = Math.min(...positions.map(p => p[1]), 0);
+  const maxX = Math.max(...positions.map(p => p[0]), 200);
+  const maxY = Math.max(...positions.map(p => p[1]), 100);
+
+  const normalizedNodes = nodes.map((node, idx) => {
+    const pos = node.position || [0, 0];
+    return {
+      ...node,
+      x: pos[0] - minX,
+      y: pos[1] - minY,
+      idx,
+    };
+  });
+
+  const width = maxX - minX + 250;
+  const height = maxY - minY + 100;
+
+  // Create connection lines
+  const connections = workflow?.connections || {};
+  const connectionLines: { from: string; to: string }[] = [];
+  Object.entries(connections).forEach(([fromNode, targets]) => {
+    targets.main?.forEach(mainConnections => {
+      mainConnections.forEach(conn => {
+        connectionLines.push({ from: fromNode, to: conn.node });
+      });
+    });
+  });
+
+  const getNodePos = (name: string) => {
+    const node = normalizedNodes.find(n => n.name === name);
+    return node ? { x: node.x, y: node.y } : null;
+  };
+
+  const nodeWidth = 160;
+  const nodeHeight = 55;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Zap className="w-5 h-5 text-primary" />
+            {workflowTitle}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 min-h-0">
+          {/* Workflow Visualization */}
+          <div className="border border-border rounded-lg bg-muted/30 overflow-hidden">
+            <div className="p-3 border-b border-border bg-card flex items-center justify-between">
+              <span className="text-sm font-medium">Workflow Preview</span>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Clock className="w-3 h-3" />
+                {(totalTime / 1000).toFixed(2)}s
+              </div>
+            </div>
+            <ScrollArea className="h-[300px]">
+              <div 
+                className="relative p-4"
+                style={{ 
+                  minWidth: Math.max(width + 50, 300),
+                  minHeight: Math.max(height + 50, 200)
+                }}
+              >
+                {/* Connection lines */}
+                <svg 
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ 
+                    width: Math.max(width + 50, 300),
+                    height: Math.max(height + 50, 200)
+                  }}
+                >
+                  {connectionLines.map((conn, idx) => {
+                    const from = getNodePos(conn.from);
+                    const to = getNodePos(conn.to);
+                    if (!from || !to) return null;
+
+                    const startX = from.x + nodeWidth + 20;
+                    const startY = from.y + nodeHeight / 2 + 20;
+                    const endX = to.x + 20;
+                    const endY = to.y + nodeHeight / 2 + 20;
+                    const midX = (startX + endX) / 2;
+
+                    const fromStatus = nodeStatuses[conn.from];
+                    const toStatus = nodeStatuses[conn.to];
+                    const isActive = fromStatus === "completed" && (toStatus === "running" || toStatus === "completed");
+
+                    return (
+                      <path
+                        key={idx}
+                        d={`M ${startX} ${startY} C ${midX} ${startY}, ${midX} ${endY}, ${endX} ${endY}`}
+                        fill="none"
+                        stroke={isActive ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))"}
+                        strokeWidth={isActive ? "3" : "2"}
+                        strokeOpacity={isActive ? "1" : "0.3"}
+                        className="transition-all duration-300"
+                      />
+                    );
+                  })}
+                </svg>
+
+                {/* Nodes */}
+                {normalizedNodes.map((node) => {
+                  const style = getNodeStyle(node.type);
+                  const shortType = getShortType(node.type);
+                  const status = nodeStatuses[node.name] || "pending";
+
+                  return (
+                    <div
+                      key={node.idx}
+                      className={`absolute rounded-lg border-2 shadow-sm transition-all duration-500 ${
+                        status === "running" 
+                          ? `${style.activeBg} border-white scale-110 shadow-lg animate-pulse` 
+                          : status === "completed"
+                          ? `${style.bg} ${style.border} scale-105 shadow-md`
+                          : `bg-muted/50 border-muted-foreground/30 opacity-60`
+                      }`}
+                      style={{
+                        left: node.x + 20,
+                        top: node.y + 20,
+                        width: nodeWidth,
+                        height: nodeHeight,
+                      }}
+                    >
+                      <div className="flex items-center gap-2 p-2 h-full">
+                        <span className="text-base">{style.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className={`font-medium truncate text-xs ${
+                            status === "running" ? "text-white" : "text-foreground"
+                          }`}>
+                            {node.name}
+                          </p>
+                          <p className={`truncate text-[10px] ${
+                            status === "running" ? "text-white/70" : "text-muted-foreground"
+                          }`}>
+                            {shortType}
+                          </p>
+                        </div>
+                        {status === "running" && (
+                          <Loader2 className="w-4 h-4 animate-spin text-white" />
+                        )}
+                        {status === "completed" && (
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </ScrollArea>
+          </div>
+
+          {/* Execution Logs */}
+          <div className="border border-border rounded-lg bg-card overflow-hidden flex flex-col">
+            <div className="p-3 border-b border-border flex items-center justify-between">
+              <span className="text-sm font-medium">Execution Logs</span>
+              {executionStatus === "completed" && (
+                <span className="text-xs text-green-500 flex items-center gap-1">
+                  <CheckCircle className="w-3 h-3" />
+                  Success
+                </span>
+              )}
+            </div>
+            <ScrollArea className="flex-1 h-[300px]">
+              <div className="p-3 font-mono text-xs space-y-1">
+                {executionLogs.length === 0 ? (
+                  <p className="text-muted-foreground">Click "Run Workflow" to start execution...</p>
+                ) : (
+                  executionLogs.map((log, idx) => (
+                    <p key={idx} className="text-muted-foreground whitespace-pre-wrap">
+                      {log}
+                    </p>
+                  ))
+                )}
+              </div>
+            </ScrollArea>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center justify-between pt-4 border-t border-border">
+          <div className="text-sm text-muted-foreground">
+            {nodes.length} nodes • {connectionLines.length} connections
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              <X className="w-4 h-4 mr-2" />
+              Close
+            </Button>
+            <Button 
+              onClick={startExecution} 
+              disabled={executionStatus === "running"}
+              variant={executionStatus === "completed" ? "outline" : "default"}
+            >
+              {executionStatus === "running" ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Running...
+                </>
+              ) : executionStatus === "completed" ? (
+                <>
+                  <Play className="w-4 h-4 mr-2" />
+                  Run Again
+                </>
+              ) : (
+                <>
+                  <Play className="w-4 h-4 mr-2" />
+                  Run Workflow
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default WorkflowExecutionModal;

@@ -9,8 +9,9 @@ import {
 import { PageTransition } from "@/components/PageTransition";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
-import { useAutomations } from "@/hooks/useAutomations";
+import { useAutomations, Automation } from "@/hooks/useAutomations";
 import { N8nWorkflowPreview } from "@/components/N8nWorkflowPreview";
+import { WorkflowExecutionModal } from "@/components/WorkflowExecutionModal";
 import { toast } from "@/hooks/use-toast";
 
 const stats = [
@@ -27,22 +28,21 @@ const Dashboard = () => {
   const { automations, loading } = useAutomations();
   const [activeTab, setActiveTab] = useState<"overview" | "automations">("overview");
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
-  const [runningAutomation, setRunningAutomation] = useState<string | null>(null);
+  const [selectedAutomation, setSelectedAutomation] = useState<Automation | null>(null);
+  const [executionModalOpen, setExecutionModalOpen] = useState(false);
 
-  const handleRunAutomation = async (e: React.MouseEvent, automationId: string, title: string) => {
+  const handleRunAutomation = (e: React.MouseEvent, automation: Automation) => {
     e.preventDefault();
     e.stopPropagation();
     
-    setRunningAutomation(automationId);
-    
-    // Simulate workflow execution
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    setRunningAutomation(null);
-    
+    setSelectedAutomation(automation);
+    setExecutionModalOpen(true);
+  };
+
+  const handleExecutionComplete = () => {
     toast({
       title: "✅ Workflow Executed Successfully",
-      description: `"${title}" completed in 2.1s`,
+      description: `"${selectedAutomation?.title}" completed`,
     });
   };
 
@@ -282,25 +282,11 @@ const Dashboard = () => {
                           <Button
                             variant="default"
                             size="sm"
-                            className={`gap-2 transition-all duration-300 ${
-                              runningAutomation === automation.id 
-                                ? "bg-primary/80 animate-pulse" 
-                                : "opacity-0 group-hover:opacity-100"
-                            }`}
-                            onClick={(e) => handleRunAutomation(e, automation.id, automation.title)}
-                            disabled={runningAutomation !== null}
+                            className="gap-2 transition-all duration-300 opacity-0 group-hover:opacity-100"
+                            onClick={(e) => handleRunAutomation(e, automation)}
                           >
-                            {runningAutomation === automation.id ? (
-                              <>
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                                Running...
-                              </>
-                            ) : (
-                              <>
-                                <Play className="w-3 h-3" />
-                                Run Now
-                              </>
-                            )}
+                            <Play className="w-3 h-3" />
+                            Run Now
                           </Button>
                         </div>
                       </div>
@@ -324,6 +310,17 @@ const Dashboard = () => {
           )}
         </main>
       </div>
+
+      {/* Workflow Execution Modal */}
+      {selectedAutomation && (
+        <WorkflowExecutionModal
+          open={executionModalOpen}
+          onOpenChange={setExecutionModalOpen}
+          workflowJson={selectedAutomation.preview_json}
+          workflowTitle={selectedAutomation.title}
+          onComplete={handleExecutionComplete}
+        />
+      )}
     </PageTransition>
   );
 };
