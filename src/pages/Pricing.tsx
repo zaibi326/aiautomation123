@@ -27,7 +27,8 @@ const plans = [
     description: "Perfect for getting started with AI automation",
     features: [
       "15K+ Workflow Templates Download 📥",
-      "Workflow Running Simulation 🔄",
+      "Unlimited Workflow Running Simulation 🔄",
+      "Test Your Own JSON Workflows ✅",
       "AI Automation Courses",
       "AI Automation Roadmap",
       "AI Agency Roadmap",
@@ -39,6 +40,11 @@ const plans = [
       "Launch Your AI Agency",
       "Email Support & Live Chat Support",
     ],
+    limits: {
+      downloads: "Unlimited Downloads",
+      runs: "Unlimited Simulations",
+      testJson: "Test Your Own Workflows"
+    },
     cta: "Get Started",
     popular: false,
     icon: Zap,
@@ -50,7 +56,8 @@ const plans = [
     description: "Complete AI automation mastery package",
     features: [
       "15K+ Workflow Templates Download 📥",
-      "Workflow Running Simulation 🔄",
+      "Unlimited Workflow Running Simulation 🔄",
+      "Test Your Own JSON Workflows ✅",
       "AI Automation Courses",
       "AI Automation Roadmap",
       "AI Agency Roadmap",
@@ -65,6 +72,11 @@ const plans = [
       "Lifetime Updates",
       "Priority Support",
     ],
+    limits: {
+      downloads: "Lifetime Unlimited Downloads",
+      runs: "Lifetime Unlimited Simulations",
+      testJson: "Test Unlimited JSON Workflows"
+    },
     cta: "Get Started",
     popular: true,
     icon: Crown,
@@ -144,7 +156,7 @@ const Pricing = () => {
                     </div>
 
                     {/* Price */}
-                    <div className="mb-8 pb-8 border-b border-border">
+                    <div className="mb-6 pb-6 border-b border-border">
                       <div className="flex items-baseline gap-2">
                         <span className={`text-5xl lg:text-6xl font-bold ${
                           plan.popular ? "text-primary" : "text-foreground"
@@ -155,6 +167,19 @@ const Pricing = () => {
                           {plan.period}
                         </span>
                       </div>
+                    </div>
+
+                    {/* Limits Badges */}
+                    <div className="flex flex-wrap gap-2 mb-6">
+                      <span className="px-3 py-1.5 rounded-full bg-green-500/10 text-green-600 text-xs font-medium border border-green-500/20">
+                        📥 {plan.limits.downloads}
+                      </span>
+                      <span className="px-3 py-1.5 rounded-full bg-blue-500/10 text-blue-600 text-xs font-medium border border-blue-500/20">
+                        🔄 {plan.limits.runs}
+                      </span>
+                      <span className="px-3 py-1.5 rounded-full bg-purple-500/10 text-purple-600 text-xs font-medium border border-purple-500/20">
+                        ✅ {plan.limits.testJson}
+                      </span>
                     </div>
 
                     {/* Features */}
@@ -194,8 +219,65 @@ const Pricing = () => {
               })}
             </div>
 
+            {/* Free vs Paid Comparison */}
+            <div className="mt-16 max-w-3xl mx-auto">
+              <div className="p-6 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/20">
+                <h3 className="text-xl font-bold text-foreground mb-4 text-center">
+                  🔒 Free Users ky liye kya hai?
+                </h3>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-3">
+                    <h4 className="font-semibold text-destructive flex items-center gap-2">
+                      ❌ Without Payment
+                    </h4>
+                    <ul className="space-y-2 text-sm text-muted-foreground">
+                      <li className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
+                        Templates Download nahi ho sakti
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
+                        Workflow Simulation nahi chal sakti
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
+                        Apna JSON test nahi ho sakta
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
+                        Video Guides access nahi
+                      </li>
+                    </ul>
+                  </div>
+                  <div className="space-y-3">
+                    <h4 className="font-semibold text-green-600 flex items-center gap-2">
+                      ✅ After Payment
+                    </h4>
+                    <ul className="space-y-2 text-sm text-muted-foreground">
+                      <li className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                        15K+ Templates Unlimited Download
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                        Unlimited Workflow Simulations
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                        Apna JSON test karo!
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                        250+ Video Guides
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Trust Badges */}
-            <div className="mt-16 text-center">
+            <div className="mt-12 text-center">
               <div className="inline-flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-primary" />
