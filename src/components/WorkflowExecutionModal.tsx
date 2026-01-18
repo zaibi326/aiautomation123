@@ -238,6 +238,7 @@ export const WorkflowExecutionModal = ({
   const [executionStatus, setExecutionStatus] = useState<"idle" | "running" | "completed">("idle");
   const [nodeStatuses, setNodeStatuses] = useState<Record<string, NodeStatus>>({});
   const [nodeOutputs, setNodeOutputs] = useState<Record<string, NodeOutput>>({});
+  const [nodeExecutionTimes, setNodeExecutionTimes] = useState<Record<string, number>>({});
   const [executionLogs, setExecutionLogs] = useState<Array<{ type: 'log' | 'output'; content: string; nodeName?: string }>>([]);
   const [totalTime, setTotalTime] = useState(0);
   const [selectedNodeOutput, setSelectedNodeOutput] = useState<string | null>(null);
@@ -331,6 +332,7 @@ export const WorkflowExecutionModal = ({
       setExecutionStatus("idle");
       setNodeStatuses({});
       setNodeOutputs({});
+      setNodeExecutionTimes({});
       setExecutionLogs([]);
       setTotalTime(0);
       setSelectedNodeOutput(null);
@@ -341,6 +343,7 @@ export const WorkflowExecutionModal = ({
     setExecutionStatus("running");
     setExecutionLogs([{ type: 'log', content: "🚀 Starting workflow execution..." }]);
     setNodeOutputs({});
+    setNodeExecutionTimes({});
     setSelectedNodeOutput(null);
     setSelectedNodeFromPreview(null);
     
@@ -363,8 +366,14 @@ export const WorkflowExecutionModal = ({
       setExecutionLogs(prev => [...prev, { type: 'log', content: `⏳ Running: ${nodeName}...` }]);
       
       // Simulate execution time (500-1500ms per node)
+      const nodeStartTime = Date.now();
       const executionTime = 500 + Math.random() * 1000;
       await new Promise(resolve => setTimeout(resolve, executionTime));
+      const nodeEndTime = Date.now();
+      const actualNodeTime = nodeEndTime - nodeStartTime;
+      
+      // Store the execution time for this node
+      setNodeExecutionTimes(prev => ({ ...prev, [nodeName]: actualNodeTime }));
       
       // Generate output for this node
       const output = generateNodeOutput(node?.type || '', nodeName);
@@ -374,7 +383,7 @@ export const WorkflowExecutionModal = ({
       setNodeStatuses(prev => ({ ...prev, [nodeName]: "completed" }));
       setExecutionLogs(prev => [
         ...prev, 
-        { type: 'log', content: `✅ Completed: ${nodeName} (${Math.round(executionTime)}ms) → ${output.items} item${output.items !== 1 ? 's' : ''}` },
+        { type: 'log', content: `✅ Completed: ${nodeName} (${actualNodeTime}ms) → ${output.items} item${output.items !== 1 ? 's' : ''}` },
         { type: 'output', content: JSON.stringify(output.data, null, 2), nodeName }
       ]);
       
@@ -502,6 +511,7 @@ export const WorkflowExecutionModal = ({
                   const status = nodeStatuses[node.name] || "pending";
                   const hasOutput = nodeOutputs[node.name];
                   const isSelected = selectedNodeFromPreview === node.name;
+                  const executionTime = nodeExecutionTimes[node.name];
 
                   const nodeContent = (
                     <div
@@ -544,11 +554,19 @@ export const WorkflowExecutionModal = ({
                           }`}>
                             {node.name}
                           </p>
-                          <p className={`truncate text-[10px] ${
-                            status === "running" ? "text-white/70" : "text-muted-foreground"
-                          }`}>
-                            {shortType}
-                          </p>
+                          <div className="flex items-center gap-1">
+                            <p className={`truncate text-[10px] ${
+                              status === "running" ? "text-white/70" : "text-muted-foreground"
+                            }`}>
+                              {shortType}
+                            </p>
+                            {executionTime && status === "completed" && (
+                              <span className="text-[9px] bg-primary/20 text-primary px-1 rounded flex items-center gap-0.5">
+                                <Clock className="w-2 h-2" />
+                                {executionTime}ms
+                              </span>
+                            )}
+                          </div>
                         </div>
                         {status === "running" && (
                           <Loader2 className="w-4 h-4 animate-spin text-white" />
@@ -569,10 +587,18 @@ export const WorkflowExecutionModal = ({
                             {nodeContent}
                           </TooltipTrigger>
                           <TooltipContent side="top" className="bg-popover text-popover-foreground">
-                            <p className="flex items-center gap-1.5">
-                              <Zap className="w-3 h-3" />
-                              Click to view output
-                            </p>
+                            <div className="flex flex-col gap-1">
+                              <p className="flex items-center gap-1.5">
+                                <Zap className="w-3 h-3" />
+                                Click to view output
+                              </p>
+                              {executionTime && (
+                                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                  <Clock className="w-3 h-3" />
+                                  Execution time: {executionTime}ms
+                                </p>
+                              )}
+                            </div>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
@@ -737,6 +763,7 @@ export const WorkflowExecutionModal = ({
                         const style = getNodeStyle(node.type);
                         const expectedOutput = generateNodeOutput(node.type, node.name);
                         const hasActualOutput = nodeOutputs[node.name];
+                        const executionTime = nodeExecutionTimes[node.name];
                         return (
                           <div 
                             key={idx}
@@ -754,6 +781,12 @@ export const WorkflowExecutionModal = ({
                               <span>{style.icon}</span>
                               <span className="flex-1 font-medium">{node.name}</span>
                               <span className="text-muted-foreground text-[10px]">{getShortType(node.type)}</span>
+                              {executionTime && status === "completed" && (
+                                <span className="text-[9px] bg-primary/20 text-primary px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                                  <Clock className="w-2 h-2" />
+                                  {executionTime}ms
+                                </span>
+                              )}
                               {status === "running" && <Loader2 className="w-3 h-3 animate-spin text-primary" />}
                               {status === "completed" && <CheckCircle className="w-3 h-3 text-green-500" />}
                               {!status && <span className="w-3 h-3 rounded-full bg-muted-foreground/30" />}
