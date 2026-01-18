@@ -280,7 +280,7 @@ const PaymentStatusTracker = () => {
                         <div className="mt-3 space-y-3">
                           <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
                             <p className="text-xs text-green-600 dark:text-green-400 mb-2">
-                              📱 WhatsApp پر آئیں اور payment slip بھیجیں
+                              📱 Contact us on WhatsApp and send your payment slip
                             </p>
                             <Button
                               size="sm"
@@ -288,7 +288,7 @@ const PaymentStatusTracker = () => {
                               onClick={() => openWhatsAppWithAttachment(payment)}
                             >
                               <Paperclip className="w-4 h-4" />
-                              WhatsApp پر Slip بھیجیں
+                              Send Slip on WhatsApp
                             </Button>
                           </div>
                           
@@ -297,7 +297,7 @@ const PaymentStatusTracker = () => {
                             onClick={() => handlePaymentOptionSelect("show_bank_details", payment)}
                           >
                             <ChevronDown className="w-4 h-4" />
-                            International Bank Transfer Details دیکھیں
+                            View International Bank Transfer Details
                           </button>
                         </div>
                       )}
