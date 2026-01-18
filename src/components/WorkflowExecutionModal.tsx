@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Loader2, Play, X, Clock, Zap, Code, FileJson, Copy, Check, Download, BookOpen, ExternalLink, ArrowRight, Info, ZoomIn, ZoomOut, Maximize2, Move, Terminal, Bot } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWorkflowAgentEngine, ExecutionResult } from "./WorkflowAgentEngine";
 
@@ -806,30 +806,28 @@ export const WorkflowExecutionModal = ({
                   // Wrap completed nodes with tooltip
                   if (hasOutput && !isSelected) {
                     return (
-                      <TooltipProvider key={node.idx} delayDuration={300}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            {nodeContent}
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="bg-slate-800 text-white border-slate-700">
-                            <div className="flex flex-col gap-1">
-                              <p className="flex items-center gap-1.5 font-medium">
-                                <Zap className="w-3 h-3 text-yellow-400" />
-                                Click to view output
+                      <Tooltip key={node.idx} delayDuration={300}>
+                        <TooltipTrigger asChild>
+                          {nodeContent}
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="bg-slate-800 text-white border-slate-700">
+                          <div className="flex flex-col gap-1">
+                            <p className="flex items-center gap-1.5 font-medium">
+                              <Zap className="w-3 h-3 text-yellow-400" />
+                              Click to view output
+                            </p>
+                            {executionTime && (
+                              <p className="flex items-center gap-1.5 text-xs text-slate-400">
+                                <Clock className="w-3 h-3" />
+                                Execution: {executionTime}ms
                               </p>
-                              {executionTime && (
-                                <p className="flex items-center gap-1.5 text-xs text-slate-400">
-                                  <Clock className="w-3 h-3" />
-                                  Execution: {executionTime}ms
-                                </p>
-                              )}
-                              <p className="text-xs text-green-400">
-                                {nodeOutputs[node.name].items} item{nodeOutputs[node.name].items !== 1 ? 's' : ''} returned
-                              </p>
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                            )}
+                            <p className="text-xs text-green-400">
+                              {nodeOutputs[node.name].items} item{nodeOutputs[node.name].items !== 1 ? 's' : ''} returned
+                            </p>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
                     );
                   }
 
