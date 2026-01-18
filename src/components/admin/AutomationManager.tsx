@@ -1096,66 +1096,98 @@ const AutomationManager = () => {
       const zip = await JSZip.loadAsync(file);
       const automationsData: any[] = [];
       
-      // Parse ZIP structure: root/category/id-name/workflow.json
+      // Parse ZIP structure - support multiple formats:
+      // 1. workflow.json files anywhere
+      // 2. Any .json files that look like n8n workflows
       const entries = Object.entries(zip.files);
       
       for (const [path, zipEntry] of entries) {
-        // Skip directories and non-workflow files
-        if (zipEntry.dir || !path.endsWith('workflow.json')) continue;
+        // Skip directories
+        if (zipEntry.dir) continue;
         
-        // Parse path: root/category/id-name/workflow.json
-        const parts = path.split('/');
-        if (parts.length < 4) continue;
+        // Accept workflow.json OR any .json file
+        if (!path.endsWith('.json')) continue;
         
-        const rootFolder = parts[0]; // e.g., "2182-workflow-templates--main"
-        const category = parts[1]; // e.g., "analytics"
-        const folderName = parts[2]; // e.g., "1690-markdown-report-generation"
-        
-        // Extract title from folder name (remove ID prefix)
-        const titleMatch = folderName.match(/^\d+-(.+)$/);
-        const title = titleMatch 
-          ? titleMatch[1].replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
-          : folderName.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-        
-        // Try to get description from README.md if exists
-        const readmePath = `${parts.slice(0, 3).join('/')}/README.md`;
-        let description = '';
         try {
-          const readmeFile = zip.file(readmePath);
-          if (readmeFile) {
-            const readmeContent = await readmeFile.async('text');
-            // Extract first paragraph after title
-            const lines = readmeContent.split('\n').filter(l => l.trim() && !l.startsWith('#'));
-            description = lines[0]?.substring(0, 500) || '';
+          const content = await zipEntry.async('text');
+          const jsonData = JSON.parse(content);
+          
+          // Validate it looks like an n8n workflow (has nodes or name)
+          const isWorkflow = jsonData.nodes || jsonData.name || jsonData.workflow || jsonData.id;
+          if (!isWorkflow) continue;
+          
+          // Parse path for category info
+          const parts = path.split('/').filter(p => p); // Remove empty parts
+          const fileName = parts[parts.length - 1].replace('.json', '');
+          
+          // Try to extract category from path structure
+          let category = 'Imported';
+          let folderName = fileName;
+          
+          if (parts.length >= 3) {
+            // Structure: root/category/id-name/workflow.json
+            category = parts[1];
+            folderName = parts[parts.length - 2];
+          } else if (parts.length === 2) {
+            // Structure: category/workflow.json or folder/workflow.json
+            category = parts[0];
+            folderName = parts[1].replace('.json', '');
+          } else if (parts.length === 1) {
+            // Just workflow.json at root - use filename
+            folderName = fileName;
           }
+          
+          // Extract title from folder/file name (remove ID prefix if exists)
+          const titleMatch = folderName.match(/^\d+-(.+)$/);
+          let title = jsonData.name || jsonData.title || (titleMatch 
+            ? titleMatch[1].replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())
+            : folderName.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()));
+          
+          // Get description from JSON or README
+          let description = jsonData.description || '';
+          if (!description && parts.length >= 2) {
+            const readmePath = `${parts.slice(0, -1).join('/')}/README.md`;
+            try {
+              const readmeFile = zip.file(readmePath);
+              if (readmeFile) {
+                const readmeContent = await readmeFile.async('text');
+                const lines = readmeContent.split('\n').filter(l => l.trim() && !l.startsWith('#'));
+                description = lines[0]?.substring(0, 500) || '';
+              }
+            } catch (e) {
+              // Ignore README parsing errors
+            }
+          }
+          
+          // Use detectCategory for better categorization
+          const detected = detectCategory(title, description);
+          
+          automationsData.push({
+            title,
+            category: detected.category,
+            subcategory: detected.subcategory,
+            description,
+            download_url: null, // Will be stored inline with preview_json
+            preview_json: jsonData,
+            icon: 'zap',
+            uses_count: 0,
+          });
         } catch (e) {
-          // Ignore README parsing errors
+          // Skip invalid JSON files
+          console.log(`Skipping invalid JSON: ${path}`);
         }
-        
-        // Create GitHub download URL
-        // Format: https://raw.githubusercontent.com/USER/REPO/BRANCH/path/to/workflow.json
-        const downloadUrl = `https://raw.githubusercontent.com/n8n-io/n8n-workflow-templates/main/${category}/${folderName}/workflow.json`;
-        
-        automationsData.push({
-          title,
-          category: category.charAt(0).toUpperCase() + category.slice(1).replace(/-/g, ' '),
-          subcategory: 'Workflows',
-          description,
-          download_url: downloadUrl,
-          icon: 'zap',
-          uses_count: 0,
-        });
       }
       
       if (automationsData.length === 0) {
-        toast.error("No workflow.json files found in ZIP");
+        toast.error("No valid workflow JSON files found in ZIP. Make sure the ZIP contains .json files with n8n workflow structure.");
         setIsLoading(false);
         return;
       }
       
       const created = await processAutomationsData(automationsData);
+      const duplicateMsg = created.skippedDuplicates > 0 ? ` (${created.skippedDuplicates} duplicates skipped)` : '';
       toast.success(
-        `Imported from ZIP: ${created.automations} automations, ${created.categories} categories, ${created.subcategories} subcategories`
+        `Imported from ZIP: ${created.automations} automations, ${created.categories} categories, ${created.subcategories} subcategories${duplicateMsg}`
       );
       refetch();
       setUploadDialog(false);
