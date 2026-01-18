@@ -850,7 +850,7 @@ export const WorkflowExecutionModal = ({
           </div>
 
           {/* Execution Logs & Output with Tabs - Collapsible */}
-          <div className="border border-border rounded-xl bg-card overflow-hidden flex flex-col h-[250px] mt-4 shadow-lg">
+          <div className="border border-border rounded-xl bg-card overflow-hidden flex flex-col h-[350px] mt-4 shadow-lg">
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "output" | "workflow" | "guide")} className="flex flex-col h-full">
               <div className="p-2 border-b border-border flex items-center justify-between">
                 <TabsList className="h-8">
@@ -924,8 +924,8 @@ export const WorkflowExecutionModal = ({
                 </div>
               </div>
 
-              <TabsContent value="output" className="flex-1 m-0 mt-0 data-[state=active]:flex data-[state=active]:flex-col">
-                <ScrollArea className="flex-1 h-[270px]">
+              <TabsContent value="output" className="flex-1 m-0 mt-0 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col">
+                <ScrollArea className="h-[300px]">
                   <div className="p-3 font-mono text-xs space-y-2">
                     {/* Show selected node output from preview click */}
                     {selectedNodeFromPreview && nodeOutputs[selectedNodeFromPreview] ? (
@@ -1030,8 +1030,8 @@ export const WorkflowExecutionModal = ({
                 </ScrollArea>
               </TabsContent>
 
-              <TabsContent value="workflow" className="flex-1 m-0 mt-0 data-[state=active]:flex data-[state=active]:flex-col">
-                <ScrollArea className="flex-1 h-[270px]">
+              <TabsContent value="workflow" className="flex-1 m-0 mt-0 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col">
+                <ScrollArea className="h-[300px]">
                   <div className="p-3 font-mono text-xs">
                     <div className="mb-3 p-2 bg-primary/10 border border-primary/20 rounded-lg">
                       <p className="text-primary text-[11px] flex items-center gap-1.5">
@@ -1104,8 +1104,8 @@ export const WorkflowExecutionModal = ({
               </TabsContent>
 
               {/* Import Guide Tab */}
-              <TabsContent value="guide" className="flex-1 m-0 mt-0 data-[state=active]:flex data-[state=active]:flex-col">
-                <ScrollArea className="flex-1 h-[270px]">
+              <TabsContent value="guide" className="flex-1 m-0 mt-0 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col">
+                <ScrollArea className="h-[300px]">
                   <div className="p-3 space-y-3">
                     {/* n8n Guide */}
                     <div className={`rounded-lg border overflow-hidden transition-all ${
