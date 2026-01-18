@@ -839,46 +839,58 @@ const AutomationManager = () => {
       const zip = await JSZip.loadAsync(arrayBuffer);
       const automationsData: any[] = [];
       
-      // Parse ZIP structure: look for workflow.json files
+      // Parse ZIP structure - support multiple formats
       const entries = Object.entries(zip.files);
       
       for (const [path, zipEntry] of entries) {
-        // Skip directories and non-workflow/non-json files
+        // Skip directories
         if (zipEntry.dir) continue;
         
-        // Check for workflow.json or any .json file
-        if (path.endsWith('workflow.json') || path.endsWith('.json')) {
-          try {
-            const content = await zipEntry.async('text');
-            const jsonData = JSON.parse(content);
-            
-            // Parse path for category info
-            const parts = path.split('/');
-            const category = parts.length >= 2 ? parts[parts.length - 2] : 'Imported';
-            const folderName = parts.length >= 2 ? parts[parts.length - 2] : path.replace('.json', '');
-            
-            // Extract title
-            const title = jsonData.name || jsonData.title || 
-              folderName.replace(/^\d+-/, '').replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
-            
-            automationsData.push({
-              title,
-              category: category.charAt(0).toUpperCase() + category.slice(1).replace(/-/g, ' '),
-              subcategory: 'Workflows',
-              description: jsonData.description || '',
-              download_url: filePath,
-              preview_json: jsonData,
-              icon: 'zap',
-              uses_count: 0,
-            });
-          } catch (e) {
-            // Skip invalid JSON files
-          }
+        // Accept any .json file
+        if (!path.endsWith('.json')) continue;
+        
+        try {
+          const content = await zipEntry.async('text');
+          const jsonData = JSON.parse(content);
+          
+          // Validate it looks like an n8n workflow (has nodes or name)
+          const isWorkflow = jsonData.nodes || jsonData.name || jsonData.workflow || jsonData.id;
+          if (!isWorkflow) continue;
+          
+          // Parse path for info
+          const parts = path.split('/').filter(p => p);
+          const fileName = parts[parts.length - 1].replace('.json', '');
+          
+          // Extract title from workflow name or filename
+          const folderName = parts.length >= 2 ? parts[parts.length - 2] : fileName;
+          const titleMatch = folderName.match(/^\d+-(.+)$/);
+          const title = jsonData.name || jsonData.title || (titleMatch 
+            ? titleMatch[1].replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())
+            : folderName.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()));
+          
+          const description = jsonData.description || '';
+          
+          // Use detectCategory for proper categorization
+          const detected = detectCategory(title, description);
+          
+          automationsData.push({
+            title,
+            category: detected.category,
+            subcategory: detected.subcategory,
+            description,
+            download_url: filePath,
+            preview_json: jsonData,
+            icon: 'zap',
+            uses_count: 0,
+          });
+        } catch (e) {
+          // Skip invalid JSON files
+          console.log(`Skipping invalid JSON: ${path}`);
         }
       }
       
       if (automationsData.length === 0) {
-        toast.error("No valid JSON/workflow files found in ZIP");
+        toast.error("No valid workflow JSON files found in ZIP. Make sure the ZIP contains .json files with n8n workflow structure (nodes, name, etc.)");
         setIsLoading(false);
         return;
       }
@@ -1545,6 +1557,30 @@ const AutomationManager = () => {
               {/* ZIP Files */}
               <p className="text-xs font-medium text-muted-foreground mt-3">📦 ZIP Files:</p>
               <div className="grid grid-cols-2 gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => handleServerZipImport('/uploads/2-182-Workflows.zip', '2-182 Workflows')}
+                  disabled={isLoading}
+                  className="text-xs h-auto py-2"
+                >
+                  📂 2,182 Workflows (New)
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => handleServerZipImport('/uploads/2-200-Templates.zip', '2-200 Templates')}
+                  disabled={isLoading}
+                  className="text-xs h-auto py-2"
+                >
+                  🌍 2,200 Templates (New)
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => handleServerZipImport('/uploads/2k-templates-main-2.zip', '2K Templates v2')}
+                  disabled={isLoading}
+                  className="text-xs h-auto py-2"
+                >
+                  🎯 2K Templates (New)
+                </Button>
                 <Button 
                   variant="outline" 
                   onClick={() => handleServerZipImport('/uploads/2182-workflows.zip', '2182 Workflows')}
