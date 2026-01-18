@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Loader2, Play, X, Clock, Zap, Code, FileJson, Copy, Check, Download, BookOpen, ExternalLink, ArrowRight, Info } from "lucide-react";
+import { CheckCircle, Loader2, Play, X, Clock, Zap, Code, FileJson, Copy, Check, Download, BookOpen, ExternalLink, ArrowRight, Info, ZoomIn, ZoomOut, Maximize2, Move } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -247,6 +247,52 @@ export const WorkflowExecutionModal = ({
   const [copiedJson, setCopiedJson] = useState(false);
   const [copiedNodeOutput, setCopiedNodeOutput] = useState<string | null>(null);
   const [expandedGuide, setExpandedGuide] = useState<"n8n" | "make" | "zapier" | null>("n8n");
+  
+  // Zoom and pan state
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const workflowContainerRef = useRef<HTMLDivElement>(null);
+
+  const handleZoomIn = useCallback(() => {
+    setZoom(prev => Math.min(prev + 0.25, 2));
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    setZoom(prev => Math.max(prev - 0.25, 0.5));
+  }, []);
+
+  const handleResetView = useCallback(() => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  }, []);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (e.button === 0) { // Left click
+      setIsPanning(true);
+      setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+    }
+  }, [pan]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (isPanning) {
+      setPan({
+        x: e.clientX - panStart.x,
+        y: e.clientY - panStart.y
+      });
+    }
+  }, [isPanning, panStart]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsPanning(false);
+  }, []);
+
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+    setZoom(prev => Math.min(Math.max(prev + delta, 0.5), 2));
+  }, []);
 
   const copyNodeOutput = (nodeName: string, data: any) => {
     navigator.clipboard.writeText(JSON.stringify(data, null, 2));
@@ -343,6 +389,8 @@ export const WorkflowExecutionModal = ({
       setExecutionLogs([]);
       setTotalTime(0);
       setSelectedNodeOutput(null);
+      setZoom(1);
+      setPan({ x: 0, y: 0 });
     }
   }, [open]);
 
@@ -468,6 +516,43 @@ export const WorkflowExecutionModal = ({
                 <span className="text-xs text-slate-400">({nodes.length} nodes)</span>
               </div>
               <div className="flex items-center gap-3">
+                {/* Zoom Controls */}
+                <div className="flex items-center gap-1 bg-slate-700/50 rounded-lg p-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-slate-400 hover:text-white hover:bg-slate-600"
+                    onClick={handleZoomOut}
+                    disabled={zoom <= 0.5}
+                  >
+                    <ZoomOut className="w-3.5 h-3.5" />
+                  </Button>
+                  <span className="text-xs text-slate-300 w-12 text-center font-mono">
+                    {Math.round(zoom * 100)}%
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-slate-400 hover:text-white hover:bg-slate-600"
+                    onClick={handleZoomIn}
+                    disabled={zoom >= 2}
+                  >
+                    <ZoomIn className="w-3.5 h-3.5" />
+                  </Button>
+                  <div className="w-px h-4 bg-slate-600 mx-1" />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-slate-400 hover:text-white hover:bg-slate-600"
+                    onClick={handleResetView}
+                  >
+                    <Maximize2 className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+                <div className="flex items-center gap-1 text-xs text-slate-400">
+                  <Move className="w-3 h-3" />
+                  <span>Drag to pan</span>
+                </div>
                 <div className="flex items-center gap-2 text-xs text-slate-400">
                   <Clock className="w-3 h-3" />
                   {(totalTime / 1000).toFixed(2)}s
@@ -480,12 +565,22 @@ export const WorkflowExecutionModal = ({
                 )}
               </div>
             </div>
-            <ScrollArea className="h-[350px]">
+            <div 
+              ref={workflowContainerRef}
+              className={`h-[350px] overflow-hidden ${isPanning ? 'cursor-grabbing' : 'cursor-grab'}`}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+              onWheel={handleWheel}
+            >
               <div 
-                className="relative p-4"
+                className="relative p-4 transition-transform duration-100"
                 style={{ 
                   minWidth: Math.max(width + 50, 300),
-                  minHeight: Math.max(height + 50, 200)
+                  minHeight: Math.max(height + 50, 200),
+                  transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
+                  transformOrigin: 'top left'
                 }}
               >
                 {/* Connection lines */}
@@ -725,7 +820,7 @@ export const WorkflowExecutionModal = ({
                   return nodeContent;
                 })}
               </div>
-            </ScrollArea>
+            </div>
           </div>
 
           {/* Execution Logs & Output with Tabs */}
