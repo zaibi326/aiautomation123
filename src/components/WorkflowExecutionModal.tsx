@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Loader2, Play, X, Clock, Zap, Code, FileJson, Copy, Check, Download, BookOpen, ExternalLink, ArrowRight, Info, ZoomIn, ZoomOut, Maximize2, Move } from "lucide-react";
+import { CheckCircle, Loader2, Play, X, Clock, Zap, Code, FileJson, Copy, Check, Download, BookOpen, ExternalLink, ArrowRight, Info, ZoomIn, ZoomOut, Maximize2, Move, Terminal, Bot } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useWorkflowAgentEngine, ExecutionResult } from "./WorkflowAgentEngine";
 
 interface N8nNode {
   id?: string;
@@ -243,7 +244,7 @@ export const WorkflowExecutionModal = ({
   const [totalTime, setTotalTime] = useState(0);
   const [selectedNodeOutput, setSelectedNodeOutput] = useState<string | null>(null);
   const [selectedNodeFromPreview, setSelectedNodeFromPreview] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"output" | "workflow" | "guide">("output");
+  const [activeTab, setActiveTab] = useState<"output" | "workflow" | "guide" | "console">("output");
   const [copiedJson, setCopiedJson] = useState(false);
   const [copiedNodeOutput, setCopiedNodeOutput] = useState<string | null>(null);
   const [expandedGuide, setExpandedGuide] = useState<"n8n" | "make" | "zapier" | null>("n8n");
@@ -334,6 +335,9 @@ export const WorkflowExecutionModal = ({
     }
   }, [workflowJson]);
 
+  // Initialize agent engine
+  const { state: agentState, executeWorkflow, resetExecution } = useWorkflowAgentEngine(workflow);
+
   const nodes = workflow?.nodes || [];
 
   // Build execution order based on connections
@@ -391,18 +395,19 @@ export const WorkflowExecutionModal = ({
       setSelectedNodeOutput(null);
       setZoom(1);
       setPan({ x: 0, y: 0 });
+      resetExecution();
     }
-  }, [open]);
+  }, [open, resetExecution]);
 
   const startExecution = async () => {
     setExecutionStatus("running");
-    setExecutionLogs([{ type: 'log', content: "🚀 Starting workflow execution..." }]);
+    setExecutionLogs([]);
     setNodeOutputs({});
     setNodeExecutionTimes({});
     setSelectedNodeOutput(null);
     setSelectedNodeFromPreview(null);
-    
-    const startTime = Date.now();
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
     
     // Initialize all nodes as pending
     const initialStatuses: Record<string, NodeStatus> = {};
@@ -411,47 +416,32 @@ export const WorkflowExecutionModal = ({
     });
     setNodeStatuses(initialStatuses);
 
-    // Execute nodes in order with animation
-    for (let i = 0; i < executionOrder.length; i++) {
-      const nodeName = executionOrder[i];
-      const node = nodes.find(n => n.name === nodeName);
-      
-      // Set current node to running
-      setNodeStatuses(prev => ({ ...prev, [nodeName]: "running" }));
-      setExecutionLogs(prev => [...prev, { type: 'log', content: `⏳ Running: ${nodeName}...` }]);
-      
-      // Simulate execution time (500-1500ms per node)
-      const nodeStartTime = Date.now();
-      const executionTime = 500 + Math.random() * 1000;
-      await new Promise(resolve => setTimeout(resolve, executionTime));
-      const nodeEndTime = Date.now();
-      const actualNodeTime = nodeEndTime - nodeStartTime;
-      
-      // Store the execution time for this node
-      setNodeExecutionTimes(prev => ({ ...prev, [nodeName]: actualNodeTime }));
-      
-      // Generate output for this node
-      const output = generateNodeOutput(node?.type || '', nodeName);
-      setNodeOutputs(prev => ({ ...prev, [nodeName]: output }));
-      
-      // Set node to completed
-      setNodeStatuses(prev => ({ ...prev, [nodeName]: "completed" }));
-      setExecutionLogs(prev => [
-        ...prev, 
-        { type: 'log', content: `✅ Completed: ${nodeName} (${actualNodeTime}ms) → ${output.items} item${output.items !== 1 ? 's' : ''}` },
-        { type: 'output', content: JSON.stringify(output.data, null, 2), nodeName }
-      ]);
-      
-      // Update total time
-      setTotalTime(Date.now() - startTime);
-    }
+    // Use the agent engine for execution
+    await executeWorkflow(
+      // onNodeStart
+      (nodeName: string) => {
+        setNodeStatuses(prev => ({ ...prev, [nodeName]: "running" }));
+      },
+      // onNodeComplete
+      (nodeName: string, result: ExecutionResult) => {
+        setNodeStatuses(prev => ({ ...prev, [nodeName]: "completed" }));
+        setNodeOutputs(prev => ({ 
+          ...prev, 
+          [nodeName]: { 
+            items: result.itemCount, 
+            data: result.outputData?.json || result.outputData 
+          } 
+        }));
+        setNodeExecutionTimes(prev => ({ ...prev, [nodeName]: result.executionTime }));
+        setTotalTime(prev => prev + result.executionTime);
+      },
+      // onLog
+      (message: string) => {
+        setExecutionLogs(prev => [...prev, { type: 'log', content: message }]);
+      }
+    );
     
-    // Final completion
-    const finalTime = (Date.now() - startTime) / 1000;
-    setTotalTime(finalTime * 1000);
-    setExecutionLogs(prev => [...prev, { type: 'log', content: `\n🎉 Workflow completed successfully in ${finalTime.toFixed(2)}s` }]);
     setExecutionStatus("completed");
-    
     onComplete?.();
   };
 
@@ -858,6 +848,10 @@ export const WorkflowExecutionModal = ({
                     <Zap className="w-3 h-3" />
                     Output
                   </TabsTrigger>
+                  <TabsTrigger value="console" className="text-xs h-7 px-3 gap-1.5">
+                    <Terminal className="w-3 h-3" />
+                    Agent Console
+                  </TabsTrigger>
                   <TabsTrigger value="workflow" className="text-xs h-7 px-3 gap-1.5">
                     <FileJson className="w-3 h-3" />
                     JSON
@@ -1025,6 +1019,64 @@ export const WorkflowExecutionModal = ({
                           )}
                         </div>
                       ))
+                    )}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+
+              {/* Agent Console Tab - Terminal-like execution logs */}
+              <TabsContent value="console" className="flex-1 m-0 mt-0 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col">
+                <ScrollArea className="h-[300px]">
+                  <div className="p-3 font-mono text-xs bg-slate-950 min-h-full">
+                    <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-700">
+                      <Bot className="w-4 h-4 text-green-400" />
+                      <span className="text-green-400 font-semibold">n8n Agent Console</span>
+                      <span className="text-slate-500">|</span>
+                      <span className="text-slate-400 text-[10px]">
+                        {executionStatus === "running" ? "Executing..." : 
+                         executionStatus === "completed" ? `Completed in ${(totalTime / 1000).toFixed(2)}s` : 
+                         "Ready"}
+                      </span>
+                    </div>
+                    
+                    {executionLogs.length === 0 ? (
+                      <div className="text-slate-500">
+                        <p className="mb-2">$ n8n-agent --execute workflow</p>
+                        <p className="text-slate-600">Waiting for execution...</p>
+                        <p className="text-slate-600 mt-4">💡 Click "Run Workflow" to start the agent simulation</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-0.5">
+                        {executionLogs.map((log, idx) => (
+                          <div key={idx} className="leading-relaxed">
+                            {log.content.includes("🚀") || log.content.includes("🎉") ? (
+                              <p className="text-green-400 font-semibold py-1">{log.content}</p>
+                            ) : log.content.includes("⏳") || log.content.includes("Executing:") ? (
+                              <p className="text-yellow-400">{log.content}</p>
+                            ) : log.content.includes("✅") || log.content.includes("Completed:") ? (
+                              <p className="text-green-400">{log.content}</p>
+                            ) : log.content.includes("❌") || log.content.includes("Error") ? (
+                              <p className="text-red-400">{log.content}</p>
+                            ) : log.content.includes("📋") || log.content.includes("🔗") ? (
+                              <p className="text-cyan-400">{log.content}</p>
+                            ) : log.content.includes("═") ? (
+                              <p className="text-slate-600 my-1">{log.content}</p>
+                            ) : log.content.startsWith("   ") ? (
+                              <p className="text-slate-400 pl-4">{log.content}</p>
+                            ) : log.content === "" ? (
+                              <div className="h-2" />
+                            ) : (
+                              <p className="text-slate-300">{log.content}</p>
+                            )}
+                          </div>
+                        ))}
+                        {executionStatus === "running" && (
+                          <div className="flex items-center gap-2 mt-2 text-yellow-400">
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            <span>Processing...</span>
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                 </ScrollArea>
