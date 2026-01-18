@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Loader2, Play, X, Clock, Zap } from "lucide-react";
+import { CheckCircle, Loader2, Play, X, Clock, Zap, Code, FileJson, Copy, Check } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface N8nNode {
   id?: string;
@@ -241,6 +242,8 @@ export const WorkflowExecutionModal = ({
   const [totalTime, setTotalTime] = useState(0);
   const [selectedNodeOutput, setSelectedNodeOutput] = useState<string | null>(null);
   const [selectedNodeFromPreview, setSelectedNodeFromPreview] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"output" | "workflow">("output");
+  const [copiedJson, setCopiedJson] = useState(false);
 
   // Demo workflow to show when no preview_json is available
   const demoWorkflow: N8nWorkflow = {
@@ -581,88 +584,163 @@ export const WorkflowExecutionModal = ({
             </ScrollArea>
           </div>
 
-          {/* Execution Logs & Output */}
+          {/* Execution Logs & Output with Tabs */}
           <div className="border border-border rounded-lg bg-card overflow-hidden flex flex-col">
-            <div className="p-3 border-b border-border flex items-center justify-between">
-              <span className="text-sm font-medium">
-                {selectedNodeFromPreview ? `Output: ${selectedNodeFromPreview}` : 'Execution Logs & Output'}
-              </span>
-              <div className="flex items-center gap-2">
-                {selectedNodeFromPreview && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 px-2 text-xs"
-                    onClick={() => setSelectedNodeFromPreview(null)}
-                  >
-                    <X className="w-3 h-3 mr-1" />
-                    Clear
-                  </Button>
-                )}
-                {executionStatus === "completed" && !selectedNodeFromPreview && (
-                  <span className="text-xs text-green-500 flex items-center gap-1">
-                    <CheckCircle className="w-3 h-3" />
-                    Success
-                  </span>
-                )}
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "output" | "workflow")} className="flex flex-col h-full">
+              <div className="p-2 border-b border-border flex items-center justify-between">
+                <TabsList className="h-8">
+                  <TabsTrigger value="output" className="text-xs h-7 px-3 gap-1.5">
+                    <Zap className="w-3 h-3" />
+                    Output
+                  </TabsTrigger>
+                  <TabsTrigger value="workflow" className="text-xs h-7 px-3 gap-1.5">
+                    <FileJson className="w-3 h-3" />
+                    Workflow JSON
+                  </TabsTrigger>
+                </TabsList>
+                <div className="flex items-center gap-2">
+                  {activeTab === "output" && selectedNodeFromPreview && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      onClick={() => setSelectedNodeFromPreview(null)}
+                    >
+                      <X className="w-3 h-3 mr-1" />
+                      Clear
+                    </Button>
+                  )}
+                  {activeTab === "workflow" && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      onClick={() => {
+                        navigator.clipboard.writeText(JSON.stringify(workflow, null, 2));
+                        setCopiedJson(true);
+                        setTimeout(() => setCopiedJson(false), 2000);
+                      }}
+                    >
+                      {copiedJson ? <Check className="w-3 h-3 mr-1 text-green-500" /> : <Copy className="w-3 h-3 mr-1" />}
+                      {copiedJson ? 'Copied!' : 'Copy'}
+                    </Button>
+                  )}
+                  {executionStatus === "completed" && activeTab === "output" && !selectedNodeFromPreview && (
+                    <span className="text-xs text-green-500 flex items-center gap-1">
+                      <CheckCircle className="w-3 h-3" />
+                      Success
+                    </span>
+                  )}
+                </div>
               </div>
-            </div>
-            <ScrollArea className="flex-1 h-[300px]">
-              <div className="p-3 font-mono text-xs space-y-2">
-                {/* Show selected node output from preview click */}
-                {selectedNodeFromPreview && nodeOutputs[selectedNodeFromPreview] ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-muted-foreground border-b border-border pb-2">
-                      <span className="text-lg">{getNodeStyle(nodes.find(n => n.name === selectedNodeFromPreview)?.type || '').icon}</span>
-                      <div>
-                        <p className="font-medium text-foreground">{selectedNodeFromPreview}</p>
-                        <p className="text-[10px]">{nodeOutputs[selectedNodeFromPreview].items} item{nodeOutputs[selectedNodeFromPreview].items !== 1 ? 's' : ''} returned</p>
-                      </div>
-                    </div>
-                    <pre className="text-green-400 bg-muted/50 rounded p-3 overflow-auto max-h-60">
-                      {JSON.stringify(nodeOutputs[selectedNodeFromPreview].data, null, 2)}
-                    </pre>
-                    <p className="text-[10px] text-muted-foreground">
-                      💡 Click on other completed nodes in the preview to see their output
-                    </p>
-                  </div>
-                ) : executionLogs.length === 0 ? (
-                  <p className="text-muted-foreground">Click "Run Workflow" to start execution...</p>
-                ) : (
-                  executionLogs.map((log, idx) => (
-                    <div key={idx}>
-                      {log.type === 'log' ? (
-                        <p className="text-muted-foreground whitespace-pre-wrap">
-                          {log.content}
-                        </p>
-                      ) : (
-                        <div className="ml-4 mt-1 mb-2">
-                          <div 
-                            className="bg-muted/50 border border-border rounded p-2 cursor-pointer hover:bg-muted transition-colors"
-                            onClick={() => setSelectedNodeOutput(selectedNodeOutput === log.nodeName ? null : log.nodeName || null)}
-                          >
-                            <div className="flex items-center justify-between text-muted-foreground mb-1">
-                              <span className="text-[10px] uppercase tracking-wider">📤 Output: {log.nodeName}</span>
-                              <span className="text-[10px]">{selectedNodeOutput === log.nodeName ? '▼' : '▶'}</span>
-                            </div>
-                            {selectedNodeOutput === log.nodeName && (
-                              <pre className="text-[10px] text-green-400 overflow-x-auto max-h-32 overflow-y-auto">
-                                {log.content}
-                              </pre>
-                            )}
-                            {selectedNodeOutput !== log.nodeName && (
-                              <pre className="text-[10px] text-green-400 truncate">
-                                {log.content.split('\n')[0]}...
-                              </pre>
-                            )}
+
+              <TabsContent value="output" className="flex-1 m-0 mt-0 data-[state=active]:flex data-[state=active]:flex-col">
+                <ScrollArea className="flex-1 h-[270px]">
+                  <div className="p-3 font-mono text-xs space-y-2">
+                    {/* Show selected node output from preview click */}
+                    {selectedNodeFromPreview && nodeOutputs[selectedNodeFromPreview] ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-muted-foreground border-b border-border pb-2">
+                          <span className="text-lg">{getNodeStyle(nodes.find(n => n.name === selectedNodeFromPreview)?.type || '').icon}</span>
+                          <div>
+                            <p className="font-medium text-foreground">{selectedNodeFromPreview}</p>
+                            <p className="text-[10px]">{nodeOutputs[selectedNodeFromPreview].items} item{nodeOutputs[selectedNodeFromPreview].items !== 1 ? 's' : ''} returned</p>
                           </div>
                         </div>
-                      )}
+                        <pre className="text-green-400 bg-muted/50 rounded p-3 overflow-auto max-h-60">
+                          {JSON.stringify(nodeOutputs[selectedNodeFromPreview].data, null, 2)}
+                        </pre>
+                        <p className="text-[10px] text-muted-foreground">
+                          💡 Click on other completed nodes in the preview to see their output
+                        </p>
+                      </div>
+                    ) : executionLogs.length === 0 ? (
+                      <p className="text-muted-foreground">Click "Run Workflow" to start execution...</p>
+                    ) : (
+                      executionLogs.map((log, idx) => (
+                        <div key={idx}>
+                          {log.type === 'log' ? (
+                            <p className="text-muted-foreground whitespace-pre-wrap">
+                              {log.content}
+                            </p>
+                          ) : (
+                            <div className="ml-4 mt-1 mb-2">
+                              <div 
+                                className="bg-muted/50 border border-border rounded p-2 cursor-pointer hover:bg-muted transition-colors"
+                                onClick={() => setSelectedNodeOutput(selectedNodeOutput === log.nodeName ? null : log.nodeName || null)}
+                              >
+                                <div className="flex items-center justify-between text-muted-foreground mb-1">
+                                  <span className="text-[10px] uppercase tracking-wider">📤 Output: {log.nodeName}</span>
+                                  <span className="text-[10px]">{selectedNodeOutput === log.nodeName ? '▼' : '▶'}</span>
+                                </div>
+                                {selectedNodeOutput === log.nodeName && (
+                                  <pre className="text-[10px] text-green-400 overflow-x-auto max-h-32 overflow-y-auto">
+                                    {log.content}
+                                  </pre>
+                                )}
+                                {selectedNodeOutput !== log.nodeName && (
+                                  <pre className="text-[10px] text-green-400 truncate">
+                                    {log.content.split('\n')[0]}...
+                                  </pre>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+
+              <TabsContent value="workflow" className="flex-1 m-0 mt-0 data-[state=active]:flex data-[state=active]:flex-col">
+                <ScrollArea className="flex-1 h-[270px]">
+                  <div className="p-3 font-mono text-xs">
+                    <div className="mb-3 p-2 bg-primary/10 border border-primary/20 rounded-lg">
+                      <p className="text-primary text-[11px] flex items-center gap-1.5">
+                        <Code className="w-3 h-3" />
+                        n8n Workflow JSON - Import this file in n8n to recreate the workflow
+                      </p>
                     </div>
-                  ))
-                )}
-              </div>
-            </ScrollArea>
+                    
+                    {/* Show nodes with their execution status */}
+                    <div className="mb-4 space-y-1">
+                      <p className="text-muted-foreground text-[10px] uppercase tracking-wider mb-2">Node Execution Status:</p>
+                      {nodes.map((node, idx) => {
+                        const status = nodeStatuses[node.name];
+                        const style = getNodeStyle(node.type);
+                        return (
+                          <div 
+                            key={idx}
+                            className={`flex items-center gap-2 p-1.5 rounded text-[11px] transition-all ${
+                              status === "running" 
+                                ? "bg-primary/20 border border-primary animate-pulse" 
+                                : status === "completed"
+                                ? "bg-green-500/10 border border-green-500/30"
+                                : "bg-muted/30 border border-transparent"
+                            }`}
+                          >
+                            <span>{style.icon}</span>
+                            <span className="flex-1 font-medium">{node.name}</span>
+                            <span className="text-muted-foreground">{getShortType(node.type)}</span>
+                            {status === "running" && <Loader2 className="w-3 h-3 animate-spin text-primary" />}
+                            {status === "completed" && <CheckCircle className="w-3 h-3 text-green-500" />}
+                            {!status && <span className="w-3 h-3 rounded-full bg-muted-foreground/30" />}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="border-t border-border pt-3">
+                      <p className="text-muted-foreground text-[10px] uppercase tracking-wider mb-2">Full Workflow JSON:</p>
+                      <pre className="text-[10px] bg-muted/50 rounded p-3 overflow-auto text-foreground/80 max-h-[150px]">
+                        {JSON.stringify(workflow, null, 2)}
+                      </pre>
+                    </div>
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
 
