@@ -231,6 +231,15 @@
     }
   }
 
+  @keyframes glow-pulse {
+    0%, 100% {
+      box-shadow: 0 0 8px 2px hsl(var(--primary) / 0.3);
+    }
+    50% {
+      box-shadow: 0 0 16px 4px hsl(var(--primary) / 0.5);
+    }
+  }
+
   /* Delayed animations */
   .delay-100 { animation-delay: 100ms; }
   .delay-200 { animation-delay: 200ms; }
