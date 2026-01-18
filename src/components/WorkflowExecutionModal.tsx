@@ -502,10 +502,12 @@ export const WorkflowExecutionModal = ({
                     <div
                       key={node.idx}
                       className={`absolute rounded-lg border-2 shadow-sm transition-all duration-300 ${
-                        hasOutput ? 'cursor-pointer hover:ring-2 hover:ring-primary/50' : ''
+                        hasOutput && !isSelected ? 'cursor-pointer hover:ring-2 hover:ring-primary/50 animate-[glow-pulse_2s_ease-in-out_infinite]' : ''
+                      } ${
+                        hasOutput && !isSelected ? 'hover:scale-[1.08]' : ''
                       } ${
                         isSelected 
-                          ? 'ring-2 ring-primary ring-offset-2 ring-offset-background z-10'
+                          ? 'ring-2 ring-primary ring-offset-2 ring-offset-background z-10 cursor-pointer'
                           : ''
                       } ${
                         status === "running" 
@@ -519,6 +521,9 @@ export const WorkflowExecutionModal = ({
                         top: node.y + 20,
                         width: nodeWidth,
                         height: nodeHeight,
+                        ...(hasOutput && !isSelected && status === "completed" ? {
+                          boxShadow: `0 0 12px 2px hsl(var(--primary) / 0.4)`,
+                        } : {}),
                       }}
                       onClick={() => {
                         if (hasOutput) {
