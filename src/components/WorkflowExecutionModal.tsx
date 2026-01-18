@@ -448,7 +448,7 @@ export const WorkflowExecutionModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-6xl max-h-[95vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Zap className="w-5 h-5 text-primary" />
@@ -456,17 +456,31 @@ export const WorkflowExecutionModal = ({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 min-h-0">
-          {/* Workflow Visualization */}
-          <div className="border border-border rounded-lg bg-muted/30 overflow-hidden">
-            <div className="p-3 border-b border-border bg-card flex items-center justify-between">
-              <span className="text-sm font-medium">Workflow Preview</span>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Clock className="w-3 h-3" />
-                {(totalTime / 1000).toFixed(2)}s
+        <div className="flex-1 flex flex-col gap-4 min-h-0 overflow-hidden">
+          {/* n8n-style Workflow Visualization - Full Width */}
+          <div className="border border-border rounded-lg bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden flex-1">
+            <div className="p-3 border-b border-slate-700 bg-slate-800/80 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">n8n</span>
+                </div>
+                <span className="text-sm font-medium text-white">Workflow Preview</span>
+                <span className="text-xs text-slate-400">({nodes.length} nodes)</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 text-xs text-slate-400">
+                  <Clock className="w-3 h-3" />
+                  {(totalTime / 1000).toFixed(2)}s
+                </div>
+                {executionStatus === "completed" && (
+                  <span className="text-xs text-green-400 flex items-center gap-1 bg-green-500/10 px-2 py-0.5 rounded">
+                    <CheckCircle className="w-3 h-3" />
+                    Executed
+                  </span>
+                )}
               </div>
             </div>
-            <ScrollArea className="h-[300px]">
+            <ScrollArea className="h-[350px]">
               <div 
                 className="relative p-4"
                 style={{ 
@@ -482,7 +496,18 @@ export const WorkflowExecutionModal = ({
                     height: Math.max(height + 50, 200)
                   }}
                 >
-                  {connectionLines.map((conn, idx) => {
+                {/* Grid background pattern */}
+                <div 
+                  className="absolute inset-0 opacity-10"
+                  style={{
+                    backgroundImage: `
+                      linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px)
+                    `,
+                    backgroundSize: '20px 20px'
+                  }}
+                />
+                {connectionLines.map((conn, idx) => {
                     const from = getNodePos(conn.from);
                     const to = getNodePos(conn.to);
                     if (!from || !to) return null;
@@ -498,20 +523,50 @@ export const WorkflowExecutionModal = ({
                     const isActive = fromStatus === "completed" && (toStatus === "running" || toStatus === "completed");
 
                     return (
-                      <path
-                        key={idx}
-                        d={`M ${startX} ${startY} C ${midX} ${startY}, ${midX} ${endY}, ${endX} ${endY}`}
-                        fill="none"
-                        stroke={isActive ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))"}
-                        strokeWidth={isActive ? "3" : "2"}
-                        strokeOpacity={isActive ? "1" : "0.3"}
-                        className="transition-all duration-300"
-                      />
+                      <g key={idx}>
+                        {/* Shadow line */}
+                        <path
+                          d={`M ${startX} ${startY} C ${midX} ${startY}, ${midX} ${endY}, ${endX} ${endY}`}
+                          fill="none"
+                          stroke={isActive ? "#22c55e" : "#475569"}
+                          strokeWidth={isActive ? "4" : "3"}
+                          strokeOpacity="0.3"
+                          className="transition-all duration-300"
+                        />
+                        {/* Main line */}
+                        <path
+                          d={`M ${startX} ${startY} C ${midX} ${startY}, ${midX} ${endY}, ${endX} ${endY}`}
+                          fill="none"
+                          stroke={isActive ? "#22c55e" : "#64748b"}
+                          strokeWidth={isActive ? "2" : "2"}
+                          strokeOpacity={isActive ? "1" : "0.5"}
+                          className="transition-all duration-300"
+                          strokeDasharray={isActive ? "0" : "0"}
+                        />
+                        {/* Animated flow indicator when active */}
+                        {isActive && (
+                          <circle r="4" fill="#22c55e">
+                            <animateMotion
+                              dur="1s"
+                              repeatCount="indefinite"
+                              path={`M ${startX} ${startY} C ${midX} ${startY}, ${midX} ${endY}, ${endX} ${endY}`}
+                            />
+                          </circle>
+                        )}
+                        {/* Connection dot at end */}
+                        <circle
+                          cx={endX}
+                          cy={endY}
+                          r="4"
+                          fill={isActive ? "#22c55e" : "#475569"}
+                          className="transition-all duration-300"
+                        />
+                      </g>
                     );
                   })}
                 </svg>
 
-                {/* Nodes */}
+                {/* Nodes - n8n style */}
                 {normalizedNodes.map((node) => {
                   const style = getNodeStyle(node.type);
                   const shortType = getShortType(node.type);
@@ -523,29 +578,14 @@ export const WorkflowExecutionModal = ({
                   const nodeContent = (
                     <div
                       key={node.idx}
-                      className={`absolute rounded-lg border-2 shadow-sm transition-all duration-300 ${
-                        hasOutput && !isSelected ? 'cursor-pointer hover:ring-2 hover:ring-primary/50 animate-[glow-pulse_2s_ease-in-out_infinite]' : ''
-                      } ${
-                        hasOutput && !isSelected ? 'hover:scale-[1.08]' : ''
-                      } ${
-                        isSelected 
-                          ? 'ring-2 ring-primary ring-offset-2 ring-offset-background z-10 cursor-pointer'
-                          : ''
-                      } ${
-                        status === "running" 
-                          ? `${style.activeBg} border-white scale-110 shadow-lg animate-pulse` 
-                          : status === "completed"
-                          ? `${style.bg} ${style.border} scale-105 shadow-md`
-                          : `bg-muted/50 border-muted-foreground/30 opacity-60`
-                      }`}
+                      className={`absolute transition-all duration-300 ${
+                        hasOutput && !isSelected ? 'cursor-pointer hover:scale-105' : ''
+                      } ${isSelected ? 'z-20' : 'z-10'}`}
                       style={{
                         left: node.x + 20,
                         top: node.y + 20,
-                        width: nodeWidth,
-                        height: nodeHeight,
-                        ...(hasOutput && !isSelected && status === "completed" ? {
-                          boxShadow: `0 0 12px 2px hsl(var(--primary) / 0.4)`,
-                        } : {}),
+                        width: nodeWidth + 20,
+                        height: nodeHeight + 10,
                       }}
                       onClick={() => {
                         if (hasOutput) {
@@ -553,35 +593,102 @@ export const WorkflowExecutionModal = ({
                         }
                       }}
                     >
-                      <div className="flex items-center gap-2 p-2 h-full">
-                        <span className="text-base">{style.icon}</span>
-                        <div className="flex-1 min-w-0">
-                          <p className={`font-medium truncate text-xs ${
-                            status === "running" ? "text-white" : "text-foreground"
-                          }`}>
-                            {node.name}
-                          </p>
-                          <div className="flex items-center gap-1">
-                            <p className={`truncate text-[10px] ${
-                              status === "running" ? "text-white/70" : "text-muted-foreground"
+                      {/* n8n-style node card */}
+                      <div 
+                        className={`relative rounded-lg overflow-hidden transition-all duration-300 h-full ${
+                          isSelected 
+                            ? 'ring-2 ring-primary ring-offset-2 ring-offset-slate-900'
+                            : status === "running"
+                            ? 'ring-2 ring-yellow-400 animate-pulse'
+                            : hasOutput
+                            ? 'ring-1 ring-green-500/50 hover:ring-2 hover:ring-green-400'
+                            : ''
+                        }`}
+                        style={{
+                          background: status === "running" 
+                            ? 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)'
+                            : status === "completed"
+                            ? 'linear-gradient(135deg, #1e293b 0%, #334155 100%)'
+                            : 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+                          boxShadow: status === "completed" 
+                            ? '0 4px 20px rgba(34, 197, 94, 0.2), 0 0 0 1px rgba(34, 197, 94, 0.1)'
+                            : status === "running"
+                            ? '0 4px 20px rgba(251, 191, 36, 0.4)'
+                            : '0 4px 15px rgba(0, 0, 0, 0.3)',
+                        }}
+                      >
+                        {/* Colored top bar */}
+                        <div 
+                          className={`h-1.5 w-full ${
+                            status === "completed" ? 'bg-green-500' 
+                            : status === "running" ? 'bg-white/50'
+                            : style.border.replace('border-', 'bg-')
+                          }`}
+                        />
+                        
+                        <div className="flex items-center gap-2.5 p-2.5">
+                          {/* Icon container */}
+                          <div 
+                            className={`w-9 h-9 rounded-lg flex items-center justify-center text-lg shrink-0 ${
+                              status === "running" ? 'bg-white/20' : style.bg
+                            }`}
+                            style={{
+                              border: `1px solid ${status === "running" ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)'}`,
+                            }}
+                          >
+                            {status === "running" ? (
+                              <Loader2 className="w-5 h-5 animate-spin text-white" />
+                            ) : (
+                              <span>{style.icon}</span>
+                            )}
+                          </div>
+                          
+                          {/* Node info */}
+                          <div className="flex-1 min-w-0">
+                            <p className={`font-semibold truncate text-xs ${
+                              status === "running" ? "text-slate-900" : "text-white"
                             }`}>
-                              {shortType}
+                              {node.name}
                             </p>
-                            {executionTime && status === "completed" && (
-                              <span className="text-[9px] bg-primary/20 text-primary px-1 rounded flex items-center gap-0.5">
-                                <Clock className="w-2 h-2" />
-                                {executionTime}ms
-                              </span>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <p className={`truncate text-[10px] ${
+                                status === "running" ? "text-slate-700" : "text-slate-400"
+                              }`}>
+                                {shortType}
+                              </p>
+                              {executionTime && status === "completed" && (
+                                <span className="text-[9px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                                  <Clock className="w-2 h-2" />
+                                  {executionTime}ms
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {/* Status indicator */}
+                          <div className="shrink-0">
+                            {status === "completed" && (
+                              <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                                <CheckCircle className="w-3.5 h-3.5 text-white" />
+                              </div>
+                            )}
+                            {status === "pending" && (
+                              <div className="w-5 h-5 rounded-full border-2 border-slate-600" />
                             )}
                           </div>
                         </div>
-                        {status === "running" && (
-                          <Loader2 className="w-4 h-4 animate-spin text-white" />
-                        )}
-                        {status === "completed" && (
-                          <CheckCircle className="w-4 h-4 text-green-500" />
+                        
+                        {/* Output indicator */}
+                        {hasOutput && status === "completed" && (
+                          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[8px] text-green-400 bg-slate-900/90 px-2 py-0.5 rounded-full border border-green-500/30">
+                            {nodeOutputs[node.name].items} item{nodeOutputs[node.name].items !== 1 ? 's' : ''}
+                          </div>
                         )}
                       </div>
+                      
+                      {/* Connection points */}
+                      <div className="absolute top-1/2 -left-1.5 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-slate-600 bg-slate-800" />
+                      <div className="absolute top-1/2 -right-1.5 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-slate-600 bg-slate-800" />
                     </div>
                   );
 
@@ -593,18 +700,21 @@ export const WorkflowExecutionModal = ({
                           <TooltipTrigger asChild>
                             {nodeContent}
                           </TooltipTrigger>
-                          <TooltipContent side="top" className="bg-popover text-popover-foreground">
+                          <TooltipContent side="top" className="bg-slate-800 text-white border-slate-700">
                             <div className="flex flex-col gap-1">
-                              <p className="flex items-center gap-1.5">
-                                <Zap className="w-3 h-3" />
+                              <p className="flex items-center gap-1.5 font-medium">
+                                <Zap className="w-3 h-3 text-yellow-400" />
                                 Click to view output
                               </p>
                               {executionTime && (
-                                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <p className="flex items-center gap-1.5 text-xs text-slate-400">
                                   <Clock className="w-3 h-3" />
-                                  Execution time: {executionTime}ms
+                                  Execution: {executionTime}ms
                                 </p>
                               )}
+                              <p className="text-xs text-green-400">
+                                {nodeOutputs[node.name].items} item{nodeOutputs[node.name].items !== 1 ? 's' : ''} returned
+                              </p>
                             </div>
                           </TooltipContent>
                         </Tooltip>
@@ -619,7 +729,7 @@ export const WorkflowExecutionModal = ({
           </div>
 
           {/* Execution Logs & Output with Tabs */}
-          <div className="border border-border rounded-lg bg-card overflow-hidden flex flex-col">
+          <div className="border border-border rounded-lg bg-card overflow-hidden flex flex-col h-[280px]">
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "output" | "workflow" | "guide")} className="flex flex-col h-full">
               <div className="p-2 border-b border-border flex items-center justify-between">
                 <TabsList className="h-8">
