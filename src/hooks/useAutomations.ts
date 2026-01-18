@@ -66,15 +66,35 @@ export const useAutomations = () => {
   };
 
   const fetchAutomations = async () => {
-    const { data, error } = await supabase
-      .from("automations")
-      .select("*")
-      .order("title");
+    // Fetch all automations (bypass default 1000 limit)
+    let allAutomations: Automation[] = [];
+    let from = 0;
+    const batchSize = 1000;
+    let hasMore = true;
     
-    if (!error && data) {
-      setAutomations(data);
+    while (hasMore) {
+      const { data, error } = await supabase
+        .from("automations")
+        .select("*")
+        .order("title")
+        .range(from, from + batchSize - 1);
+      
+      if (error) {
+        console.error("Error fetching automations:", error);
+        break;
+      }
+      
+      if (data && data.length > 0) {
+        allAutomations = [...allAutomations, ...data];
+        from += batchSize;
+        hasMore = data.length === batchSize;
+      } else {
+        hasMore = false;
+      }
     }
-    return data || [];
+    
+    setAutomations(allAutomations);
+    return allAutomations;
   };
 
   const fetchAll = async () => {

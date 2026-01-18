@@ -31,6 +31,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import BulkDownloadSection from "@/components/home/BulkDownloadSection";
 import N8nWorkflowPreview from "@/components/N8nWorkflowPreview";
 import { WorkflowExecutionModal } from "@/components/WorkflowExecutionModal";
+import { WorkflowTester } from "@/components/WorkflowTester";
 import { toast } from "@/hooks/use-toast";
 
 // Icon mapping
@@ -304,10 +305,13 @@ const Automations = () => {
                   className="pl-10 h-12"
                 />
               </div>
-              <Button variant="outline" className="h-12 gap-2">
-                <Filter className="w-4 h-4" />
-                Filters
-              </Button>
+              <div className="flex gap-3">
+                <Button variant="outline" className="h-12 gap-2">
+                  <Filter className="w-4 h-4" />
+                  Filters
+                </Button>
+                <WorkflowTester hasAccess={hasAccess} isAdmin={isAdmin} />
+              </div>
             </div>
 
             {/* Categories */}
