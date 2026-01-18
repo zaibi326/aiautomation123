@@ -245,7 +245,14 @@ export const WorkflowExecutionModal = ({
   const [selectedNodeFromPreview, setSelectedNodeFromPreview] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"output" | "workflow" | "guide">("output");
   const [copiedJson, setCopiedJson] = useState(false);
+  const [copiedNodeOutput, setCopiedNodeOutput] = useState<string | null>(null);
   const [expandedGuide, setExpandedGuide] = useState<"n8n" | "make" | "zapier" | null>("n8n");
+
+  const copyNodeOutput = (nodeName: string, data: any) => {
+    navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+    setCopiedNodeOutput(nodeName);
+    setTimeout(() => setCopiedNodeOutput(null), 2000);
+  };
 
   // Demo workflow to show when no preview_json is available
   const demoWorkflow: N8nWorkflow = {
@@ -692,12 +699,26 @@ export const WorkflowExecutionModal = ({
                     {/* Show selected node output from preview click */}
                     {selectedNodeFromPreview && nodeOutputs[selectedNodeFromPreview] ? (
                       <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-muted-foreground border-b border-border pb-2">
-                          <span className="text-lg">{getNodeStyle(nodes.find(n => n.name === selectedNodeFromPreview)?.type || '').icon}</span>
-                          <div>
-                            <p className="font-medium text-foreground">{selectedNodeFromPreview}</p>
-                            <p className="text-[10px]">{nodeOutputs[selectedNodeFromPreview].items} item{nodeOutputs[selectedNodeFromPreview].items !== 1 ? 's' : ''} returned</p>
+                        <div className="flex items-center justify-between border-b border-border pb-2">
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <span className="text-lg">{getNodeStyle(nodes.find(n => n.name === selectedNodeFromPreview)?.type || '').icon}</span>
+                            <div>
+                              <p className="font-medium text-foreground">{selectedNodeFromPreview}</p>
+                              <p className="text-[10px]">{nodeOutputs[selectedNodeFromPreview].items} item{nodeOutputs[selectedNodeFromPreview].items !== 1 ? 's' : ''} returned</p>
+                            </div>
                           </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-xs"
+                            onClick={() => copyNodeOutput(selectedNodeFromPreview, nodeOutputs[selectedNodeFromPreview].data)}
+                          >
+                            {copiedNodeOutput === selectedNodeFromPreview ? (
+                              <><Check className="w-3 h-3 mr-1 text-green-500" /> Copied</>
+                            ) : (
+                              <><Copy className="w-3 h-3 mr-1" /> Copy</>
+                            )}
+                          </Button>
                         </div>
                         <pre className="text-green-400 bg-muted/50 rounded p-3 overflow-auto max-h-60">
                           {JSON.stringify(nodeOutputs[selectedNodeFromPreview].data, null, 2)}
@@ -718,12 +739,42 @@ export const WorkflowExecutionModal = ({
                           ) : (
                             <div className="ml-4 mt-1 mb-2">
                               <div 
-                                className="bg-muted/50 border border-border rounded p-2 cursor-pointer hover:bg-muted transition-colors"
-                                onClick={() => setSelectedNodeOutput(selectedNodeOutput === log.nodeName ? null : log.nodeName || null)}
+                                className="bg-muted/50 border border-border rounded p-2 hover:bg-muted transition-colors"
                               >
                                 <div className="flex items-center justify-between text-muted-foreground mb-1">
-                                  <span className="text-[10px] uppercase tracking-wider">📤 Output: {log.nodeName}</span>
-                                  <span className="text-[10px]">{selectedNodeOutput === log.nodeName ? '▼' : '▶'}</span>
+                                  <span 
+                                    className="text-[10px] uppercase tracking-wider cursor-pointer flex-1"
+                                    onClick={() => setSelectedNodeOutput(selectedNodeOutput === log.nodeName ? null : log.nodeName || null)}
+                                  >
+                                    📤 Output: {log.nodeName}
+                                  </span>
+                                  <div className="flex items-center gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-5 px-1.5 text-[10px]"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (log.nodeName) {
+                                          navigator.clipboard.writeText(log.content);
+                                          setCopiedNodeOutput(log.nodeName);
+                                          setTimeout(() => setCopiedNodeOutput(null), 2000);
+                                        }
+                                      }}
+                                    >
+                                      {copiedNodeOutput === log.nodeName ? (
+                                        <Check className="w-2.5 h-2.5 text-green-500" />
+                                      ) : (
+                                        <Copy className="w-2.5 h-2.5" />
+                                      )}
+                                    </Button>
+                                    <span 
+                                      className="text-[10px] cursor-pointer"
+                                      onClick={() => setSelectedNodeOutput(selectedNodeOutput === log.nodeName ? null : log.nodeName || null)}
+                                    >
+                                      {selectedNodeOutput === log.nodeName ? '▼' : '▶'}
+                                    </span>
+                                  </div>
                                 </div>
                                 {selectedNodeOutput === log.nodeName && (
                                   <pre className="text-[10px] text-green-400 overflow-x-auto max-h-32 overflow-y-auto">
@@ -731,7 +782,10 @@ export const WorkflowExecutionModal = ({
                                   </pre>
                                 )}
                                 {selectedNodeOutput !== log.nodeName && (
-                                  <pre className="text-[10px] text-green-400 truncate">
+                                  <pre 
+                                    className="text-[10px] text-green-400 truncate cursor-pointer"
+                                    onClick={() => setSelectedNodeOutput(selectedNodeOutput === log.nodeName ? null : log.nodeName || null)}
+                                  >
                                     {log.content.split('\n')[0]}...
                                   </pre>
                                 )}
