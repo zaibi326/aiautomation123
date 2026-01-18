@@ -592,8 +592,24 @@ const AutomationManager = () => {
     return { category: 'General Automation', subcategory: 'Miscellaneous' };
   };
 
-  // Smart import - auto-create categories/subcategories with BATCH processing & DUPLICATE DETECTION
-  const processAutomationsData = async (automationsData: any[]) => {
+  // Validate workflow JSON structure
+  const validateWorkflowJson = (json: any): { isValid: boolean; hasNodes: boolean } => {
+    if (!json || typeof json !== 'object') {
+      return { isValid: false, hasNodes: false };
+    }
+    
+    // Check for n8n workflow structure
+    const nodes = json.nodes || [];
+    const hasNodes = Array.isArray(nodes) && nodes.length > 0;
+    
+    // Valid if it has nodes array (even empty is technically valid structure)
+    const isValid = Array.isArray(json.nodes);
+    
+    return { isValid, hasNodes };
+  };
+
+  // Smart import - auto-create categories/subcategories with BATCH processing & DUPLICATE DETECTION & JSON VALIDATION
+  const processAutomationsData = async (automationsData: any[], requireValidJson: boolean = false) => {
     // Get current categories, subcategories, and existing automations for duplicate detection
     const { data: currentCategories } = await supabase.from("automation_categories").select("*");
     const { data: currentSubcategories } = await supabase.from("automation_subcategories").select("*");
@@ -605,7 +621,7 @@ const AutomationManager = () => {
     // Create a Set of existing automation titles (lowercase for case-insensitive comparison)
     const existingTitles = new Set(existingAutomations?.map(a => a.title.toLowerCase().trim()) || []);
 
-    let created = { categories: 0, subcategories: 0, automations: 0, skippedDuplicates: 0 };
+    let created = { categories: 0, subcategories: 0, automations: 0, skippedDuplicates: 0, skippedInvalidJson: 0 };
 
     // First pass: collect all unique categories and subcategories needed
     const neededCategories = new Set<string>();
@@ -671,7 +687,7 @@ const AutomationManager = () => {
       }
     }
 
-    // Prepare all automations for batch insert (with duplicate detection)
+    // Prepare all automations for batch insert (with duplicate detection and JSON validation)
     const automationsToInsert: any[] = [];
     const seenTitles = new Set<string>(); // Track titles within this import batch
 
@@ -679,6 +695,7 @@ const AutomationManager = () => {
       const automationTitle = auto.title || auto.name || auto.Name || auto.Title;
       const automationUrl = auto.download_url || auto.url || auto.link || auto.URL || auto.Link || auto.Url || "";
       const automationDescription = auto.description || auto.Description || "";
+      const previewJson = auto.preview_json || auto.workflow || auto.json || null;
       
       if (!automationTitle) continue;
 
@@ -687,6 +704,23 @@ const AutomationManager = () => {
       // Skip if already exists in database OR already seen in this batch
       if (existingTitles.has(titleKey) || seenTitles.has(titleKey)) {
         created.skippedDuplicates++;
+        continue;
+      }
+      
+      // Validate JSON if present or required
+      let validatedJson = null;
+      if (previewJson) {
+        const validation = validateWorkflowJson(previewJson);
+        if (validation.isValid && validation.hasNodes) {
+          validatedJson = previewJson;
+        } else if (requireValidJson) {
+          // If JSON is required but invalid, skip this automation
+          created.skippedInvalidJson++;
+          continue;
+        }
+      } else if (requireValidJson) {
+        // No JSON provided but required
+        created.skippedInvalidJson++;
         continue;
       }
       
@@ -711,6 +745,7 @@ const AutomationManager = () => {
         subcategory_id: subcategoryId,
         download_url: automationUrl,
         uses_count: parseInt(auto.uses_count || auto.score || "0") || 0,
+        preview_json: validatedJson,
       });
     }
 
@@ -852,6 +887,12 @@ const AutomationManager = () => {
             const content = await zipEntry.async('text');
             const jsonData = JSON.parse(content);
             
+            // Validate workflow JSON structure - must have nodes array with items
+            const validation = validateWorkflowJson(jsonData);
+            if (!validation.isValid || !validation.hasNodes) {
+              continue; // Skip invalid workflows
+            }
+            
             // Parse path for category info
             const parts = path.split('/');
             const category = parts.length >= 2 ? parts[parts.length - 2] : 'Imported';
@@ -883,10 +924,12 @@ const AutomationManager = () => {
         return;
       }
       
-      const created = await processAutomationsData(automationsData);
-      const duplicateMsg = created.skippedDuplicates > 0 ? ` (${created.skippedDuplicates} duplicates skipped)` : '';
+      // Require valid JSON for ZIP imports
+      const created = await processAutomationsData(automationsData, true);
+      const duplicateMsg = created.skippedDuplicates > 0 ? `, ${created.skippedDuplicates} duplicates skipped` : '';
+      const invalidJsonMsg = created.skippedInvalidJson > 0 ? `, ${created.skippedInvalidJson} invalid JSON skipped` : '';
       toast.success(
-        `Imported from ${fileName}: ${created.automations} automations, ${created.categories} categories, ${created.subcategories} subcategories${duplicateMsg}`
+        `Imported from ${fileName}: ${created.automations} automations, ${created.categories} categories, ${created.subcategories} subcategories${duplicateMsg}${invalidJsonMsg}`
       );
       refetch();
       setUploadDialog(false);
@@ -955,66 +998,78 @@ const AutomationManager = () => {
       const zip = await JSZip.loadAsync(file);
       const automationsData: any[] = [];
       
-      // Parse ZIP structure: root/category/id-name/workflow.json
+      // Parse ZIP structure: look for workflow.json or any .json files
       const entries = Object.entries(zip.files);
       
       for (const [path, zipEntry] of entries) {
-        // Skip directories and non-workflow files
-        if (zipEntry.dir || !path.endsWith('workflow.json')) continue;
+        // Skip directories
+        if (zipEntry.dir) continue;
         
-        // Parse path: root/category/id-name/workflow.json
-        const parts = path.split('/');
-        if (parts.length < 4) continue;
-        
-        const rootFolder = parts[0]; // e.g., "2182-workflow-templates--main"
-        const category = parts[1]; // e.g., "analytics"
-        const folderName = parts[2]; // e.g., "1690-markdown-report-generation"
-        
-        // Extract title from folder name (remove ID prefix)
-        const titleMatch = folderName.match(/^\d+-(.+)$/);
-        const title = titleMatch 
-          ? titleMatch[1].replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
-          : folderName.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-        
-        // Try to get description from README.md if exists
-        const readmePath = `${parts.slice(0, 3).join('/')}/README.md`;
-        let description = '';
-        try {
-          const readmeFile = zip.file(readmePath);
-          if (readmeFile) {
-            const readmeContent = await readmeFile.async('text');
-            // Extract first paragraph after title
-            const lines = readmeContent.split('\n').filter(l => l.trim() && !l.startsWith('#'));
-            description = lines[0]?.substring(0, 500) || '';
+        // Check for workflow.json or any .json file
+        if (path.endsWith('workflow.json') || path.endsWith('.json')) {
+          try {
+            const content = await zipEntry.async('text');
+            const jsonData = JSON.parse(content);
+            
+            // Validate workflow JSON structure
+            const validation = validateWorkflowJson(jsonData);
+            if (!validation.isValid || !validation.hasNodes) {
+              continue; // Skip invalid workflows
+            }
+            
+            // Parse path for category info
+            const parts = path.split('/');
+            const folderName = parts.length >= 2 ? parts[parts.length - 2] : path.replace('.json', '');
+            const category = parts.length >= 3 ? parts[parts.length - 3] : 'Imported';
+            
+            // Extract title from folder name (remove ID prefix) or from JSON
+            const titleMatch = folderName.match(/^\d+-(.+)$/);
+            const title = jsonData.name || jsonData.title || (titleMatch 
+              ? titleMatch[1].replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())
+              : folderName.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()));
+            
+            // Try to get description from README.md if exists
+            const readmePath = `${parts.slice(0, -1).join('/')}/README.md`;
+            let description = jsonData.description || '';
+            try {
+              const readmeFile = zip.file(readmePath);
+              if (readmeFile && !description) {
+                const readmeContent = await readmeFile.async('text');
+                const lines = readmeContent.split('\n').filter(l => l.trim() && !l.startsWith('#'));
+                description = lines[0]?.substring(0, 500) || '';
+              }
+            } catch (e) {
+              // Ignore README parsing errors
+            }
+            
+            automationsData.push({
+              title,
+              category: category.charAt(0).toUpperCase() + category.slice(1).replace(/-/g, ' '),
+              subcategory: 'Workflows',
+              description,
+              download_url: '',
+              preview_json: jsonData,
+              icon: 'zap',
+              uses_count: 0,
+            });
+          } catch (e) {
+            // Skip invalid JSON files
           }
-        } catch (e) {
-          // Ignore README parsing errors
         }
-        
-        // Create GitHub download URL
-        // Format: https://raw.githubusercontent.com/USER/REPO/BRANCH/path/to/workflow.json
-        const downloadUrl = `https://raw.githubusercontent.com/n8n-io/n8n-workflow-templates/main/${category}/${folderName}/workflow.json`;
-        
-        automationsData.push({
-          title,
-          category: category.charAt(0).toUpperCase() + category.slice(1).replace(/-/g, ' '),
-          subcategory: 'Workflows',
-          description,
-          download_url: downloadUrl,
-          icon: 'zap',
-          uses_count: 0,
-        });
       }
       
       if (automationsData.length === 0) {
-        toast.error("No workflow.json files found in ZIP");
+        toast.error("No valid workflow.json files found in ZIP. Workflows must have a 'nodes' array.");
         setIsLoading(false);
         return;
       }
       
-      const created = await processAutomationsData(automationsData);
+      // Require valid JSON for ZIP imports
+      const created = await processAutomationsData(automationsData, true);
+      const duplicateMsg = created.skippedDuplicates > 0 ? `, ${created.skippedDuplicates} duplicates skipped` : '';
+      const invalidJsonMsg = created.skippedInvalidJson > 0 ? `, ${created.skippedInvalidJson} invalid JSON skipped` : '';
       toast.success(
-        `Imported from ZIP: ${created.automations} automations, ${created.categories} categories, ${created.subcategories} subcategories`
+        `Imported from ZIP: ${created.automations} automations, ${created.categories} categories, ${created.subcategories} subcategories${duplicateMsg}${invalidJsonMsg}`
       );
       refetch();
       setUploadDialog(false);
