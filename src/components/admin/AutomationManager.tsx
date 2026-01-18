@@ -945,6 +945,147 @@ const AutomationManager = () => {
     }
   };
 
+  // Bulk recategorize all existing automations using the new detection rules
+  const handleBulkRecategorize = async () => {
+    if (!confirm("This will recategorize ALL automations based on the new detection rules. Continue?")) return;
+    
+    setIsLoading(true);
+    try {
+      // Fetch all automations with their current data
+      let allAutomations: any[] = [];
+      let from = 0;
+      const batchSize = 1000;
+      let hasMore = true;
+      
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from("automations")
+          .select("id, title, description")
+          .range(from, from + batchSize - 1);
+        
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          allAutomations = [...allAutomations, ...data];
+          from += batchSize;
+          hasMore = data.length === batchSize;
+        } else {
+          hasMore = false;
+        }
+      }
+      
+      if (allAutomations.length === 0) {
+        toast.info("No automations found to recategorize");
+        setIsLoading(false);
+        return;
+      }
+
+      // Fetch current categories and subcategories
+      const { data: currentCategories } = await supabase.from("automation_categories").select("*");
+      const { data: currentSubcategories } = await supabase.from("automation_subcategories").select("*");
+      
+      const categoryMap = new Map(currentCategories?.map(c => [c.name.toLowerCase(), c.id]) || []);
+      const subcategoryMap = new Map(currentSubcategories?.map(s => [`${s.name.toLowerCase()}_${s.category_id}`, s.id]) || []);
+
+      // First pass: collect all unique categories and subcategories needed
+      const neededCategories = new Set<string>();
+      const neededSubcategories = new Map<string, string>();
+
+      for (const auto of allAutomations) {
+        const detected = detectCategory(auto.title || "", auto.description || "");
+        
+        if (!categoryMap.has(detected.category.toLowerCase())) {
+          neededCategories.add(detected.category);
+        }
+        neededSubcategories.set(`${detected.subcategory}|||${detected.category}`, detected.category);
+      }
+
+      let createdCategories = 0;
+      let createdSubcategories = 0;
+
+      // Batch create missing categories
+      if (neededCategories.size > 0) {
+        const categoriesToInsert = Array.from(neededCategories).map(name => ({
+          name, description: "", icon: "folder"
+        }));
+        const { data: newCats } = await supabase
+          .from("automation_categories")
+          .insert(categoriesToInsert)
+          .select();
+        
+        if (newCats) {
+          newCats.forEach(c => categoryMap.set(c.name.toLowerCase(), c.id));
+          createdCategories = newCats.length;
+        }
+      }
+
+      // Batch create missing subcategories
+      const subcatsToInsert: any[] = [];
+      for (const [key] of neededSubcategories) {
+        const [subName, catName] = key.split("|||");
+        const categoryId = categoryMap.get(catName.toLowerCase());
+        const subKey = `${subName.toLowerCase()}_${categoryId}`;
+        
+        if (categoryId && !subcategoryMap.has(subKey)) {
+          subcatsToInsert.push({
+            name: subName,
+            description: "",
+            icon: "file",
+            category_id: categoryId
+          });
+        }
+      }
+
+      if (subcatsToInsert.length > 0) {
+        const { data: newSubs } = await supabase
+          .from("automation_subcategories")
+          .insert(subcatsToInsert)
+          .select();
+        
+        if (newSubs) {
+          newSubs.forEach(s => subcategoryMap.set(`${s.name.toLowerCase()}_${s.category_id}`, s.id));
+          createdSubcategories = newSubs.length;
+        }
+      }
+
+      // Now update each automation with its new subcategory
+      let updatedCount = 0;
+      const updateBatchSize = 100;
+      
+      for (let i = 0; i < allAutomations.length; i += updateBatchSize) {
+        const batch = allAutomations.slice(i, i + updateBatchSize);
+        
+        for (const auto of batch) {
+          const detected = detectCategory(auto.title || "", auto.description || "");
+          const categoryId = categoryMap.get(detected.category.toLowerCase());
+          
+          if (!categoryId) continue;
+          
+          const subKey = `${detected.subcategory.toLowerCase()}_${categoryId}`;
+          const subcategoryId = subcategoryMap.get(subKey);
+          
+          if (!subcategoryId) continue;
+          
+          const { error } = await supabase
+            .from("automations")
+            .update({ subcategory_id: subcategoryId })
+            .eq("id", auto.id);
+          
+          if (!error) updatedCount++;
+        }
+      }
+
+      toast.success(
+        `Recategorized ${updatedCount} automations! Created ${createdCategories} new categories and ${createdSubcategories} new subcategories.`
+      );
+      refetch();
+    } catch (error: any) {
+      toast.error("Failed to recategorize: " + error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // ZIP file upload - extract workflow templates
   const handleZipUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1045,10 +1186,16 @@ const AutomationManager = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-foreground">Automation Management</h2>
-        <Button onClick={() => setUploadDialog(true)} variant="outline" className="gap-2">
-          <Upload className="w-4 h-4" />
-          Import Excel
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleBulkRecategorize} variant="outline" className="gap-2" disabled={isLoading}>
+            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+            Recategorize All
+          </Button>
+          <Button onClick={() => setUploadDialog(true)} variant="outline" className="gap-2">
+            <Upload className="w-4 h-4" />
+            Import Excel
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="categories" className="w-full">
