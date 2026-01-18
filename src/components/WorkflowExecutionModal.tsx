@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Loader2, Play, X, Clock, Zap } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface N8nNode {
   id?: string;
@@ -498,7 +499,7 @@ export const WorkflowExecutionModal = ({
                   const hasOutput = nodeOutputs[node.name];
                   const isSelected = selectedNodeFromPreview === node.name;
 
-                  return (
+                  const nodeContent = (
                     <div
                       key={node.idx}
                       className={`absolute rounded-lg border-2 shadow-sm transition-all duration-300 ${
@@ -554,6 +555,27 @@ export const WorkflowExecutionModal = ({
                       </div>
                     </div>
                   );
+
+                  // Wrap completed nodes with tooltip
+                  if (hasOutput && !isSelected) {
+                    return (
+                      <TooltipProvider key={node.idx} delayDuration={300}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            {nodeContent}
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="bg-popover text-popover-foreground">
+                            <p className="flex items-center gap-1.5">
+                              <Zap className="w-3 h-3" />
+                              Click to view output
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    );
+                  }
+
+                  return nodeContent;
                 })}
               </div>
             </ScrollArea>
