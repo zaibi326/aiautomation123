@@ -224,126 +224,355 @@ const AutomationManager = () => {
   const detectCategory = (title: string, description: string): { category: string; subcategory: string } => {
     const text = `${title} ${description}`.toLowerCase();
     
-    // Category detection rules with subcategories
+    // Category detection rules with subcategories - ENHANCED with more keywords
     const categoryRules = [
       { 
-        keywords: ['instagram', 'facebook', 'twitter', 'linkedin', 'tiktok', 'youtube', 'social media', 'social post', 'threads', 'bluesky', 'pinterest'],
-        category: 'Social Media Management',
+        keywords: ['whatsapp', 'wa ', 'wa-', 'whats app', 'wapp', 'whatsapp business', 'waba', 'twilio whatsapp'],
+        category: 'WhatsApp Automation',
         subcategoryRules: [
-          { keywords: ['post', 'publish', 'schedule', 'content'], subcategory: 'Content Publishing' },
-          { keywords: ['analytics', 'insight', 'report', 'stats'], subcategory: 'Analytics' },
-          { keywords: ['video', 'reel', 'short'], subcategory: 'Video Content' },
-          { keywords: ['comment', 'engage', 'reply'], subcategory: 'Engagement' },
+          { keywords: ['message', 'send', 'bulk', 'broadcast'], subcategory: 'Message Sending' },
+          { keywords: ['bot', 'chatbot', 'auto reply', 'autorespond'], subcategory: 'WhatsApp Bots' },
+          { keywords: ['group', 'community'], subcategory: 'Group Management' },
+          { keywords: ['catalog', 'product', 'shop'], subcategory: 'WhatsApp Business' },
+          { keywords: ['notification', 'alert', 'remind'], subcategory: 'Notifications' },
         ],
-        defaultSubcategory: 'Social Automation'
+        defaultSubcategory: 'WhatsApp Workflows'
       },
       { 
-        keywords: ['email', 'gmail', 'outlook', 'mailchimp', 'newsletter', 'smtp', 'imap'],
-        category: 'Email Automation',
+        keywords: ['telegram', 'tg bot', 'telegram bot', 'telegrambotapi'],
+        category: 'Telegram Automation',
         subcategoryRules: [
-          { keywords: ['campaign', 'marketing', 'newsletter'], subcategory: 'Email Marketing' },
-          { keywords: ['autorespond', 'reply', 'response'], subcategory: 'Auto-Response' },
-          { keywords: ['filter', 'sort', 'organize', 'archive'], subcategory: 'Email Management' },
+          { keywords: ['bot', 'chatbot'], subcategory: 'Telegram Bots' },
+          { keywords: ['channel', 'broadcast'], subcategory: 'Channel Management' },
+          { keywords: ['group', 'admin'], subcategory: 'Group Automation' },
+          { keywords: ['sticker', 'media', 'file'], subcategory: 'Media Handling' },
         ],
-        defaultSubcategory: 'Email Workflows'
+        defaultSubcategory: 'Telegram Workflows'
       },
       { 
-        keywords: ['crm', 'hubspot', 'salesforce', 'pipedrive', 'zoho', 'lead', 'deal', 'contact', 'sales'],
-        category: 'CRM & Sales',
+        keywords: ['instagram', 'ig ', 'ig-', 'insta', 'reels', 'instagram story', 'instagram post'],
+        category: 'Instagram Automation',
         subcategoryRules: [
-          { keywords: ['lead', 'prospect', 'qualify'], subcategory: 'Lead Management' },
-          { keywords: ['deal', 'pipeline', 'opportunity'], subcategory: 'Deal Tracking' },
-          { keywords: ['contact', 'enrich', 'update'], subcategory: 'Contact Management' },
+          { keywords: ['post', 'publish', 'schedule', 'content', 'feed'], subcategory: 'Content Publishing' },
+          { keywords: ['story', 'stories', 'reel'], subcategory: 'Stories & Reels' },
+          { keywords: ['dm', 'message', 'inbox'], subcategory: 'Direct Messages' },
+          { keywords: ['follower', 'follow', 'unfollow'], subcategory: 'Follower Management' },
+          { keywords: ['comment', 'engage', 'like'], subcategory: 'Engagement' },
+          { keywords: ['analytics', 'insight', 'stats'], subcategory: 'Analytics' },
         ],
-        defaultSubcategory: 'Sales Automation'
+        defaultSubcategory: 'Instagram Workflows'
       },
       { 
-        keywords: ['ai', 'gpt', 'openai', 'chatgpt', 'gemini', 'claude', 'llm', 'langchain', 'chatbot', 'assistant'],
+        keywords: ['facebook', 'fb ', 'fb-', 'meta', 'facebook page', 'facebook group', 'fb ads', 'facebook ads'],
+        category: 'Facebook Automation',
+        subcategoryRules: [
+          { keywords: ['post', 'publish', 'page'], subcategory: 'Page Management' },
+          { keywords: ['group', 'community'], subcategory: 'Group Automation' },
+          { keywords: ['ads', 'advertising', 'campaign', 'pixel'], subcategory: 'Facebook Ads' },
+          { keywords: ['messenger', 'chat', 'inbox'], subcategory: 'Messenger' },
+          { keywords: ['lead', 'form'], subcategory: 'Lead Generation' },
+        ],
+        defaultSubcategory: 'Facebook Workflows'
+      },
+      { 
+        keywords: ['twitter', 'x.com', 'tweet', 'x api', 'twitter api', 'tweetdeck'],
+        category: 'Twitter/X Automation',
+        subcategoryRules: [
+          { keywords: ['tweet', 'post', 'thread'], subcategory: 'Tweet Publishing' },
+          { keywords: ['follow', 'unfollow', 'follower'], subcategory: 'Follower Management' },
+          { keywords: ['dm', 'message', 'direct'], subcategory: 'Direct Messages' },
+          { keywords: ['analytics', 'stats', 'insight'], subcategory: 'Analytics' },
+        ],
+        defaultSubcategory: 'Twitter Workflows'
+      },
+      { 
+        keywords: ['linkedin', 'li ', 'linkedin post', 'linkedin message', 'linkedin connection'],
+        category: 'LinkedIn Automation',
+        subcategoryRules: [
+          { keywords: ['post', 'article', 'publish'], subcategory: 'Content Publishing' },
+          { keywords: ['connect', 'connection', 'network'], subcategory: 'Networking' },
+          { keywords: ['message', 'inmail', 'outreach'], subcategory: 'Messaging' },
+          { keywords: ['lead', 'sales', 'prospect'], subcategory: 'Lead Generation' },
+          { keywords: ['job', 'recruit', 'hire'], subcategory: 'Recruiting' },
+        ],
+        defaultSubcategory: 'LinkedIn Workflows'
+      },
+      { 
+        keywords: ['tiktok', 'tik tok', 'tiktok video'],
+        category: 'TikTok Automation',
+        subcategoryRules: [
+          { keywords: ['video', 'upload', 'post'], subcategory: 'Video Publishing' },
+          { keywords: ['analytics', 'stats'], subcategory: 'Analytics' },
+          { keywords: ['trend', 'hashtag'], subcategory: 'Trends' },
+        ],
+        defaultSubcategory: 'TikTok Workflows'
+      },
+      { 
+        keywords: ['youtube', 'yt ', 'youtube video', 'youtube channel', 'youtube api'],
+        category: 'YouTube Automation',
+        subcategoryRules: [
+          { keywords: ['upload', 'video', 'publish'], subcategory: 'Video Publishing' },
+          { keywords: ['comment', 'moderate'], subcategory: 'Comment Management' },
+          { keywords: ['analytics', 'stats', 'subscriber'], subcategory: 'Analytics' },
+          { keywords: ['playlist', 'organize'], subcategory: 'Playlist Management' },
+          { keywords: ['thumbnail', 'title', 'seo'], subcategory: 'Optimization' },
+        ],
+        defaultSubcategory: 'YouTube Workflows'
+      },
+      { 
+        keywords: ['n8n', 'n8n.io', 'n8n workflow', 'n8n template', 'n8n automation'],
+        category: 'n8n Templates',
+        subcategoryRules: [
+          { keywords: ['trigger', 'webhook', 'schedule'], subcategory: 'Triggers' },
+          { keywords: ['integrate', 'connect', 'sync'], subcategory: 'Integrations' },
+          { keywords: ['transform', 'process', 'data'], subcategory: 'Data Processing' },
+          { keywords: ['api', 'http', 'request'], subcategory: 'API Workflows' },
+        ],
+        defaultSubcategory: 'n8n Workflows'
+      },
+      { 
+        keywords: ['zapier', 'zap', 'zapier integration', 'zapier automation'],
+        category: 'Zapier Templates',
+        subcategoryRules: [
+          { keywords: ['trigger', 'action'], subcategory: 'Zap Templates' },
+          { keywords: ['multi', 'path'], subcategory: 'Multi-Step Zaps' },
+        ],
+        defaultSubcategory: 'Zapier Workflows'
+      },
+      { 
+        keywords: ['make', 'make.com', 'integromat', 'scenario'],
+        category: 'Make.com Templates',
+        subcategoryRules: [
+          { keywords: ['scenario', 'template'], subcategory: 'Scenarios' },
+          { keywords: ['module', 'connect'], subcategory: 'Integrations' },
+        ],
+        defaultSubcategory: 'Make Workflows'
+      },
+      { 
+        keywords: ['ai', 'gpt', 'openai', 'chatgpt', 'gemini', 'claude', 'llm', 'langchain', 'chatbot', 'assistant', 'anthropic', 'mistral', 'llama', 'perplexity', 'copilot', 'bard', 'ai agent', 'machine learning', 'ml ', 'neural', 'deep learning'],
         category: 'AI & Chatbots',
         subcategoryRules: [
-          { keywords: ['chat', 'assistant', 'bot', 'conversation'], subcategory: 'Chatbots' },
-          { keywords: ['generate', 'create', 'write', 'content'], subcategory: 'Content Generation' },
-          { keywords: ['analyze', 'summary', 'extract'], subcategory: 'AI Analysis' },
-          { keywords: ['image', 'dall', 'vision', 'photo'], subcategory: 'AI Image' },
-          { keywords: ['voice', 'speech', 'transcri', 'audio'], subcategory: 'AI Voice' },
+          { keywords: ['chat', 'assistant', 'bot', 'conversation', 'support'], subcategory: 'Chatbots' },
+          { keywords: ['generate', 'create', 'write', 'content', 'copy'], subcategory: 'Content Generation' },
+          { keywords: ['analyze', 'summary', 'extract', 'summarize'], subcategory: 'AI Analysis' },
+          { keywords: ['image', 'dall', 'vision', 'photo', 'midjourney', 'stable diffusion'], subcategory: 'AI Image' },
+          { keywords: ['voice', 'speech', 'transcri', 'audio', 'whisper', 'elevenlabs', 'tts'], subcategory: 'AI Voice' },
+          { keywords: ['agent', 'autonomous', 'crew', 'autogpt'], subcategory: 'AI Agents' },
+          { keywords: ['embed', 'vector', 'rag', 'retrieval'], subcategory: 'RAG & Embeddings' },
         ],
         defaultSubcategory: 'AI Automation'
       },
       { 
-        keywords: ['telegram', 'slack', 'discord', 'whatsapp', 'teams', 'mattermost'],
-        category: 'Messaging & Chat',
+        keywords: ['email', 'gmail', 'outlook', 'mailchimp', 'newsletter', 'smtp', 'imap', 'sendgrid', 'mailgun', 'ses', 'postmark', 'resend', 'brevo', 'sendinblue', 'convertkit', 'drip', 'activecampaign'],
+        category: 'Email Automation',
         subcategoryRules: [
-          { keywords: ['telegram'], subcategory: 'Telegram Bots' },
-          { keywords: ['slack'], subcategory: 'Slack Integrations' },
-          { keywords: ['discord'], subcategory: 'Discord Bots' },
-          { keywords: ['whatsapp'], subcategory: 'WhatsApp Automation' },
+          { keywords: ['campaign', 'marketing', 'newsletter', 'broadcast'], subcategory: 'Email Marketing' },
+          { keywords: ['autorespond', 'reply', 'response', 'auto-reply'], subcategory: 'Auto-Response' },
+          { keywords: ['filter', 'sort', 'organize', 'archive', 'label'], subcategory: 'Email Management' },
+          { keywords: ['sequence', 'drip', 'nurture'], subcategory: 'Email Sequences' },
+          { keywords: ['transactional', 'notification', 'alert'], subcategory: 'Transactional Email' },
         ],
-        defaultSubcategory: 'Chat Automation'
+        defaultSubcategory: 'Email Workflows'
       },
       { 
-        keywords: ['shopify', 'woocommerce', 'ecommerce', 'order', 'inventory', 'product', 'stripe', 'payment'],
+        keywords: ['crm', 'hubspot', 'salesforce', 'pipedrive', 'zoho', 'lead', 'deal', 'contact', 'sales', 'freshsales', 'close.com', 'copper', 'insightly', 'nutshell', 'keap', 'infusionsoft', 'agile crm', 'monday sales'],
+        category: 'CRM & Sales',
+        subcategoryRules: [
+          { keywords: ['lead', 'prospect', 'qualify', 'capture'], subcategory: 'Lead Management' },
+          { keywords: ['deal', 'pipeline', 'opportunity', 'stage'], subcategory: 'Deal Tracking' },
+          { keywords: ['contact', 'enrich', 'update', 'sync'], subcategory: 'Contact Management' },
+          { keywords: ['quote', 'proposal', 'invoice'], subcategory: 'Quotes & Proposals' },
+          { keywords: ['outreach', 'sequence', 'cold'], subcategory: 'Sales Outreach' },
+        ],
+        defaultSubcategory: 'Sales Automation'
+      },
+      { 
+        keywords: ['slack', 'slack bot', 'slack notification', 'slack channel', 'slackbot'],
+        category: 'Slack Automation',
+        subcategoryRules: [
+          { keywords: ['notification', 'alert', 'notify'], subcategory: 'Notifications' },
+          { keywords: ['bot', 'command', 'slash'], subcategory: 'Slack Bots' },
+          { keywords: ['channel', 'message', 'post'], subcategory: 'Channel Management' },
+          { keywords: ['workflow', 'approve', 'form'], subcategory: 'Slack Workflows' },
+        ],
+        defaultSubcategory: 'Slack Integrations'
+      },
+      { 
+        keywords: ['discord', 'discord bot', 'discord server', 'discord webhook'],
+        category: 'Discord Automation',
+        subcategoryRules: [
+          { keywords: ['bot', 'command'], subcategory: 'Discord Bots' },
+          { keywords: ['moderate', 'mod', 'ban', 'kick'], subcategory: 'Moderation' },
+          { keywords: ['role', 'permission'], subcategory: 'Role Management' },
+          { keywords: ['webhook', 'notification'], subcategory: 'Notifications' },
+        ],
+        defaultSubcategory: 'Discord Workflows'
+      },
+      { 
+        keywords: ['teams', 'microsoft teams', 'ms teams', 'teams bot', 'teams channel'],
+        category: 'Microsoft Teams',
+        subcategoryRules: [
+          { keywords: ['message', 'chat', 'channel'], subcategory: 'Messaging' },
+          { keywords: ['meeting', 'call'], subcategory: 'Meetings' },
+          { keywords: ['notification', 'alert'], subcategory: 'Notifications' },
+        ],
+        defaultSubcategory: 'Teams Workflows'
+      },
+      { 
+        keywords: ['shopify', 'woocommerce', 'ecommerce', 'e-commerce', 'order', 'inventory', 'product', 'stripe', 'payment', 'bigcommerce', 'magento', 'prestashop', 'opencart', 'square', 'paypal', 'razorpay', 'cart', 'checkout'],
         category: 'E-commerce',
         subcategoryRules: [
-          { keywords: ['order', 'fulfillment'], subcategory: 'Order Management' },
-          { keywords: ['inventory', 'stock'], subcategory: 'Inventory' },
-          { keywords: ['payment', 'stripe', 'invoice'], subcategory: 'Payments' },
+          { keywords: ['order', 'fulfillment', 'ship', 'tracking'], subcategory: 'Order Management' },
+          { keywords: ['inventory', 'stock', 'warehouse'], subcategory: 'Inventory' },
+          { keywords: ['payment', 'stripe', 'invoice', 'refund'], subcategory: 'Payments' },
+          { keywords: ['product', 'catalog', 'listing'], subcategory: 'Product Management' },
+          { keywords: ['customer', 'review', 'feedback'], subcategory: 'Customer Management' },
+          { keywords: ['abandon', 'cart', 'recover'], subcategory: 'Cart Recovery' },
         ],
         defaultSubcategory: 'E-commerce Automation'
       },
       { 
-        keywords: ['notion', 'airtable', 'google sheet', 'spreadsheet', 'database', 'trello', 'asana', 'clickup', 'project', 'task'],
+        keywords: ['notion', 'airtable', 'google sheet', 'spreadsheet', 'database', 'trello', 'asana', 'clickup', 'project', 'task', 'monday', 'jira', 'linear', 'basecamp', 'wrike', 'smartsheet', 'todoist', 'things', 'omnifocus'],
         category: 'Project Management',
         subcategoryRules: [
-          { keywords: ['task', 'todo', 'assign'], subcategory: 'Task Management' },
-          { keywords: ['sync', 'integrate', 'connect'], subcategory: 'Data Sync' },
-          { keywords: ['report', 'status', 'update'], subcategory: 'Reporting' },
+          { keywords: ['task', 'todo', 'assign', 'checklist'], subcategory: 'Task Management' },
+          { keywords: ['sync', 'integrate', 'connect', 'mirror'], subcategory: 'Data Sync' },
+          { keywords: ['report', 'status', 'update', 'standup'], subcategory: 'Reporting' },
+          { keywords: ['board', 'kanban', 'sprint', 'agile'], subcategory: 'Agile Workflows' },
+          { keywords: ['database', 'table', 'view'], subcategory: 'Database Management' },
         ],
         defaultSubcategory: 'Productivity'
       },
       { 
-        keywords: ['scrape', 'crawl', 'extract', 'web data', 'scraping'],
+        keywords: ['scrape', 'crawl', 'extract', 'web data', 'scraping', 'puppeteer', 'playwright', 'selenium', 'beautifulsoup', 'cheerio', 'apify', 'bright data', 'octoparse'],
         category: 'Web Scraping & Data',
         subcategoryRules: [
-          { keywords: ['scrape', 'crawl', 'extract'], subcategory: 'Web Scraping' },
-          { keywords: ['enrich', 'lookup'], subcategory: 'Data Enrichment' },
+          { keywords: ['scrape', 'crawl', 'extract', 'parse'], subcategory: 'Web Scraping' },
+          { keywords: ['enrich', 'lookup', 'append'], subcategory: 'Data Enrichment' },
+          { keywords: ['monitor', 'track', 'watch', 'change'], subcategory: 'Web Monitoring' },
+          { keywords: ['price', 'competitor'], subcategory: 'Price Monitoring' },
         ],
         defaultSubcategory: 'Data Extraction'
       },
       { 
-        keywords: ['calendar', 'meeting', 'schedule', 'appointment', 'booking'],
+        keywords: ['calendar', 'meeting', 'schedule', 'appointment', 'booking', 'calendly', 'cal.com', 'google calendar', 'outlook calendar', 'acuity', 'doodle', 'timely'],
         category: 'Calendar & Scheduling',
         subcategoryRules: [
-          { keywords: ['meeting', 'appointment'], subcategory: 'Meeting Management' },
-          { keywords: ['schedule', 'book'], subcategory: 'Scheduling' },
+          { keywords: ['meeting', 'appointment', 'book'], subcategory: 'Meeting Management' },
+          { keywords: ['schedule', 'slot', 'availability'], subcategory: 'Scheduling' },
+          { keywords: ['remind', 'notification', 'alert'], subcategory: 'Reminders' },
+          { keywords: ['sync', 'integrate'], subcategory: 'Calendar Sync' },
         ],
         defaultSubcategory: 'Calendar Automation'
       },
       { 
-        keywords: ['github', 'gitlab', 'bitbucket', 'deploy', 'ci/cd', 'devops', 'code review'],
+        keywords: ['github', 'gitlab', 'bitbucket', 'deploy', 'ci/cd', 'devops', 'code review', 'jenkins', 'vercel', 'netlify', 'heroku', 'aws', 'azure', 'docker', 'kubernetes', 'terraform'],
         category: 'Developer Tools',
         subcategoryRules: [
-          { keywords: ['github', 'gitlab', 'repo'], subcategory: 'Git Automation' },
-          { keywords: ['deploy', 'ci', 'cd'], subcategory: 'CI/CD' },
+          { keywords: ['github', 'gitlab', 'repo', 'commit', 'pull request', 'pr '], subcategory: 'Git Automation' },
+          { keywords: ['deploy', 'ci', 'cd', 'build', 'release'], subcategory: 'CI/CD' },
+          { keywords: ['issue', 'bug', 'ticket'], subcategory: 'Issue Tracking' },
+          { keywords: ['monitor', 'alert', 'log', 'error'], subcategory: 'Monitoring' },
+          { keywords: ['docker', 'container', 'kubernetes'], subcategory: 'Container Ops' },
         ],
         defaultSubcategory: 'Dev Automation'
       },
       { 
-        keywords: ['seo', 'keyword', 'ranking', 'backlink', 'search engine'],
+        keywords: ['seo', 'keyword', 'ranking', 'backlink', 'search engine', 'marketing', 'ads', 'google ads', 'facebook ads', 'campaign', 'ppc', 'affiliate', 'utm', 'analytics', 'tracking'],
         category: 'Marketing Automation',
         subcategoryRules: [
-          { keywords: ['seo', 'keyword', 'ranking'], subcategory: 'SEO' },
-          { keywords: ['campaign', 'ads'], subcategory: 'Campaigns' },
+          { keywords: ['seo', 'keyword', 'ranking', 'backlink'], subcategory: 'SEO' },
+          { keywords: ['campaign', 'ads', 'ppc', 'advertising'], subcategory: 'Paid Advertising' },
+          { keywords: ['analytics', 'tracking', 'report', 'utm'], subcategory: 'Analytics' },
+          { keywords: ['social', 'content', 'schedule'], subcategory: 'Content Marketing' },
+          { keywords: ['affiliate', 'referral', 'partner'], subcategory: 'Affiliate Marketing' },
         ],
         defaultSubcategory: 'Marketing'
       },
       { 
-        keywords: ['pdf', 'document', 'file', 'convert', 'google drive', 'dropbox'],
+        keywords: ['pdf', 'document', 'file', 'convert', 'google drive', 'dropbox', 'onedrive', 'box', 's3', 'storage', 'upload', 'download', 'docx', 'excel', 'csv', 'xml', 'json'],
         category: 'Document & Files',
         subcategoryRules: [
-          { keywords: ['pdf', 'convert'], subcategory: 'PDF Processing' },
-          { keywords: ['drive', 'dropbox', 'storage'], subcategory: 'File Storage' },
+          { keywords: ['pdf', 'convert', 'merge', 'split'], subcategory: 'PDF Processing' },
+          { keywords: ['drive', 'dropbox', 'storage', 'cloud', 's3'], subcategory: 'File Storage' },
+          { keywords: ['upload', 'download', 'transfer'], subcategory: 'File Transfer' },
+          { keywords: ['ocr', 'extract', 'parse', 'read'], subcategory: 'Document Parsing' },
+          { keywords: ['sign', 'signature', 'docusign'], subcategory: 'E-Signatures' },
         ],
         defaultSubcategory: 'File Automation'
+      },
+      { 
+        keywords: ['form', 'survey', 'typeform', 'google form', 'jotform', 'tally', 'airtable form', 'cognito', 'formstack', 'wufoo', 'gravity form'],
+        category: 'Forms & Surveys',
+        subcategoryRules: [
+          { keywords: ['submit', 'response', 'entry'], subcategory: 'Form Processing' },
+          { keywords: ['survey', 'feedback', 'poll'], subcategory: 'Surveys' },
+          { keywords: ['lead', 'capture', 'contact'], subcategory: 'Lead Capture' },
+        ],
+        defaultSubcategory: 'Form Automation'
+      },
+      { 
+        keywords: ['sms', 'text message', 'twilio', 'vonage', 'messagebird', 'plivo', 'nexmo', 'textlocal', 'clicksend'],
+        category: 'SMS Automation',
+        subcategoryRules: [
+          { keywords: ['send', 'bulk', 'broadcast'], subcategory: 'SMS Sending' },
+          { keywords: ['notification', 'alert', 'otp'], subcategory: 'SMS Notifications' },
+          { keywords: ['two-way', 'reply', 'receive'], subcategory: 'Two-Way SMS' },
+        ],
+        defaultSubcategory: 'SMS Workflows'
+      },
+      { 
+        keywords: ['webhook', 'api', 'http', 'rest', 'graphql', 'endpoint', 'request', 'response', 'integration', 'oauth'],
+        category: 'API & Webhooks',
+        subcategoryRules: [
+          { keywords: ['webhook', 'hook', 'trigger'], subcategory: 'Webhooks' },
+          { keywords: ['api', 'rest', 'graphql', 'request'], subcategory: 'API Calls' },
+          { keywords: ['oauth', 'auth', 'token'], subcategory: 'Authentication' },
+          { keywords: ['transform', 'map', 'convert'], subcategory: 'Data Transformation' },
+        ],
+        defaultSubcategory: 'API Workflows'
+      },
+      { 
+        keywords: ['hr', 'employee', 'onboard', 'offboard', 'recruit', 'hire', 'bamboohr', 'workday', 'gusto', 'rippling', 'personio', 'lever', 'greenhouse', 'applicant'],
+        category: 'HR & Recruiting',
+        subcategoryRules: [
+          { keywords: ['recruit', 'hire', 'applicant', 'candidate'], subcategory: 'Recruiting' },
+          { keywords: ['onboard', 'welcome', 'new hire'], subcategory: 'Onboarding' },
+          { keywords: ['offboard', 'exit', 'departure'], subcategory: 'Offboarding' },
+          { keywords: ['leave', 'time off', 'vacation', 'pto'], subcategory: 'Leave Management' },
+        ],
+        defaultSubcategory: 'HR Automation'
+      },
+      { 
+        keywords: ['accounting', 'invoice', 'quickbooks', 'xero', 'freshbooks', 'wave', 'zoho books', 'expense', 'receipt', 'billing', 'finance'],
+        category: 'Finance & Accounting',
+        subcategoryRules: [
+          { keywords: ['invoice', 'billing', 'payment'], subcategory: 'Invoicing' },
+          { keywords: ['expense', 'receipt', 'reimburse'], subcategory: 'Expense Management' },
+          { keywords: ['report', 'reconcile', 'sync'], subcategory: 'Financial Reporting' },
+        ],
+        defaultSubcategory: 'Finance Automation'
+      },
+      { 
+        keywords: ['support', 'ticket', 'helpdesk', 'zendesk', 'freshdesk', 'intercom', 'crisp', 'help scout', 'front', 'customer service', 'live chat'],
+        category: 'Customer Support',
+        subcategoryRules: [
+          { keywords: ['ticket', 'issue', 'request'], subcategory: 'Ticket Management' },
+          { keywords: ['chat', 'live', 'conversation'], subcategory: 'Live Chat' },
+          { keywords: ['knowledge', 'faq', 'article'], subcategory: 'Knowledge Base' },
+          { keywords: ['feedback', 'nps', 'csat', 'survey'], subcategory: 'Customer Feedback' },
+        ],
+        defaultSubcategory: 'Support Automation'
+      },
+      { 
+        keywords: ['pinterest', 'threads', 'bluesky', 'mastodon', 'reddit', 'quora', 'medium', 'tumblr', 'snapchat'],
+        category: 'Other Social Platforms',
+        subcategoryRules: [
+          { keywords: ['pinterest', 'pin'], subcategory: 'Pinterest' },
+          { keywords: ['reddit', 'subreddit'], subcategory: 'Reddit' },
+          { keywords: ['medium', 'blog', 'article'], subcategory: 'Blogging' },
+        ],
+        defaultSubcategory: 'Social Workflows'
       },
     ];
 
