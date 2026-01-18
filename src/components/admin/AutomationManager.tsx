@@ -599,6 +599,75 @@ const AutomationManager = () => {
     }
   };
 
+  // Import ZIP from server files
+  const handleServerZipImport = async (filePath: string, fileName: string) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(filePath);
+      if (!response.ok) throw new Error(`Failed to fetch ${filePath}`);
+      
+      const arrayBuffer = await response.arrayBuffer();
+      const zip = await JSZip.loadAsync(arrayBuffer);
+      const automationsData: any[] = [];
+      
+      // Parse ZIP structure: look for workflow.json files
+      const entries = Object.entries(zip.files);
+      
+      for (const [path, zipEntry] of entries) {
+        // Skip directories and non-workflow/non-json files
+        if (zipEntry.dir) continue;
+        
+        // Check for workflow.json or any .json file
+        if (path.endsWith('workflow.json') || path.endsWith('.json')) {
+          try {
+            const content = await zipEntry.async('text');
+            const jsonData = JSON.parse(content);
+            
+            // Parse path for category info
+            const parts = path.split('/');
+            const category = parts.length >= 2 ? parts[parts.length - 2] : 'Imported';
+            const folderName = parts.length >= 2 ? parts[parts.length - 2] : path.replace('.json', '');
+            
+            // Extract title
+            const title = jsonData.name || jsonData.title || 
+              folderName.replace(/^\d+-/, '').replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+            
+            automationsData.push({
+              title,
+              category: category.charAt(0).toUpperCase() + category.slice(1).replace(/-/g, ' '),
+              subcategory: 'Workflows',
+              description: jsonData.description || '',
+              download_url: filePath,
+              preview_json: jsonData,
+              icon: 'zap',
+              uses_count: 0,
+            });
+          } catch (e) {
+            // Skip invalid JSON files
+          }
+        }
+      }
+      
+      if (automationsData.length === 0) {
+        toast.error("No valid JSON/workflow files found in ZIP");
+        setIsLoading(false);
+        return;
+      }
+      
+      const created = await processAutomationsData(automationsData);
+      const duplicateMsg = created.skippedDuplicates > 0 ? ` (${created.skippedDuplicates} duplicates skipped)` : '';
+      toast.success(
+        `Imported from ${fileName}: ${created.automations} automations, ${created.categories} categories, ${created.subcategories} subcategories${duplicateMsg}`
+      );
+      refetch();
+      setUploadDialog(false);
+    } catch (error: any) {
+      toast.error("Failed to import ZIP: " + error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Import from URL (Google Drive, etc.)
   const handleUrlImport = async () => {
     if (!jsonUrl.trim()) return;
@@ -1041,8 +1110,11 @@ const AutomationManager = () => {
             <div className="space-y-3">
               <p className="text-sm font-medium">📁 Import from Server Files:</p>
               <p className="text-xs text-muted-foreground">
-                Click to import pre-uploaded Excel files from your server
+                Click to import pre-uploaded files from your server
               </p>
+              
+              {/* Excel Files */}
+              <p className="text-xs font-medium text-muted-foreground mt-2">📊 Excel Files:</p>
               <div className="grid grid-cols-2 gap-2">
                 <Button 
                   variant="outline" 
@@ -1059,6 +1131,75 @@ const AutomationManager = () => {
                   className="text-xs h-auto py-2"
                 >
                   📊 200 Professional
+                </Button>
+              </div>
+
+              {/* ZIP Files */}
+              <p className="text-xs font-medium text-muted-foreground mt-3">📦 ZIP Files:</p>
+              <div className="grid grid-cols-2 gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => handleServerZipImport('/uploads/2182-workflows.zip', '2182 Workflows')}
+                  disabled={isLoading}
+                  className="text-xs h-auto py-2"
+                >
+                  📂 2,182 Workflows
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => handleServerZipImport('/uploads/2200-templates.zip', '2200 Templates')}
+                  disabled={isLoading}
+                  className="text-xs h-auto py-2"
+                >
+                  🌍 2,200 Templates
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => handleServerZipImport('/uploads/2k-templates.zip', '2K Templates')}
+                  disabled={isLoading}
+                  className="text-xs h-auto py-2"
+                >
+                  🎯 2,000 Templates
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => handleServerZipImport('/uploads/3k-templates.zip', '3K Templates')}
+                  disabled={isLoading}
+                  className="text-xs h-auto py-2"
+                >
+                  📊 3,000 Templates
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => handleServerZipImport('/uploads/500-n8n-templates.zip', '500 n8n')}
+                  disabled={isLoading}
+                  className="text-xs h-auto py-2"
+                >
+                  🚀 500 n8n Templates
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => handleServerZipImport('/uploads/300-whatsapp-templates.zip', '300 WhatsApp')}
+                  disabled={isLoading}
+                  className="text-xs h-auto py-2"
+                >
+                  💬 300 WhatsApp
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => handleServerZipImport('/uploads/business-templates-35.zip', '35 Business')}
+                  disabled={isLoading}
+                  className="text-xs h-auto py-2"
+                >
+                  💼 35 Business
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => handleServerZipImport('/uploads/workflow-templates.zip', 'Workflow Templates')}
+                  disabled={isLoading}
+                  className="text-xs h-auto py-2"
+                >
+                  ⚡ Workflow Templates
                 </Button>
               </div>
             </div>
