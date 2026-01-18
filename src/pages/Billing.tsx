@@ -113,34 +113,57 @@ const Billing = () => {
             <div className="grid md:grid-cols-2 gap-6 mb-6">
               <div className="bg-card rounded-2xl border border-border p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-foreground">Pro</h3>
-                  <span className="text-2xl font-bold text-foreground">$29<span className="text-sm font-normal text-muted-foreground">/mo</span></span>
+                  <h3 className="text-lg font-semibold text-foreground">Basic Plan</h3>
+                  <span className="text-2xl font-bold text-foreground">$20<span className="text-sm font-normal text-muted-foreground">/month</span></span>
                 </div>
                 <ul className="space-y-3 mb-6">
-                  {["10,000 runs/month", "Unlimited automations", "Priority support"].map((feature) => (
+                  {[
+                    "15K+ Workflow Templates Download",
+                    "Workflow Running Simulation",
+                    "AI Automation Courses",
+                    "250+ Templates with Video Guides 🎥",
+                    "Email & Live Chat Support",
+                  ].map((feature) => (
                     <li key={feature} className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Check className="w-4 h-4 text-primary" />
                       {feature}
                     </li>
                   ))}
                 </ul>
-                <Button variant="hero" className="w-full">Upgrade to Pro</Button>
+                <Link to="/pricing">
+                  <Button variant="outline" className="w-full">Get Basic</Button>
+                </Link>
               </div>
 
-              <div className="bg-card rounded-2xl border border-border p-6">
+              <div className="bg-card rounded-2xl border-2 border-primary p-6 relative">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <span className="px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-bold">
+                    MOST POPULAR
+                  </span>
+                </div>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-foreground">Business</h3>
-                  <span className="text-2xl font-bold text-foreground">$99<span className="text-sm font-normal text-muted-foreground">/mo</span></span>
+                  <h3 className="text-lg font-semibold text-foreground">Pro Plan</h3>
+                  <span className="text-2xl font-bold text-primary">$100<span className="text-sm font-normal text-muted-foreground">/lifetime</span></span>
                 </div>
                 <ul className="space-y-3 mb-6">
-                  {["Unlimited runs", "Team collaboration", "24/7 support"].map((feature) => (
+                  {[
+                    "15K+ Workflow Templates Download",
+                    "Workflow Running Simulation",
+                    "AI Automation Courses",
+                    "250+ Templates with Video Guides 🎥",
+                    "1-on-1 Consultation",
+                    "Lifetime Updates",
+                    "Priority Support",
+                  ].map((feature) => (
                     <li key={feature} className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Check className="w-4 h-4 text-primary" />
                       {feature}
                     </li>
                   ))}
                 </ul>
-                <Button variant="outline" className="w-full">Contact Sales</Button>
+                <Link to="/pricing">
+                  <Button variant="hero" className="w-full">Get Pro</Button>
+                </Link>
               </div>
             </div>
 
