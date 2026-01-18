@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Loader2, Play, X, Clock, Zap, Code, FileJson, Copy, Check, Download } from "lucide-react";
+import { CheckCircle, Loader2, Play, X, Clock, Zap, Code, FileJson, Copy, Check, Download, BookOpen, ExternalLink, ArrowRight, Info } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -242,8 +242,9 @@ export const WorkflowExecutionModal = ({
   const [totalTime, setTotalTime] = useState(0);
   const [selectedNodeOutput, setSelectedNodeOutput] = useState<string | null>(null);
   const [selectedNodeFromPreview, setSelectedNodeFromPreview] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"output" | "workflow">("output");
+  const [activeTab, setActiveTab] = useState<"output" | "workflow" | "guide">("output");
   const [copiedJson, setCopiedJson] = useState(false);
+  const [expandedGuide, setExpandedGuide] = useState<"n8n" | "make" | "zapier" | null>("n8n");
 
   // Demo workflow to show when no preview_json is available
   const demoWorkflow: N8nWorkflow = {
@@ -586,7 +587,7 @@ export const WorkflowExecutionModal = ({
 
           {/* Execution Logs & Output with Tabs */}
           <div className="border border-border rounded-lg bg-card overflow-hidden flex flex-col">
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "output" | "workflow")} className="flex flex-col h-full">
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "output" | "workflow" | "guide")} className="flex flex-col h-full">
               <div className="p-2 border-b border-border flex items-center justify-between">
                 <TabsList className="h-8">
                   <TabsTrigger value="output" className="text-xs h-7 px-3 gap-1.5">
@@ -595,7 +596,11 @@ export const WorkflowExecutionModal = ({
                   </TabsTrigger>
                   <TabsTrigger value="workflow" className="text-xs h-7 px-3 gap-1.5">
                     <FileJson className="w-3 h-3" />
-                    Workflow JSON
+                    JSON
+                  </TabsTrigger>
+                  <TabsTrigger value="guide" className="text-xs h-7 px-3 gap-1.5">
+                    <BookOpen className="w-3 h-3" />
+                    Import Guide
                   </TabsTrigger>
                 </TabsList>
                 <div className="flex items-center gap-2">
@@ -724,29 +729,47 @@ export const WorkflowExecutionModal = ({
                       </p>
                     </div>
                     
-                    {/* Show nodes with their execution status */}
-                    <div className="mb-4 space-y-1">
-                      <p className="text-muted-foreground text-[10px] uppercase tracking-wider mb-2">Node Execution Status:</p>
+                    {/* Show nodes with expected output preview */}
+                    <div className="mb-4 space-y-2">
+                      <p className="text-muted-foreground text-[10px] uppercase tracking-wider mb-2">Expected Node Outputs:</p>
                       {nodes.map((node, idx) => {
                         const status = nodeStatuses[node.name];
                         const style = getNodeStyle(node.type);
+                        const expectedOutput = generateNodeOutput(node.type, node.name);
+                        const hasActualOutput = nodeOutputs[node.name];
                         return (
                           <div 
                             key={idx}
-                            className={`flex items-center gap-2 p-1.5 rounded text-[11px] transition-all ${
+                            className={`rounded text-[11px] transition-all overflow-hidden border ${
                               status === "running" 
-                                ? "bg-primary/20 border border-primary animate-pulse" 
+                                ? "border-primary animate-pulse" 
                                 : status === "completed"
-                                ? "bg-green-500/10 border border-green-500/30"
-                                : "bg-muted/30 border border-transparent"
+                                ? "border-green-500/30"
+                                : "border-border"
                             }`}
                           >
-                            <span>{style.icon}</span>
-                            <span className="flex-1 font-medium">{node.name}</span>
-                            <span className="text-muted-foreground">{getShortType(node.type)}</span>
-                            {status === "running" && <Loader2 className="w-3 h-3 animate-spin text-primary" />}
-                            {status === "completed" && <CheckCircle className="w-3 h-3 text-green-500" />}
-                            {!status && <span className="w-3 h-3 rounded-full bg-muted-foreground/30" />}
+                            <div className={`flex items-center gap-2 p-2 ${
+                              status === "completed" ? "bg-green-500/10" : "bg-muted/30"
+                            }`}>
+                              <span>{style.icon}</span>
+                              <span className="flex-1 font-medium">{node.name}</span>
+                              <span className="text-muted-foreground text-[10px]">{getShortType(node.type)}</span>
+                              {status === "running" && <Loader2 className="w-3 h-3 animate-spin text-primary" />}
+                              {status === "completed" && <CheckCircle className="w-3 h-3 text-green-500" />}
+                              {!status && <span className="w-3 h-3 rounded-full bg-muted-foreground/30" />}
+                            </div>
+                            <div className="p-2 bg-background/50 border-t border-border">
+                              <p className="text-[9px] text-muted-foreground mb-1 flex items-center gap-1">
+                                {hasActualOutput ? (
+                                  <>✅ Actual Output ({hasActualOutput.items} items):</>
+                                ) : (
+                                  <>📋 Expected Output ({expectedOutput.items} items):</>
+                                )}
+                              </p>
+                              <pre className="text-[9px] text-green-400/80 overflow-x-auto max-h-16 overflow-y-auto bg-muted/30 rounded p-1.5">
+                                {JSON.stringify(hasActualOutput?.data || expectedOutput.data, null, 2)}
+                              </pre>
+                            </div>
                           </div>
                         );
                       })}
@@ -754,9 +777,245 @@ export const WorkflowExecutionModal = ({
 
                     <div className="border-t border-border pt-3">
                       <p className="text-muted-foreground text-[10px] uppercase tracking-wider mb-2">Full Workflow JSON:</p>
-                      <pre className="text-[10px] bg-muted/50 rounded p-3 overflow-auto text-foreground/80 max-h-[150px]">
+                      <pre className="text-[10px] bg-muted/50 rounded p-3 overflow-auto text-foreground/80 max-h-[100px]">
                         {JSON.stringify(workflow, null, 2)}
                       </pre>
+                    </div>
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+
+              {/* Import Guide Tab */}
+              <TabsContent value="guide" className="flex-1 m-0 mt-0 data-[state=active]:flex data-[state=active]:flex-col">
+                <ScrollArea className="flex-1 h-[270px]">
+                  <div className="p-3 space-y-3">
+                    {/* n8n Guide */}
+                    <div className={`rounded-lg border overflow-hidden transition-all ${
+                      expandedGuide === "n8n" ? "border-orange-500/50" : "border-border"
+                    }`}>
+                      <button
+                        className={`w-full flex items-center gap-3 p-3 text-left transition-colors ${
+                          expandedGuide === "n8n" ? "bg-orange-500/10" : "bg-muted/30 hover:bg-muted/50"
+                        }`}
+                        onClick={() => setExpandedGuide(expandedGuide === "n8n" ? null : "n8n")}
+                      >
+                        <span className="text-xl">🟠</span>
+                        <div className="flex-1">
+                          <p className="font-semibold text-sm">n8n</p>
+                          <p className="text-[10px] text-muted-foreground">Direct JSON import - Recommended</p>
+                        </div>
+                        <span className="text-muted-foreground text-xs">{expandedGuide === "n8n" ? "▼" : "▶"}</span>
+                      </button>
+                      {expandedGuide === "n8n" && (
+                        <div className="p-3 border-t border-border bg-background/50 space-y-3">
+                          <div className="bg-green-500/10 border border-green-500/30 rounded p-2 text-[11px] text-green-600 flex items-start gap-2">
+                            <CheckCircle className="w-3 h-3 mt-0.5 shrink-0" />
+                            <span>This JSON file works directly with n8n - just import and run!</span>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <div className="flex items-start gap-2">
+                              <span className="bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shrink-0">1</span>
+                              <div className="text-[11px]">
+                                <p className="font-medium">Download the JSON file</p>
+                                <p className="text-muted-foreground">Click the "Download" button above</p>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <span className="bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shrink-0">2</span>
+                              <div className="text-[11px]">
+                                <p className="font-medium">Open n8n workflow editor</p>
+                                <p className="text-muted-foreground">Go to n8n.io or your self-hosted instance</p>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <span className="bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shrink-0">3</span>
+                              <div className="text-[11px]">
+                                <p className="font-medium">Import the workflow</p>
+                                <p className="text-muted-foreground">Click ⋮ menu → "Import from File" → Select the JSON</p>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <span className="bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shrink-0">4</span>
+                              <div className="text-[11px]">
+                                <p className="font-medium">Configure credentials</p>
+                                <p className="text-muted-foreground">Add your API keys for connected services (Gmail, Slack, etc.)</p>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <span className="bg-green-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shrink-0">5</span>
+                              <div className="text-[11px]">
+                                <p className="font-medium text-green-600">Execute the workflow!</p>
+                                <p className="text-muted-foreground">Click "Execute Workflow" to run</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          <a 
+                            href="https://n8n.io" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 text-[11px] text-primary hover:underline"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            Open n8n.io
+                          </a>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Make Guide */}
+                    <div className={`rounded-lg border overflow-hidden transition-all ${
+                      expandedGuide === "make" ? "border-purple-500/50" : "border-border"
+                    }`}>
+                      <button
+                        className={`w-full flex items-center gap-3 p-3 text-left transition-colors ${
+                          expandedGuide === "make" ? "bg-purple-500/10" : "bg-muted/30 hover:bg-muted/50"
+                        }`}
+                        onClick={() => setExpandedGuide(expandedGuide === "make" ? null : "make")}
+                      >
+                        <span className="text-xl">🟣</span>
+                        <div className="flex-1">
+                          <p className="font-semibold text-sm">Make (Integromat)</p>
+                          <p className="text-[10px] text-muted-foreground">Manual recreation required</p>
+                        </div>
+                        <span className="text-muted-foreground text-xs">{expandedGuide === "make" ? "▼" : "▶"}</span>
+                      </button>
+                      {expandedGuide === "make" && (
+                        <div className="p-3 border-t border-border bg-background/50 space-y-3">
+                          <div className="bg-amber-500/10 border border-amber-500/30 rounded p-2 text-[11px] text-amber-600 flex items-start gap-2">
+                            <Info className="w-3 h-3 mt-0.5 shrink-0" />
+                            <span>Make uses a different format. Use this JSON as a reference to recreate the workflow.</span>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <div className="flex items-start gap-2">
+                              <span className="bg-purple-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shrink-0">1</span>
+                              <div className="text-[11px]">
+                                <p className="font-medium">Create a new scenario in Make</p>
+                                <p className="text-muted-foreground">Go to make.com → Create new scenario</p>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <span className="bg-purple-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shrink-0">2</span>
+                              <div className="text-[11px]">
+                                <p className="font-medium">Add these modules:</p>
+                                <div className="mt-1 space-y-1">
+                                  {nodes.map((node, idx) => (
+                                    <div key={idx} className="flex items-center gap-1.5 text-muted-foreground">
+                                      <ArrowRight className="w-2.5 h-2.5" />
+                                      <span>{getNodeStyle(node.type).icon} {node.name}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <span className="bg-purple-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shrink-0">3</span>
+                              <div className="text-[11px]">
+                                <p className="font-medium">Connect modules in order</p>
+                                <p className="text-muted-foreground">Link modules as shown in the workflow preview</p>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <span className="bg-green-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shrink-0">4</span>
+                              <div className="text-[11px]">
+                                <p className="font-medium text-green-600">Configure and run!</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          <a 
+                            href="https://make.com" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 text-[11px] text-purple-500 hover:underline"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            Open Make.com
+                          </a>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Zapier Guide */}
+                    <div className={`rounded-lg border overflow-hidden transition-all ${
+                      expandedGuide === "zapier" ? "border-orange-600/50" : "border-border"
+                    }`}>
+                      <button
+                        className={`w-full flex items-center gap-3 p-3 text-left transition-colors ${
+                          expandedGuide === "zapier" ? "bg-orange-600/10" : "bg-muted/30 hover:bg-muted/50"
+                        }`}
+                        onClick={() => setExpandedGuide(expandedGuide === "zapier" ? null : "zapier")}
+                      >
+                        <span className="text-xl">⚡</span>
+                        <div className="flex-1">
+                          <p className="font-semibold text-sm">Zapier</p>
+                          <p className="text-[10px] text-muted-foreground">Manual recreation required</p>
+                        </div>
+                        <span className="text-muted-foreground text-xs">{expandedGuide === "zapier" ? "▼" : "▶"}</span>
+                      </button>
+                      {expandedGuide === "zapier" && (
+                        <div className="p-3 border-t border-border bg-background/50 space-y-3">
+                          <div className="bg-amber-500/10 border border-amber-500/30 rounded p-2 text-[11px] text-amber-600 flex items-start gap-2">
+                            <Info className="w-3 h-3 mt-0.5 shrink-0" />
+                            <span>Zapier uses a different format. Use this as a reference to create your Zap.</span>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <div className="flex items-start gap-2">
+                              <span className="bg-orange-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shrink-0">1</span>
+                              <div className="text-[11px]">
+                                <p className="font-medium">Create a new Zap</p>
+                                <p className="text-muted-foreground">Go to zapier.com → Create Zap</p>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <span className="bg-orange-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shrink-0">2</span>
+                              <div className="text-[11px]">
+                                <p className="font-medium">Set up trigger:</p>
+                                <div className="mt-1 text-muted-foreground">
+                                  {nodes[0] && (
+                                    <span className="flex items-center gap-1.5">
+                                      {getNodeStyle(nodes[0].type).icon} {nodes[0].name} ({getShortType(nodes[0].type)})
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <span className="bg-orange-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shrink-0">3</span>
+                              <div className="text-[11px]">
+                                <p className="font-medium">Add actions:</p>
+                                <div className="mt-1 space-y-1">
+                                  {nodes.slice(1).map((node, idx) => (
+                                    <div key={idx} className="flex items-center gap-1.5 text-muted-foreground">
+                                      <ArrowRight className="w-2.5 h-2.5" />
+                                      <span>{getNodeStyle(node.type).icon} {node.name}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <span className="bg-green-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shrink-0">4</span>
+                              <div className="text-[11px]">
+                                <p className="font-medium text-green-600">Test and publish your Zap!</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          <a 
+                            href="https://zapier.com" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 text-[11px] text-orange-600 hover:underline"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            Open Zapier.com
+                          </a>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </ScrollArea>
