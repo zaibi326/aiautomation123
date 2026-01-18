@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Loader2, Play, X, Clock, Zap, Code, FileJson, Copy, Check } from "lucide-react";
+import { CheckCircle, Loader2, Play, X, Clock, Zap, Code, FileJson, Copy, Check, Download } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -611,19 +611,40 @@ export const WorkflowExecutionModal = ({
                     </Button>
                   )}
                   {activeTab === "workflow" && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 px-2 text-xs"
-                      onClick={() => {
-                        navigator.clipboard.writeText(JSON.stringify(workflow, null, 2));
-                        setCopiedJson(true);
-                        setTimeout(() => setCopiedJson(false), 2000);
-                      }}
-                    >
-                      {copiedJson ? <Check className="w-3 h-3 mr-1 text-green-500" /> : <Copy className="w-3 h-3 mr-1" />}
-                      {copiedJson ? 'Copied!' : 'Copy'}
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs"
+                        onClick={() => {
+                          const blob = new Blob([JSON.stringify(workflow, null, 2)], { type: 'application/json' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `${workflowTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_workflow.json`;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          URL.revokeObjectURL(url);
+                        }}
+                      >
+                        <Download className="w-3 h-3 mr-1" />
+                        Download
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs"
+                        onClick={() => {
+                          navigator.clipboard.writeText(JSON.stringify(workflow, null, 2));
+                          setCopiedJson(true);
+                          setTimeout(() => setCopiedJson(false), 2000);
+                        }}
+                      >
+                        {copiedJson ? <Check className="w-3 h-3 mr-1 text-green-500" /> : <Copy className="w-3 h-3 mr-1" />}
+                        {copiedJson ? 'Copied!' : 'Copy'}
+                      </Button>
+                    </div>
                   )}
                   {executionStatus === "completed" && activeTab === "output" && !selectedNodeFromPreview && (
                     <span className="text-xs text-green-500 flex items-center gap-1">
