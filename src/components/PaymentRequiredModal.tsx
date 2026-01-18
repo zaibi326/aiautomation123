@@ -58,7 +58,7 @@ const PaymentRequiredModal = ({ open, onOpenChange }: PaymentRequiredModalProps)
 
           {/* Features */}
           <div className="space-y-2">
-            <p className="text-sm font-medium text-foreground">آپ کو ملے گا:</p>
+            <p className="text-sm font-medium text-foreground">You will get:</p>
             <ul className="space-y-1.5">
               {[
                 "15,000+ Automation Templates",

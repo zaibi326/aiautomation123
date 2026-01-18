@@ -223,7 +223,7 @@ const Pricing = () => {
             <div className="mt-16 max-w-3xl mx-auto">
               <div className="p-6 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/20">
                 <h3 className="text-xl font-bold text-foreground mb-4 text-center">
-                  🔒 Free Users ky liye kya hai?
+                  🔒 What Do Free Users Get?
                 </h3>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-3">
@@ -233,19 +233,19 @@ const Pricing = () => {
                     <ul className="space-y-2 text-sm text-muted-foreground">
                       <li className="flex items-center gap-2">
                         <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
-                        Templates Download nahi ho sakti
+                        Cannot Download Templates
                       </li>
                       <li className="flex items-center gap-2">
                         <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
-                        Workflow Simulation nahi chal sakti
+                        Cannot Run Workflow Simulations
                       </li>
                       <li className="flex items-center gap-2">
                         <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
-                        Apna JSON test nahi ho sakta
+                        Cannot Test Your Own JSON
                       </li>
                       <li className="flex items-center gap-2">
                         <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
-                        Video Guides access nahi
+                        No Video Guides Access
                       </li>
                     </ul>
                   </div>
@@ -264,7 +264,7 @@ const Pricing = () => {
                       </li>
                       <li className="flex items-center gap-2">
                         <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                        Apna JSON test karo!
+                        Test Your Own JSON Workflows!
                       </li>
                       <li className="flex items-center gap-2">
                         <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
@@ -305,7 +305,7 @@ const Pricing = () => {
                   Pay via Bank Transfer
                 </h2>
                 <p className="text-muted-foreground max-w-lg mx-auto">
-                  WhatsApp پر آئیں اور payment slip بھیجیں۔ Instant access حاصل کریں!
+                  Contact us on WhatsApp and send your payment slip. Get instant access!
                 </p>
               </div>
 
@@ -316,10 +316,10 @@ const Pricing = () => {
                     <MessageCircle className="w-8 h-8 text-green-500" />
                   </div>
                   <h3 className="text-xl font-bold text-foreground mb-2">
-                    WhatsApp پر آئیں
+                    Contact Us on WhatsApp
                   </h3>
                   <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                    Payment slip attach کریں اور instant access حاصل کریں۔ ہم آپ کو bank details بھی provide کر دیں گے۔
+                    Attach your payment slip and get instant access. We'll also provide you with bank details.
                   </p>
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                     <Button
@@ -328,7 +328,7 @@ const Pricing = () => {
                       onClick={() => setShowWhatsAppModal(true)}
                     >
                       <Paperclip className="w-5 h-5" />
-                      WhatsApp پر Slip بھیجیں
+                      Send Slip on WhatsApp
                     </Button>
                   </div>
                 </div>
@@ -341,7 +341,7 @@ const Pricing = () => {
                   onClick={() => setShowBankDetails(true)}
                 >
                   <ChevronDown className="w-4 h-4" />
-                  International Bank Transfer Details دیکھیں
+                  View International Bank Transfer Details
                 </button>
               )}
 
@@ -552,7 +552,7 @@ const Pricing = () => {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <MessageCircle className="w-5 h-5 text-green-500" />
-                WhatsApp پر رابطہ کریں
+                Contact Us on WhatsApp
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
@@ -578,7 +578,7 @@ const Pricing = () => {
 
               {/* Link Options */}
               <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">اگر ایک لنک کام نہ کرے تو دوسرا try کریں:</p>
+                <p className="text-sm text-muted-foreground">If one link doesn't work, try the other:</p>
                 
                 <a
                   href={getWaMeLink()}
