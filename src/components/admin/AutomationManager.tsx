@@ -563,6 +563,42 @@ const AutomationManager = () => {
     }
   };
 
+  // Import from server files (pre-uploaded Excel files)
+  const handleServerFileImport = async (filePath: string) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(filePath);
+      if (!response.ok) throw new Error(`Failed to fetch ${filePath}`);
+      
+      const arrayBuffer = await response.arrayBuffer();
+      const data = new Uint8Array(arrayBuffer);
+      const workbook = XLSX.read(data, { type: "array" });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const automationsData = XLSX.utils.sheet_to_json<any>(sheet);
+      
+      // Map different column formats
+      const normalizedData = automationsData.map((item: any) => ({
+        title: item.name || item.Name || item.title || item.Title,
+        description: item.description || item.Description || "",
+        download_url: item.url || item.URL || item.template_url || item.download_url || item.Link || "",
+        creator: item.creator || item.Creator || "",
+        youtube_url: item.youtube_url || item.Youtube_url || "",
+      }));
+      
+      const created = await processAutomationsData(normalizedData);
+      const duplicateMsg = created.skippedDuplicates > 0 ? ` (${created.skippedDuplicates} duplicates skipped)` : '';
+      toast.success(
+        `Imported: ${created.automations} automations, ${created.categories} categories, ${created.subcategories} subcategories${duplicateMsg}`
+      );
+      refetch();
+      setUploadDialog(false);
+    } catch (error: any) {
+      toast.error("Failed to import from server file: " + error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Import from URL (Google Drive, etc.)
   const handleUrlImport = async () => {
     if (!jsonUrl.trim()) return;
@@ -998,6 +1034,32 @@ const AutomationManager = () => {
                   <p className="text-xs text-muted-foreground mb-1">JSON</p>
                   <Input type="file" accept=".json" onChange={handleJsonUpload} disabled={isLoading} />
                 </div>
+              </div>
+            </div>
+
+            {/* Server Files Import Section */}
+            <div className="space-y-3">
+              <p className="text-sm font-medium">📁 Import from Server Files:</p>
+              <p className="text-xs text-muted-foreground">
+                Click to import pre-uploaded Excel files from your server
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => handleServerFileImport('/uploads/n8n-templates-2000.xlsx')}
+                  disabled={isLoading}
+                  className="text-xs h-auto py-2"
+                >
+                  📊 2000 Templates
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => handleServerFileImport('/uploads/professional-templates-200.xlsx')}
+                  disabled={isLoading}
+                  className="text-xs h-auto py-2"
+                >
+                  📊 200 Professional
+                </Button>
               </div>
             </div>
 
