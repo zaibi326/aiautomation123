@@ -82,7 +82,7 @@ const simulateTypingLogs = async (logs: string[], message: string, onLog?: (msg:
   }
 };
 
-// Simulate node execution based on type and input data
+// Simulate node execution based on type and input data - uses actual parameters from JSON
 const executeNode = async (
   node: N8nNode,
   inputData: any,
@@ -92,42 +92,51 @@ const executeNode = async (
   const nodeType = node.type.toLowerCase();
   const params = node.parameters || {};
   const logs: string[] = [];
+  const nodeName = node.name;
   
-  // Realistic processing delays based on node type
-  const getProcessingDelay = () => {
-    if (nodeType.includes("ai") || nodeType.includes("openai") || nodeType.includes("gpt")) return 2500 + Math.random() * 2000;
-    if (nodeType.includes("http") || nodeType.includes("api")) return 800 + Math.random() * 1500;
-    if (nodeType.includes("email") || nodeType.includes("gmail")) return 1200 + Math.random() * 800;
-    if (nodeType.includes("sheets") || nodeType.includes("database")) return 1000 + Math.random() * 1000;
-    if (nodeType.includes("code") || nodeType.includes("function")) return 600 + Math.random() * 800;
-    return 400 + Math.random() * 600;
+  // Show actual parameters being used
+  const showParams = (key: string, value: any) => {
+    if (value && typeof value === 'string' && value.length < 100) {
+      logs.push(`   📌 ${key}: ${value}`);
+    } else if (value && typeof value === 'object') {
+      logs.push(`   📌 ${key}: ${JSON.stringify(value).substring(0, 80)}...`);
+    }
   };
 
   // Trigger nodes - start the workflow
-  if (nodeType.includes("trigger") || nodeType.includes("webhook") || nodeType.includes("manual") || nodeType.includes("start")) {
-    logs.push(`🔔 Trigger activated: ${node.name}`);
+  if (nodeType.includes("trigger") || nodeType.includes("webhook") || nodeType.includes("manual") || nodeType.includes("start") || nodeType.includes("respondtowebhook")) {
+    logs.push(`🔔 [${nodeName}] Trigger Node Activated`);
     await new Promise(resolve => setTimeout(resolve, 300));
-    logs.push(`📥 Receiving incoming webhook request...`);
+    
+    // Show actual webhook config if present
+    if (params.path) showParams("Webhook Path", params.path);
+    if (params.httpMethod) showParams("HTTP Method", params.httpMethod);
+    if (params.responseMode) showParams("Response Mode", params.responseMode);
+    
+    logs.push(`📥 Receiving incoming request...`);
     await new Promise(resolve => setTimeout(resolve, 400));
-    logs.push(`🔐 Validating request headers and authentication...`);
+    logs.push(`🔐 Validating authentication headers...`);
     await new Promise(resolve => setTimeout(resolve, 300));
-    logs.push(`✅ Request validated successfully`);
     
     const initialData = generateRealisticUsers(3);
+    logs.push(`✅ Trigger executed - Generated ${initialData.length} sample records`);
+    
     return {
       output: {
         json: {
           triggerTime: new Date().toISOString(),
           workflowId: "wf_" + Math.random().toString(36).substr(2, 9),
           executionId: `exec_${Date.now()}`,
-          source: params.source || "webhook_trigger",
+          source: params.path || params.source || "webhook",
+          httpMethod: params.httpMethod || "POST",
           headers: {
             "content-type": "application/json",
             "x-request-id": `req_${Math.random().toString(36).substr(2, 16)}`,
-            "user-agent": "n8n-workflow-engine/2.0"
+            "authorization": "Bearer ***hidden***"
           },
-          body: inputData || { event: "workflow_started", timestamp: Date.now() },
-          initialData: initialData
+          body: inputData || { action: "workflow_started", timestamp: Date.now() },
+          initialData: initialData,
+          nodeParams: params
         }
       },
       items: 1,
@@ -135,42 +144,40 @@ const executeNode = async (
     };
   }
 
-  // HTTP Request nodes
+  // HTTP Request nodes - show actual URL and method from params
   if (nodeType.includes("httprequest") || nodeType.includes("http")) {
-    const url = params.url || "https://api.example.com/data";
-    logs.push(`🌐 Initiating HTTP request...`);
+    const url = params.url || params.endpoint || "https://api.example.com/data";
+    const method = params.method || params.requestMethod || "GET";
+    
+    logs.push(`🌐 [${nodeName}] HTTP Request Node`);
     await new Promise(resolve => setTimeout(resolve, 300));
-    logs.push(`📡 Connecting to: ${url}`);
-    await new Promise(resolve => setTimeout(resolve, 600));
-    logs.push(`🔄 Sending request with headers...`);
+    logs.push(`   📌 Method: ${method}`);
+    logs.push(`   📌 URL: ${url}`);
+    if (params.authentication) logs.push(`   📌 Auth: ${params.authentication}`);
+    if (params.queryParameters) logs.push(`   📌 Query Params: ${JSON.stringify(params.queryParameters).substring(0, 50)}`);
+    
     await new Promise(resolve => setTimeout(resolve, 400));
-    logs.push(`⏳ Waiting for server response...`);
+    logs.push(`📡 Sending ${method} request...`);
+    await new Promise(resolve => setTimeout(resolve, 600));
+    logs.push(`⏳ Waiting for response...`);
     await new Promise(resolve => setTimeout(resolve, 800));
     
     const responseData = generateRealisticProducts(5);
     const responseSize = JSON.stringify(responseData).length;
     
-    logs.push(`📊 Response received: 200 OK (${responseSize} bytes)`);
-    await new Promise(resolve => setTimeout(resolve, 200));
-    logs.push(`✅ Parsed ${responseData.length} items from response`);
+    logs.push(`✅ Response: 200 OK (${responseSize} bytes, ${responseData.length} items)`);
     
     return {
       output: {
         json: {
           statusCode: 200,
           responseTime: Math.floor(Math.random() * 200) + 150,
+          requestUrl: url,
+          requestMethod: method,
           data: responseData,
-          pagination: {
-            page: 1,
-            perPage: 10,
-            total: responseData.length,
-            hasMore: false
-          },
-          headers: { 
-            "content-type": "application/json",
-            "x-ratelimit-remaining": Math.floor(Math.random() * 900) + 100
-          },
-          requestUrl: url
+          pagination: { page: 1, total: responseData.length, hasMore: false },
+          headers: { "content-type": "application/json", "x-ratelimit-remaining": Math.floor(Math.random() * 900) + 100 },
+          nodeParams: params
         }
       },
       items: responseData.length,
@@ -178,31 +185,37 @@ const executeNode = async (
     };
   }
 
-  // Gmail/Email nodes
-  if (nodeType.includes("gmail") || nodeType.includes("email") || nodeType.includes("mail")) {
-    const to = params.to || generateRandomEmail();
-    logs.push(`📧 Preparing email message...`);
+  // Gmail/Email nodes - show actual email params
+  if (nodeType.includes("gmail") || nodeType.includes("email") || nodeType.includes("mail") || nodeType.includes("sendgrid")) {
+    const to = params.sendTo || params.to || params.toEmail || generateRandomEmail();
+    const subject = params.subject || params.emailSubject || `Workflow Update - ${new Date().toLocaleDateString()}`;
+    const operation = params.operation || params.resource || "send";
+    
+    logs.push(`📧 [${nodeName}] Email Node`);
+    await new Promise(resolve => setTimeout(resolve, 300));
+    logs.push(`   📌 Operation: ${operation}`);
+    logs.push(`   📌 To: ${to}`);
+    logs.push(`   📌 Subject: ${subject}`);
+    if (params.message || params.text) logs.push(`   📌 Body: "${(params.message || params.text).substring(0, 50)}..."`);
+    
     await new Promise(resolve => setTimeout(resolve, 400));
     logs.push(`🔐 Authenticating with mail server...`);
     await new Promise(resolve => setTimeout(resolve, 600));
-    logs.push(`📤 Sending email to: ${to}`);
+    logs.push(`📤 Sending email...`);
     await new Promise(resolve => setTimeout(resolve, 800));
-    logs.push(`✅ Email delivered successfully`);
-    await new Promise(resolve => setTimeout(resolve, 200));
-    logs.push(`📬 Delivery confirmation received`);
+    logs.push(`✅ Email delivered to ${to}`);
     
     return {
       output: {
         json: {
           messageId: `<${Math.random().toString(36).substr(2, 12)}@mail.workflow.io>`,
           to: to,
-          from: "workflow@automation.io",
-          subject: params.subject || `Workflow Update - ${new Date().toLocaleDateString()}`,
+          from: params.from || "workflow@automation.io",
+          subject: subject,
           status: "delivered",
           sentAt: new Date().toISOString(),
           deliveryTime: Math.floor(Math.random() * 500) + 200,
-          attachments: [],
-          trackingId: `track_${Math.random().toString(36).substr(2, 10)}`
+          nodeParams: params
         }
       },
       items: 1,
@@ -210,35 +223,42 @@ const executeNode = async (
     };
   }
 
-  // Google Sheets nodes
+  // Google Sheets nodes - show actual spreadsheet config
   if (nodeType.includes("googlesheets") || nodeType.includes("sheets") || nodeType.includes("spreadsheet")) {
-    logs.push(`📊 Connecting to Google Sheets API...`);
-    await new Promise(resolve => setTimeout(resolve, 500));
-    logs.push(`🔐 Authenticating with service account...`);
+    const operation = params.operation || "append";
+    const sheetName = params.sheetName || params.sheet || "Sheet1";
+    const docId = params.documentId || params.spreadsheetId || "1BxiM" + Math.random().toString(36).substr(2, 6);
+    
+    logs.push(`📊 [${nodeName}] Google Sheets Node`);
+    await new Promise(resolve => setTimeout(resolve, 300));
+    logs.push(`   📌 Operation: ${operation}`);
+    logs.push(`   📌 Sheet: ${sheetName}`);
+    logs.push(`   📌 Document ID: ${docId.substring(0, 15)}...`);
+    if (params.range) logs.push(`   📌 Range: ${params.range}`);
+    
     await new Promise(resolve => setTimeout(resolve, 400));
-    logs.push(`📂 Opening spreadsheet...`);
+    logs.push(`🔐 Authenticating with Google API...`);
     await new Promise(resolve => setTimeout(resolve, 300));
     
     const inputItems = inputData?.json?.data || inputData?.json?.initialData || generateRealisticProducts(3);
     const rowCount = Array.isArray(inputItems) ? inputItems.length : 1;
     
-    logs.push(`📝 Writing ${rowCount} rows to Sheet1...`);
+    logs.push(`📝 ${operation.toUpperCase()} ${rowCount} rows to ${sheetName}...`);
     await new Promise(resolve => setTimeout(resolve, 600));
-    logs.push(`✅ Data synchronized successfully`);
-    await new Promise(resolve => setTimeout(resolve, 200));
-    logs.push(`🔄 Sheet cache updated`);
+    logs.push(`✅ ${rowCount} rows synced successfully`);
     
     return {
       output: {
         json: {
-          spreadsheetId: "1BxiM" + Math.random().toString(36).substr(2, 6),
-          spreadsheetUrl: `https://docs.google.com/spreadsheets/d/1BxiM${Math.random().toString(36).substr(2, 6)}`,
-          sheetName: "Sheet1",
-          range: `A1:E${rowCount + 1}`,
+          spreadsheetId: docId,
+          spreadsheetUrl: `https://docs.google.com/spreadsheets/d/${docId}`,
+          sheetName: sheetName,
+          range: params.range || `A1:E${rowCount + 1}`,
           rowsUpdated: rowCount,
-          operation: params.operation || "append",
+          operation: operation,
           data: inputItems,
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
+          nodeParams: params
         }
       },
       items: rowCount,
@@ -246,18 +266,25 @@ const executeNode = async (
     };
   }
 
-  // Slack nodes
+  // Slack nodes - show actual channel and message config
   if (nodeType.includes("slack")) {
-    const channel = params.channel || "#automation-alerts";
-    logs.push(`💬 Connecting to Slack workspace...`);
-    await new Promise(resolve => setTimeout(resolve, 400));
-    logs.push(`🔐 Validating bot permissions...`);
+    const channel = params.channel || params.channelId || "#automation-alerts";
+    const operation = params.operation || params.resource || "postMessage";
+    const text = params.text || params.message;
+    
+    logs.push(`💬 [${nodeName}] Slack Node`);
     await new Promise(resolve => setTimeout(resolve, 300));
-    logs.push(`📤 Posting message to ${channel}...`);
+    logs.push(`   📌 Operation: ${operation}`);
+    logs.push(`   📌 Channel: ${channel}`);
+    if (text) logs.push(`   📌 Message: "${text.substring(0, 50)}..."`);
+    if (params.username) logs.push(`   📌 Bot Name: ${params.username}`);
+    
+    await new Promise(resolve => setTimeout(resolve, 400));
+    logs.push(`🔐 Validating Slack token...`);
     await new Promise(resolve => setTimeout(resolve, 500));
-    logs.push(`✅ Message posted successfully`);
     
     const inputSummary = inputData?.json?.data ? `Processed ${inputData.json.data.length} items` : "Workflow update";
+    logs.push(`✅ Message posted to ${channel}`);
     
     return {
       output: {
@@ -265,14 +292,10 @@ const executeNode = async (
           ok: true,
           channel: channel,
           ts: (Date.now() / 1000).toFixed(6),
-          message: {
-            text: params.text || `🤖 ${inputSummary}`,
-            blocks: [
-              { type: "section", text: { type: "mrkdwn", text: `*Workflow Notification*\n${inputSummary}` } }
-            ]
-          },
+          message: { text: text || `🤖 ${inputSummary}` },
           messageId: "slack_" + Math.random().toString(36).substr(2, 10),
-          team: "T" + Math.random().toString(36).substr(2, 8).toUpperCase()
+          team: "T" + Math.random().toString(36).substr(2, 8).toUpperCase(),
+          nodeParams: params
         }
       },
       items: 1,
@@ -280,15 +303,23 @@ const executeNode = async (
     };
   }
 
-  // Telegram nodes
+  // Telegram nodes - show actual chat config
   if (nodeType.includes("telegram")) {
-    logs.push(`📱 Connecting to Telegram Bot API...`);
+    const chatId = params.chatId || params.chat_id || Math.floor(Math.random() * 1000000000);
+    const operation = params.operation || params.resource || "sendMessage";
+    const text = params.text || params.message;
+    
+    logs.push(`📱 [${nodeName}] Telegram Node`);
+    await new Promise(resolve => setTimeout(resolve, 300));
+    logs.push(`   📌 Operation: ${operation}`);
+    logs.push(`   📌 Chat ID: ${chatId}`);
+    if (text) logs.push(`   📌 Message: "${text.substring(0, 50)}..."`);
+    if (params.parseMode) logs.push(`   📌 Parse Mode: ${params.parseMode}`);
+    
     await new Promise(resolve => setTimeout(resolve, 400));
     logs.push(`🔐 Authenticating bot token...`);
-    await new Promise(resolve => setTimeout(resolve, 300));
-    logs.push(`📤 Sending message...`);
     await new Promise(resolve => setTimeout(resolve, 600));
-    logs.push(`✅ Message delivered`);
+    logs.push(`✅ ${operation} completed`);
     
     return {
       output: {
@@ -296,11 +327,12 @@ const executeNode = async (
           ok: true,
           result: {
             message_id: Math.floor(Math.random() * 100000),
-            from: { id: 123456789, is_bot: true, first_name: "WorkflowBot" },
-            chat: { id: Math.floor(Math.random() * 1000000000), type: "private" },
+            from: { id: 123456789, is_bot: true, first_name: params.botName || "WorkflowBot" },
+            chat: { id: chatId, type: params.chatType || "private" },
             date: Math.floor(Date.now() / 1000),
-            text: params.text || "Workflow notification"
-          }
+            text: text || "Workflow notification"
+          },
+          nodeParams: params
         }
       },
       items: 1,
@@ -308,25 +340,32 @@ const executeNode = async (
     };
   }
 
-  // WhatsApp nodes
+  // WhatsApp nodes - show actual phone and template config
   if (nodeType.includes("whatsapp")) {
-    logs.push(`📱 Connecting to WhatsApp Business API...`);
+    const phoneNumber = params.phoneNumber || params.phone || params.recipientPhoneNumber || "+1234567890";
+    const operation = params.operation || "sendMessage";
+    const messageType = params.messageType || params.type || "text";
+    
+    logs.push(`📱 [${nodeName}] WhatsApp Node`);
+    await new Promise(resolve => setTimeout(resolve, 300));
+    logs.push(`   📌 Operation: ${operation}`);
+    logs.push(`   📌 Phone: ${phoneNumber}`);
+    logs.push(`   📌 Type: ${messageType}`);
+    if (params.template) logs.push(`   📌 Template: ${params.template}`);
+    if (params.text) logs.push(`   📌 Message: "${params.text.substring(0, 50)}..."`);
+    
     await new Promise(resolve => setTimeout(resolve, 500));
-    logs.push(`🔐 Verifying phone number...`);
-    await new Promise(resolve => setTimeout(resolve, 400));
-    logs.push(`📤 Sending message via template...`);
+    logs.push(`🔐 Verifying WhatsApp Business API...`);
     await new Promise(resolve => setTimeout(resolve, 700));
-    logs.push(`✅ Message delivered successfully`);
+    logs.push(`✅ Message sent to ${phoneNumber}`);
     
     return {
       output: {
         json: {
           messaging_product: "whatsapp",
-          contacts: [{ input: params.phone || "+1234567890", wa_id: "1234567890" }],
-          messages: [{ 
-            id: "wamid." + Math.random().toString(36).substr(2, 22),
-            message_status: "sent" 
-          }]
+          contacts: [{ input: phoneNumber, wa_id: phoneNumber.replace(/\+/g, "") }],
+          messages: [{ id: "wamid." + Math.random().toString(36).substr(2, 22), message_status: "sent" }],
+          nodeParams: params
         }
       },
       items: 1,
@@ -334,36 +373,40 @@ const executeNode = async (
     };
   }
 
-  // OpenAI/AI nodes - longer processing
-  if (nodeType.includes("openai") || nodeType.includes("ai") || nodeType.includes("gpt") || nodeType.includes("claude") || nodeType.includes("langchain")) {
-    logs.push(`🤖 Initializing AI model connection...`);
-    await new Promise(resolve => setTimeout(resolve, 600));
-    logs.push(`📊 Preparing input context and tokens...`);
-    await new Promise(resolve => setTimeout(resolve, 400));
+  // OpenAI/AI nodes - show actual model, prompt, operation from params
+  if (nodeType.includes("openai") || nodeType.includes("ai") || nodeType.includes("gpt") || nodeType.includes("claude") || nodeType.includes("langchain") || nodeType.includes("agent")) {
+    const model = params.model || params.modelId || "gpt-4-turbo";
+    const operation = params.operation || params.resource || "chat";
+    const prompt = params.prompt || params.text || params.messages;
     
+    logs.push(`🤖 [${nodeName}] AI/LLM Node`);
+    await new Promise(resolve => setTimeout(resolve, 400));
+    logs.push(`   📌 Model: ${model}`);
+    logs.push(`   📌 Operation: ${operation}`);
+    if (prompt && typeof prompt === 'string') logs.push(`   📌 Prompt: "${prompt.substring(0, 60)}..."`);
+    if (params.systemMessage) logs.push(`   📌 System: "${params.systemMessage.substring(0, 50)}..."`);
+    if (params.temperature) logs.push(`   📌 Temperature: ${params.temperature}`);
+    if (params.maxTokens) logs.push(`   📌 Max Tokens: ${params.maxTokens}`);
+    
+    await new Promise(resolve => setTimeout(resolve, 600));
     const inputContext = inputData?.json?.data || inputData?.json?.initialData;
     const contextSize = inputContext ? JSON.stringify(inputContext).length : 100;
     
-    logs.push(`🧠 Processing ${contextSize} characters of context...`);
+    logs.push(`🧠 Processing ${contextSize} characters with ${model}...`);
     await new Promise(resolve => setTimeout(resolve, 1200));
-    logs.push(`⚡ Running inference with GPT-4...`);
+    logs.push(`⚡ Running inference...`);
     await new Promise(resolve => setTimeout(resolve, 1500));
     logs.push(`📝 Generating response...`);
     await new Promise(resolve => setTimeout(resolve, 800));
-    logs.push(`✅ AI processing complete`);
     
     const analysisResult = inputContext && Array.isArray(inputContext) ? {
-      summary: `Analyzed ${inputContext.length} records from the input data.`,
+      summary: `Analyzed ${inputContext.length} records using ${model}.`,
       insights: [
         `Found ${inputContext.filter((i: any) => i.status === "active").length || 0} active items`,
-        `Average value: $${(inputContext.reduce((sum: number, i: any) => sum + (i.price || i.value || 0), 0) / inputContext.length).toFixed(2) || "N/A"}`,
+        `Average value: $${(inputContext.reduce((sum: number, i: any) => sum + (i.price || i.value || 0), 0) / Math.max(inputContext.length, 1)).toFixed(2)}`,
         `Data quality score: ${Math.floor(Math.random() * 20) + 80}%`
       ],
-      recommendations: [
-        "Consider automating follow-up for pending items",
-        "Data patterns suggest peak activity between 9 AM - 2 PM",
-        "Recommend implementing batch processing for efficiency"
-      ],
+      recommendations: ["Automate follow-up for pending items", "Batch processing recommended"],
       processedItems: inputContext.map((item: any, idx: number) => ({
         ...item,
         aiScore: Math.floor(Math.random() * 40) + 60,
@@ -371,23 +414,26 @@ const executeNode = async (
         sentiment: ["positive", "neutral", "needs-attention"][Math.floor(Math.random() * 3)]
       }))
     } : {
-      summary: "AI analysis completed successfully",
-      insights: ["No specific data patterns detected"],
-      recommendations: ["Provide structured input for detailed analysis"]
+      summary: `AI analysis completed with ${model}`,
+      response: prompt ? `Response to: "${prompt.substring(0, 30)}..."` : "Analysis complete",
+      insights: ["AI processing successful"],
+      confidence: 0.92
     };
+    
+    const promptTokens = Math.floor(contextSize / 4) + 50;
+    const completionTokens = Math.floor(Math.random() * 300) + 100;
+    logs.push(`✅ Complete - ${promptTokens + completionTokens} tokens used`);
     
     return {
       output: {
         json: {
-          model: "gpt-4-turbo",
+          model: model,
+          operation: operation,
           analysis: analysisResult,
-          usage: {
-            prompt_tokens: Math.floor(contextSize / 4) + 50,
-            completion_tokens: Math.floor(Math.random() * 300) + 100,
-            total_tokens: Math.floor(contextSize / 4) + Math.floor(Math.random() * 300) + 150
-          },
+          usage: { prompt_tokens: promptTokens, completion_tokens: completionTokens, total_tokens: promptTokens + completionTokens },
           processingTime: Math.floor(Math.random() * 2000) + 1500,
-          finish_reason: "stop"
+          finish_reason: "stop",
+          nodeParams: params
         }
       },
       items: 1,
@@ -395,17 +441,26 @@ const executeNode = async (
     };
   }
 
-  // Code/Function nodes - data transformation
+  // Code/Function nodes - show actual code snippet from params
   if (nodeType.includes("code") || nodeType.includes("function") || nodeType.includes("javascript")) {
-    logs.push(`💻 Initializing JavaScript runtime...`);
+    const jsCode = params.jsCode || params.functionCode || params.code;
+    const mode = params.mode || "runOnceForAllItems";
+    
+    logs.push(`💻 [${nodeName}] Code/Function Node`);
     await new Promise(resolve => setTimeout(resolve, 300));
+    logs.push(`   📌 Mode: ${mode}`);
+    if (jsCode) {
+      const codePreview = jsCode.toString().replace(/\s+/g, ' ').substring(0, 80);
+      logs.push(`   📌 Code: ${codePreview}...`);
+    }
+    
     logs.push(`📥 Loading input data...`);
     await new Promise(resolve => setTimeout(resolve, 200));
     
     const inputItems = inputData?.json?.data || inputData?.json?.initialData || inputData?.json?.analysis?.processedItems;
     
     if (Array.isArray(inputItems) && inputItems.length > 0) {
-      logs.push(`🔄 Processing ${inputItems.length} items...`);
+      logs.push(`🔄 Processing ${inputItems.length} items with custom code...`);
       await new Promise(resolve => setTimeout(resolve, 400));
       logs.push(`📊 Applying transformations...`);
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -420,19 +475,16 @@ const executeNode = async (
         tags: ["automated", "validated", idx % 2 === 0 ? "even-batch" : "odd-batch"]
       }));
       
-      logs.push(`✅ Transformed ${transformedData.length} items successfully`);
+      logs.push(`✅ Code executed - Transformed ${transformedData.length} items`);
       
       return {
         output: {
           json: {
             items: transformedData,
-            stats: {
-              totalProcessed: transformedData.length,
-              successRate: 100,
-              transformations: ["addId", "computeValue", "addTags"]
-            },
+            stats: { totalProcessed: transformedData.length, successRate: 100, transformations: ["addId", "computeValue", "addTags"] },
             executionTime: Date.now(),
-            codeVersion: "2.1.0"
+            codeVersion: "2.1.0",
+            nodeParams: params
           }
         },
         items: transformedData.length,
@@ -449,7 +501,8 @@ const executeNode = async (
         json: {
           items: [{ processed: true, result: "code_executed", timestamp: Date.now() }],
           executionTime: Date.now(),
-          codeVersion: "2.1.0"
+          codeVersion: "2.1.0",
+          nodeParams: params
         }
       },
       items: 1,
@@ -614,25 +667,39 @@ const executeNode = async (
     };
   }
 
-  // Database nodes
-  if (nodeType.includes("postgres") || nodeType.includes("mysql") || nodeType.includes("database") || nodeType.includes("supabase")) {
-    logs.push(`🗄️ Connecting to database...`);
-    await new Promise(resolve => setTimeout(resolve, 500));
+  // Database nodes - show actual table, operation, query from params
+  if (nodeType.includes("postgres") || nodeType.includes("mysql") || nodeType.includes("database") || nodeType.includes("supabase") || nodeType.includes("mongodb")) {
+    const operation = params.operation || "select";
+    const table = params.table || params.collection || "records";
+    const query = params.query || params.queryParams;
+    
+    logs.push(`🗄️ [${nodeName}] Database Node`);
+    await new Promise(resolve => setTimeout(resolve, 400));
+    logs.push(`   📌 Operation: ${operation.toUpperCase()}`);
+    logs.push(`   📌 Table: ${table}`);
+    if (query) logs.push(`   📌 Query: ${typeof query === 'string' ? query.substring(0, 60) : JSON.stringify(query).substring(0, 60)}...`);
+    if (params.limit) logs.push(`   📌 Limit: ${params.limit}`);
+    if (params.where) logs.push(`   📌 Where: ${JSON.stringify(params.where).substring(0, 50)}`);
+    
+    await new Promise(resolve => setTimeout(resolve, 300));
     logs.push(`🔐 Authenticating connection...`);
     await new Promise(resolve => setTimeout(resolve, 300));
-    logs.push(`📊 Executing query...`);
-    await new Promise(resolve => setTimeout(resolve, 700));
+    logs.push(`📊 Executing ${operation}...`);
+    await new Promise(resolve => setTimeout(resolve, 600));
     
-    const records = generateRealisticUsers(4);
-    logs.push(`✅ Query returned ${records.length} rows`);
+    const records = generateRealisticUsers(params.limit || 4);
+    logs.push(`✅ ${operation.toUpperCase()} returned ${records.length} rows from ${table}`);
     
     return {
       output: {
         json: {
           data: records,
           rowCount: records.length,
-          query: params.query || "SELECT * FROM records LIMIT 10",
-          executionTime: Math.floor(Math.random() * 100) + 50
+          operation: operation,
+          table: table,
+          query: query || `SELECT * FROM ${table} LIMIT ${params.limit || 10}`,
+          executionTime: Math.floor(Math.random() * 100) + 50,
+          nodeParams: params
         }
       },
       items: records.length,
