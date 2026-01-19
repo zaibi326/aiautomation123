@@ -1345,7 +1345,8 @@ export const useWorkflowAgentEngine = (workflow: N8nWorkflow | null) => {
   const executeWorkflow = useCallback(async (
     onNodeStart?: (nodeName: string) => void,
     onNodeComplete?: (nodeName: string, result: ExecutionResult) => void,
-    onLog?: (message: string) => void
+    onLog?: (message: string) => void,
+    customInputData?: any[] // User-provided input data
   ) => {
     if (!workflow?.nodes?.length) {
       return;
@@ -1399,7 +1400,14 @@ export const useWorkflowAgentEngine = (workflow: N8nWorkflow | null) => {
       finalOutput: null
     }));
 
+    // Check if custom input data is provided
+    const hasCustomInput = customInputData && customInputData.length > 0;
+    
     onLog?.("🚀 Starting workflow agent execution...");
+    if (hasCustomInput) {
+      onLog?.(`📥 USER INPUT DATA PROVIDED: ${customInputData.length} item(s)`);
+      onLog?.(`   ${JSON.stringify(customInputData).substring(0, 150)}${JSON.stringify(customInputData).length > 150 ? '...' : ''}`);
+    }
     onLog?.(`📋 Workflow: ${executionOrder.length} nodes to execute`);
     onLog?.(`🔗 Execution order: ${executionOrder.join(" → ")}`);
     onLog?.("");
@@ -1409,20 +1417,44 @@ export const useWorkflowAgentEngine = (workflow: N8nWorkflow | null) => {
     const nodeExecutionTimes: Record<string, number> = {};
     const executionResults: ExecutionResult[] = [];
     let lastOutput: any = null;
+    
+    // Prepare initial input from custom data
+    let initialInputData: any = null;
+    if (hasCustomInput) {
+      initialInputData = {
+        json: {
+          userInput: true,
+          data: customInputData,
+          items: customInputData,
+          initialData: customInputData,
+          _inputSource: 'user_provided',
+          _timestamp: new Date().toISOString()
+        }
+      };
+    }
 
-    for (const nodeName of executionOrder) {
+    for (let nodeIndex = 0; nodeIndex < executionOrder.length; nodeIndex++) {
+      const nodeName = executionOrder[nodeIndex];
       const node = nodes.find(n => n.name === nodeName);
       if (!node) continue;
 
-      // Find input data from connected nodes
+      // Find input data from connected nodes OR use custom input for first node
       let inputData: any = null;
-      for (const [fromNode, targets] of Object.entries(connections)) {
-        const isConnected = targets.main?.some(mainConns => 
-          mainConns.some(conn => conn.node === nodeName)
-        );
-        if (isConnected && nodeOutputs[fromNode]) {
-          inputData = nodeOutputs[fromNode];
-          break;
+      
+      // For the first node (trigger), use custom input if provided
+      if (nodeIndex === 0 && initialInputData) {
+        inputData = initialInputData;
+        onLog?.(`📥 Using user-provided input data for ${nodeName}`);
+      } else {
+        // Find input from connected previous nodes
+        for (const [fromNode, targets] of Object.entries(connections)) {
+          const isConnected = targets.main?.some(mainConns => 
+            mainConns.some(conn => conn.node === nodeName)
+          );
+          if (isConnected && nodeOutputs[fromNode]) {
+            inputData = nodeOutputs[fromNode];
+            break;
+          }
         }
       }
 
