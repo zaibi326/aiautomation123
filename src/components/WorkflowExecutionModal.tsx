@@ -383,6 +383,43 @@ export const WorkflowExecutionModal = ({
     return order;
   }, [workflow]);
 
+  // Export execution log as JSON
+  const exportExecutionLog = useCallback(() => {
+    const exportData = {
+      workflow: {
+        title: workflowTitle,
+        exportedAt: new Date().toISOString(),
+        totalExecutionTime: totalTime,
+        status: executionStatus,
+      },
+      nodes: nodes.map(node => ({
+        name: node.name,
+        type: node.type,
+        parameters: node.parameters || {},
+        status: nodeStatuses[node.name] || 'pending',
+        executionTime: nodeExecutionTimes[node.name] || 0,
+        output: nodeOutputs[node.name] || null,
+      })),
+      executionOrder,
+      logs: executionLogs.map(log => ({
+        type: log.type,
+        content: log.content,
+        nodeName: log.nodeName,
+      })),
+      rawWorkflowJson: workflow,
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${workflowTitle.replace(/[^a-z0-9]/gi, '_')}_execution_log_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [workflowTitle, totalTime, executionStatus, nodes, nodeStatuses, nodeExecutionTimes, nodeOutputs, executionOrder, executionLogs, workflow]);
+
   // Reset state when modal opens
   useEffect(() => {
     if (open) {
@@ -557,10 +594,21 @@ export const WorkflowExecutionModal = ({
                   {(totalTime / 1000).toFixed(2)}s
                 </div>
                 {executionStatus === "completed" && (
-                  <span className="text-xs font-medium text-green-400 flex items-center gap-1.5 bg-green-500/15 px-3 py-1.5 rounded-full border border-green-500/30">
-                    <CheckCircle className="w-3.5 h-3.5" />
-                    Execution Complete
-                  </span>
+                  <>
+                    <span className="text-xs font-medium text-green-400 flex items-center gap-1.5 bg-green-500/15 px-3 py-1.5 rounded-full border border-green-500/30">
+                      <CheckCircle className="w-3.5 h-3.5" />
+                      Execution Complete
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 text-xs text-slate-300 hover:text-white hover:bg-slate-700 gap-1.5"
+                      onClick={exportExecutionLog}
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      Export Log
+                    </Button>
+                  </>
                 )}
               </div>
             </div>
