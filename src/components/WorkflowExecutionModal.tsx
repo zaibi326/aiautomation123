@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Loader2, Play, X, Clock, Zap, Code, FileJson, Copy, Check, Download, BookOpen, ExternalLink, ArrowRight, Info, ZoomIn, ZoomOut, Maximize2, Move, Terminal, Bot, LayoutGrid } from "lucide-react";
+import { CheckCircle, Loader2, Play, X, Clock, Zap, Code, FileJson, Copy, Check, Download, BookOpen, ExternalLink, ArrowRight, Info, ZoomIn, ZoomOut, Maximize2, Move, Terminal, Bot, LayoutGrid, Sparkles } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWorkflowAgentEngine, ExecutionResult } from "./WorkflowAgentEngine";
 import { ExecutionFlowPanel } from "./NodeExecutionPanel";
+import { WorkflowInputPanel } from "./WorkflowInputPanel";
 
 interface N8nNode {
   id?: string;
@@ -245,10 +246,11 @@ export const WorkflowExecutionModal = ({
   const [totalTime, setTotalTime] = useState(0);
   const [selectedNodeOutput, setSelectedNodeOutput] = useState<string | null>(null);
   const [selectedNodeFromPreview, setSelectedNodeFromPreview] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"visual" | "output" | "workflow" | "guide" | "console">("visual");
+  const [activeTab, setActiveTab] = useState<"visual" | "output" | "workflow" | "guide" | "console" | "input">("input");
   const [copiedJson, setCopiedJson] = useState(false);
   const [copiedNodeOutput, setCopiedNodeOutput] = useState<string | null>(null);
   const [expandedGuide, setExpandedGuide] = useState<"n8n" | "make" | "zapier" | null>("n8n");
+  const [customInputData, setCustomInputData] = useState<any[] | null>(null);
   
   // Zoom and pan state
   const [zoom, setZoom] = useState(1);
@@ -437,7 +439,7 @@ export const WorkflowExecutionModal = ({
     }
   }, [open, resetExecution]);
 
-  const startExecution = async () => {
+  const startExecution = async (inputData?: any[]) => {
     setExecutionStatus("running");
     setExecutionLogs([]);
     setNodeOutputs({});
@@ -446,6 +448,12 @@ export const WorkflowExecutionModal = ({
     setSelectedNodeFromPreview(null);
     setZoom(1);
     setPan({ x: 0, y: 0 });
+    setActiveTab("visual"); // Switch to visual tab when execution starts
+    
+    // Store custom input if provided
+    if (inputData) {
+      setCustomInputData(inputData);
+    }
     
     // Initialize all nodes as pending
     const initialStatuses: Record<string, NodeStatus> = {};
@@ -454,7 +462,7 @@ export const WorkflowExecutionModal = ({
     });
     setNodeStatuses(initialStatuses);
 
-    // Use the agent engine for execution
+    // Use the agent engine for execution with custom input
     await executeWorkflow(
       // onNodeStart
       (nodeName: string) => {
@@ -476,12 +484,19 @@ export const WorkflowExecutionModal = ({
       // onLog
       (message: string) => {
         setExecutionLogs(prev => [...prev, { type: 'log', content: message }]);
-      }
+      },
+      // Custom input data
+      inputData || customInputData || undefined
     );
     
     setExecutionStatus("completed");
     onComplete?.();
   };
+  
+  // Handler for input panel execution
+  const handleExecuteWithInput = useCallback((inputData: any[]) => {
+    startExecution(inputData);
+  }, []);
 
   // Calculate bounds for workflow preview
   const positions = nodes.map(n => n.position || [0, 0]);
@@ -888,9 +903,13 @@ export const WorkflowExecutionModal = ({
 
           {/* Execution Logs & Output with Tabs - Collapsible */}
           <div className="border border-border rounded-xl bg-card overflow-hidden flex flex-col h-[400px] mt-4 shadow-lg">
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "output" | "workflow" | "guide" | "console" | "visual")} className="flex flex-col h-full">
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "output" | "workflow" | "guide" | "console" | "visual" | "input")} className="flex flex-col h-full">
               <div className="p-2 border-b border-border flex items-center justify-between">
                 <TabsList className="h-8">
+                  <TabsTrigger value="input" className="text-xs h-7 px-3 gap-1.5">
+                    <Sparkles className="w-3 h-3" />
+                    Input
+                  </TabsTrigger>
                   <TabsTrigger value="visual" className="text-xs h-7 px-3 gap-1.5">
                     <LayoutGrid className="w-3 h-3" />
                     Execution
@@ -977,7 +996,7 @@ export const WorkflowExecutionModal = ({
                       <div className="flex flex-col items-center justify-center h-48 text-center">
                         <LayoutGrid className="w-12 h-12 text-slate-500 mb-4" />
                         <p className="text-slate-400 font-medium">Ready to Execute</p>
-                        <p className="text-slate-500 text-sm mt-1">Click "Run Workflow" to see execution data flow</p>
+                        <p className="text-slate-500 text-sm mt-1">Use the "Input" tab to provide data and run the workflow</p>
                       </div>
                     ) : (
                       <ExecutionFlowPanel
@@ -990,6 +1009,35 @@ export const WorkflowExecutionModal = ({
                         nodeStatuses={nodeStatuses}
                         executionOrder={executionOrder}
                       />
+                    )}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+
+              {/* NEW: Input Tab for User Data */}
+              <TabsContent value="input" className="flex-1 m-0 mt-0 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col">
+                <ScrollArea className="h-[300px]">
+                  <div className="p-4">
+                    <WorkflowInputPanel
+                      onExecute={handleExecuteWithInput}
+                      isRunning={executionStatus === "running"}
+                      workflowNodes={nodes.map(n => ({ name: n.name, type: n.type }))}
+                    />
+                    
+                    {/* Show last used input if available */}
+                    {customInputData && executionStatus === "completed" && (
+                      <div className="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <CheckCircle className="w-4 h-4 text-emerald-400" />
+                          <span className="text-sm font-medium text-emerald-400">Execution Complete</span>
+                        </div>
+                        <p className="text-xs text-slate-400 mb-2">
+                          Input used: {customInputData.length} item(s)
+                        </p>
+                        <pre className="text-[10px] text-green-400 bg-slate-900 p-2 rounded max-h-20 overflow-auto">
+                          {JSON.stringify(customInputData, null, 2).substring(0, 200)}...
+                        </pre>
+                      </div>
                     )}
                   </div>
                 </ScrollArea>
@@ -1482,7 +1530,7 @@ export const WorkflowExecutionModal = ({
               Close
             </Button>
             <Button 
-              onClick={startExecution} 
+              onClick={() => startExecution()} 
               disabled={executionStatus === "running"}
               variant={executionStatus === "completed" ? "outline" : "default"}
             >
