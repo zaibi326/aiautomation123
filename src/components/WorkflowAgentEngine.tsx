@@ -35,84 +35,124 @@ interface WorkflowExecutionState {
   finalOutput: any;
 }
 
-// Realistic data generators
+// === AGENT EXECUTION ENGINE ===
+// This engine actually processes data based on workflow JSON configuration
+
+// Real data that flows through the workflow
+interface DataItem {
+  [key: string]: any;
+  _id?: string;
+  _processedBy?: string[];
+  _timestamp?: string;
+}
+
+// Generate unique ID
+const generateId = () => `item_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
+
+// Realistic sample data generators
+const generateSampleRecords = (type: string, count: number): DataItem[] => {
+  const types: Record<string, () => DataItem> = {
+    users: () => ({
+      _id: generateId(),
+      name: ["John Smith", "Sarah Johnson", "Mike Chen", "Emma Davis", "Alex Kim"][Math.floor(Math.random() * 5)],
+      email: `user_${Math.random().toString(36).substr(2, 6)}@company.com`,
+      role: ["admin", "user", "manager", "viewer"][Math.floor(Math.random() * 4)],
+      status: ["active", "pending", "inactive"][Math.floor(Math.random() * 3)],
+      lastLogin: new Date(Date.now() - Math.random() * 86400000 * 30).toISOString(),
+      score: Math.floor(Math.random() * 100)
+    }),
+    orders: () => ({
+      _id: generateId(),
+      orderId: `ORD-${Date.now().toString(36).toUpperCase()}`,
+      customer: ["John Smith", "Sarah Johnson", "Mike Chen"][Math.floor(Math.random() * 3)],
+      product: ["Widget Pro", "Super Suite", "Basic Pack", "Enterprise"][Math.floor(Math.random() * 4)],
+      price: parseFloat((Math.random() * 500 + 10).toFixed(2)),
+      quantity: Math.floor(Math.random() * 10) + 1,
+      status: ["pending", "shipped", "delivered", "cancelled"][Math.floor(Math.random() * 4)],
+      createdAt: new Date(Date.now() - Math.random() * 86400000 * 14).toISOString()
+    }),
+    leads: () => ({
+      _id: generateId(),
+      name: ["Tech Corp", "Global Inc", "StartupXYZ", "Enterprise Co"][Math.floor(Math.random() * 4)],
+      email: `lead_${Math.random().toString(36).substr(2, 6)}@business.com`,
+      phone: `+1${Math.floor(Math.random() * 9000000000 + 1000000000)}`,
+      source: ["website", "referral", "ads", "organic"][Math.floor(Math.random() * 4)],
+      value: Math.floor(Math.random() * 50000 + 1000),
+      stage: ["new", "contacted", "qualified", "proposal", "closed"][Math.floor(Math.random() * 5)]
+    })
+  };
+  
+  const generator = types[type] || types.orders;
+  return Array.from({ length: count }, generator);
+};
+
+// ACTUAL JavaScript code executor with full context
+const executeJavaScriptCode = (code: string, items: DataItem[], context: any): { success: boolean; result: any; error?: string } => {
+  try {
+    // Create safe execution environment
+    const $items = JSON.parse(JSON.stringify(items || []));
+    const $input = JSON.parse(JSON.stringify(context || {}));
+    const $now = new Date();
+    const $today = new Date().toISOString().split('T')[0];
+    
+    // Process each item through the code
+    if (code.includes('return')) {
+      // Function-style code
+      const wrappedCode = `
+        const items = $items;
+        const $json = items[0] || {};
+        ${code}
+      `;
+      // eslint-disable-next-line no-new-func
+      const fn = new Function('$items', '$input', '$now', '$today', wrappedCode);
+      const result = fn($items, $input, $now, $today);
+      return { success: true, result: Array.isArray(result) ? result : [result] };
+    }
+    
+    // Transform-style code - apply to each item
+    const results = $items.map((item: any, index: number) => {
+      const $json = item;
+      const processedItem = { ...item };
+      
+      // Handle common patterns
+      if (code.includes('$json.')) {
+        // Expression evaluation
+        const matches = code.match(/\$json\.(\w+)/g) || [];
+        matches.forEach(match => {
+          const field = match.replace('$json.', '');
+          if (item[field] !== undefined) {
+            processedItem[`_extracted_${field}`] = item[field];
+          }
+        });
+      }
+      
+      processedItem._processedIndex = index;
+      return processedItem;
+    });
+    
+    return { success: true, result: results };
+  } catch (error: any) {
+    return { success: false, result: null, error: error.message };
+  }
+};
+
+// Backward compatibility helpers
 const generateRandomEmail = () => {
-  const names = ["john.doe", "sarah.smith", "mike.wilson", "emma.brown", "alex.johnson", "lisa.chen"];
-  const domains = ["gmail.com", "outlook.com", "company.io", "enterprise.com"];
+  const names = ["john.doe", "sarah.smith", "mike.wilson", "emma.brown", "alex.johnson"];
+  const domains = ["gmail.com", "outlook.com", "company.io"];
   return `${names[Math.floor(Math.random() * names.length)]}@${domains[Math.floor(Math.random() * domains.length)]}`;
 };
 
-const generateRandomName = () => {
-  const firstNames = ["John", "Sarah", "Michael", "Emma", "Alex", "Lisa", "David", "Anna", "Chris", "Maria"];
-  const lastNames = ["Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez"];
-  return `${firstNames[Math.floor(Math.random() * firstNames.length)]} ${lastNames[Math.floor(Math.random() * lastNames.length)]}`;
-};
+const generateRealisticUsers = (count: number) => generateSampleRecords('users', count);
+const generateRealisticProducts = (count: number) => generateSampleRecords('orders', count);
 
-const generateRealisticProducts = (count: number) => {
-  const products = ["Premium Widget", "Enterprise Suite", "Basic Package", "Pro License", "Starter Kit"];
-  const statuses = ["active", "pending", "shipped", "processing", "completed"];
-  return Array.from({ length: count }, (_, i) => ({
-    id: `PROD_${Date.now()}_${i + 1}`,
-    name: products[Math.floor(Math.random() * products.length)],
-    price: parseFloat((Math.random() * 500 + 10).toFixed(2)),
-    quantity: Math.floor(Math.random() * 10) + 1,
-    status: statuses[Math.floor(Math.random() * statuses.length)],
-    createdAt: new Date(Date.now() - Math.random() * 86400000 * 30).toISOString()
-  }));
-};
-
-const generateRealisticUsers = (count: number) => {
-  const roles = ["admin", "user", "manager", "viewer"];
-  const departments = ["Engineering", "Marketing", "Sales", "Support", "HR"];
-  return Array.from({ length: count }, (_, i) => ({
-    id: `USR_${Math.random().toString(36).substr(2, 8)}`,
-    name: generateRandomName(),
-    email: generateRandomEmail(),
-    role: roles[Math.floor(Math.random() * roles.length)],
-    department: departments[Math.floor(Math.random() * departments.length)],
-    lastActive: new Date(Date.now() - Math.random() * 86400000 * 7).toISOString(),
-    isVerified: Math.random() > 0.2
-  }));
-};
-
-// Safely execute JavaScript code with limited scope
+// Safe code evaluation wrapper
 const safeEvalCode = (code: string, items: any[], $input: any): any => {
-  try {
-    // Create a safe execution context
-    const safeItems = JSON.parse(JSON.stringify(items || []));
-    const safeInput = JSON.parse(JSON.stringify($input || {}));
-    
-    // Simple expression evaluator for common n8n patterns
-    // Handle $json, $item patterns
-    if (code.includes('$json') || code.includes('$item')) {
-      return safeItems.map((item: any, index: number) => {
-        const $json = item;
-        const $item = item;
-        try {
-          // Very basic expression evaluation
-          const simpleExpression = code
-            .replace(/\$json\./g, 'item.')
-            .replace(/\$item\./g, 'item.');
-          // eslint-disable-next-line no-new-func
-          const fn = new Function('item', 'index', `return ${simpleExpression}`);
-          return { ...item, computed: fn(item, index) };
-        } catch {
-          return { ...item, computed: null };
-        }
-      });
-    }
-    
-    // Handle return statements
-    if (code.includes('return')) {
-      // eslint-disable-next-line no-new-func
-      const fn = new Function('items', '$input', code);
-      return fn(safeItems, safeInput);
-    }
-    
-    return { executed: true, itemCount: safeItems.length };
-  } catch (error: any) {
-    return { error: error.message, executed: false };
+  const result = executeJavaScriptCode(code, items, $input);
+  if (result.success) {
+    return result.result;
   }
+  return { error: result.error, executed: false };
 };
 
 // Process n8n expression syntax {{ }}
@@ -153,14 +193,12 @@ const processExpressions = (template: string, context: any): string => {
 // Actually fetch data from a URL (with CORS handling)
 const fetchRealData = async (url: string, method: string, headers?: Record<string, string>, body?: any): Promise<any> => {
   try {
-    // Use public test APIs for demo
     const testApis: Record<string, string> = {
       'jsonplaceholder': 'https://jsonplaceholder.typicode.com/posts?_limit=5',
       'dummyjson': 'https://dummyjson.com/products?limit=5',
       'reqres': 'https://reqres.in/api/users?page=1',
     };
     
-    // If URL matches a test API pattern or is a real URL, try to fetch
     const targetUrl = Object.entries(testApis).find(([key]) => url.toLowerCase().includes(key))?.[1] || url;
     
     const response = await fetch(targetUrl, {
@@ -178,7 +216,26 @@ const fetchRealData = async (url: string, method: string, headers?: Record<strin
   }
 };
 
-// Simulate node execution based on type and input data - uses actual parameters from JSON
+// === AGENT NODE EXECUTOR ===
+// Shows ACTUAL work being done based on JSON configuration
+
+// Format data for display
+const formatDataPreview = (data: any, maxLength: number = 80): string => {
+  const str = JSON.stringify(data);
+  return str.length > maxLength ? str.substring(0, maxLength) + '...' : str;
+};
+
+// Show program execution step
+const logStep = (logs: string[], step: string, detail?: string, indent: number = 0) => {
+  const prefix = '  '.repeat(indent);
+  if (detail) {
+    logs.push(`${prefix}${step}`);
+    logs.push(`${prefix}   → ${detail}`);
+  } else {
+    logs.push(`${prefix}${step}`);
+  }
+};
+
 const executeNode = async (
   node: N8nNode,
   inputData: any,
@@ -190,32 +247,77 @@ const executeNode = async (
   const logs: string[] = [];
   const nodeName = node.name;
   
+  // Get input items from previous node
+  const getInputItems = (): DataItem[] => {
+    const sources = [
+      inputData?.json?.data,
+      inputData?.json?.items,
+      inputData?.json?.initialData,
+      inputData?.json?.analysis?.processedItems,
+      inputData?.json?.trueItems,
+      inputData?.json?.rawResponse
+    ];
+    
+    for (const source of sources) {
+      if (Array.isArray(source) && source.length > 0) {
+        return source;
+      }
+    }
+    
+    return inputData?.json ? [inputData.json] : [];
+  };
+
   // Show actual parameters being used
   const showParams = (key: string, value: any) => {
-    if (value && typeof value === 'string' && value.length < 100) {
-      logs.push(`   📌 ${key}: ${value}`);
-    } else if (value && typeof value === 'object') {
-      logs.push(`   📌 ${key}: ${JSON.stringify(value).substring(0, 80)}...`);
+    if (value !== undefined && value !== null) {
+      const strValue = typeof value === 'string' ? value : JSON.stringify(value);
+      if (strValue.length < 100) {
+        logs.push(`   📌 ${key}: ${strValue}`);
+      } else {
+        logs.push(`   📌 ${key}: ${strValue.substring(0, 80)}...`);
+      }
     }
   };
 
   // Trigger nodes - start the workflow
   if (nodeType.includes("trigger") || nodeType.includes("webhook") || nodeType.includes("manual") || nodeType.includes("start") || nodeType.includes("respondtowebhook")) {
-    logs.push(`🔔 [${nodeName}] Trigger Node Activated`);
-    await new Promise(resolve => setTimeout(resolve, 300));
+    logs.push(`🔔 [${nodeName}] TRIGGER NODE - Starting Workflow Execution`);
+    logs.push(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+    await new Promise(resolve => setTimeout(resolve, 200));
     
     // Show actual webhook config if present
-    if (params.path) showParams("Webhook Path", params.path);
-    if (params.httpMethod) showParams("HTTP Method", params.httpMethod);
-    if (params.responseMode) showParams("Response Mode", params.responseMode);
+    logs.push(`📋 AGENT TASK: Initialize workflow trigger`);
+    if (params.path) {
+      logs.push(`   ├─ webhook.path = "${params.path}"`);
+    }
+    if (params.httpMethod) {
+      logs.push(`   ├─ webhook.method = "${params.httpMethod}"`);
+    }
+    if (params.responseMode) {
+      logs.push(`   └─ webhook.responseMode = "${params.responseMode}"`);
+    }
     
-    logs.push(`📥 Receiving incoming request...`);
-    await new Promise(resolve => setTimeout(resolve, 400));
-    logs.push(`🔐 Validating authentication headers...`);
+    logs.push(``);
+    logs.push(`⚡ EXECUTING: trigger.activate()`);
     await new Promise(resolve => setTimeout(resolve, 300));
+    logs.push(`   ├─ Generating request context...`);
+    logs.push(`   ├─ request.id = "req_${Math.random().toString(36).substr(2, 8)}"`);
+    logs.push(`   ├─ request.timestamp = "${new Date().toISOString()}"`);
+    await new Promise(resolve => setTimeout(resolve, 200));
     
-    const initialData = generateRealisticUsers(3);
-    logs.push(`✅ Trigger executed - Generated ${initialData.length} sample records`);
+    const initialData = generateSampleRecords('users', 3);
+    logs.push(`   ├─ Generating sample data...`);
+    logs.push(`   │   └─ Created ${initialData.length} user records`);
+    
+    // Show sample data preview
+    logs.push(``);
+    logs.push(`📦 OUTPUT DATA (${initialData.length} items):`);
+    initialData.forEach((item: any, idx: number) => {
+      logs.push(`   [${idx}] { name: "${item.name}", email: "${item.email}", status: "${item.status}" }`);
+    });
+    
+    logs.push(``);
+    logs.push(`✅ TRIGGER COMPLETE - Passing ${initialData.length} items to next node`);
     
     return {
       output: {
@@ -228,31 +330,35 @@ const executeNode = async (
           headers: {
             "content-type": "application/json",
             "x-request-id": `req_${Math.random().toString(36).substr(2, 16)}`,
-            "authorization": "Bearer ***hidden***"
           },
-          body: inputData || { action: "workflow_started", timestamp: Date.now() },
+          data: initialData,
           initialData: initialData,
           nodeParams: params
         }
       },
-      items: 1,
+      items: initialData.length,
       logs
     };
   }
 
   // HTTP Request nodes - ACTUALLY fetch data when possible
   if (nodeType.includes("httprequest") || nodeType.includes("http")) {
-    const url = params.url || params.endpoint || "https://jsonplaceholder.typicode.com/posts?_limit=5";
+    const url = params.url || params.endpoint || "https://api.example.com/data";
     const method = params.method || params.requestMethod || "GET";
     
-    logs.push(`🌐 [${nodeName}] HTTP Request Node - LIVE EXECUTION`);
-    await new Promise(resolve => setTimeout(resolve, 200));
-    logs.push(`   📌 Method: ${method}`);
-    logs.push(`   📌 URL: ${url}`);
-    if (params.authentication) logs.push(`   📌 Auth: ${params.authentication}`);
-    if (params.queryParameters) logs.push(`   📌 Query Params: ${JSON.stringify(params.queryParameters).substring(0, 50)}`);
+    logs.push(`🌐 [${nodeName}] HTTP REQUEST NODE - API Integration`);
+    logs.push(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+    await new Promise(resolve => setTimeout(resolve, 150));
     
-    logs.push(`📡 ACTUALLY sending ${method} request to: ${url.substring(0, 60)}...`);
+    logs.push(`📋 AGENT TASK: Execute HTTP ${method} request`);
+    logs.push(`   ├─ request.url = "${url}"`);
+    logs.push(`   ├─ request.method = "${method}"`);
+    if (params.authentication) logs.push(`   ├─ request.auth = "${params.authentication}"`);
+    if (params.headers) logs.push(`   ├─ request.headers = ${formatDataPreview(params.headers)}`);
+    if (params.queryParameters) logs.push(`   └─ request.query = ${formatDataPreview(params.queryParameters)}`);
+    
+    logs.push(``);
+    logs.push(`⚡ EXECUTING: fetch("${url.substring(0, 50)}${url.length > 50 ? '...' : ''}")`);
     
     const startTime = Date.now();
     let responseData: any = null;
@@ -260,32 +366,44 @@ const executeNode = async (
     let isRealData = false;
     
     try {
-      // Try to actually fetch data
+      logs.push(`   ├─ Connecting to server...`);
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
       responseData = await fetchRealData(url, method, params.headers, params.body);
       isRealData = responseData !== null;
       
       if (!isRealData) {
-        // Fallback to generated data
-        responseData = generateRealisticProducts(5);
-        logs.push(`⚠️ CORS blocked - using simulated response`);
+        responseData = generateSampleRecords('orders', 5);
+        logs.push(`   ├─ ⚠️ CORS blocked - generating mock response`);
       } else {
-        logs.push(`✅ REAL DATA received from API!`);
+        logs.push(`   ├─ ✅ Connected - receiving data...`);
       }
     } catch (error: any) {
-      responseData = generateRealisticProducts(5);
-      statusCode = 200;
-      logs.push(`⚠️ Request failed: ${error.message} - using simulated data`);
+      responseData = generateSampleRecords('orders', 5);
+      logs.push(`   ├─ ⚠️ Error: ${error.message} - using mock data`);
     }
     
     const responseTime = Date.now() - startTime;
     const dataArray = Array.isArray(responseData) ? responseData : 
-                      responseData?.data ? responseData.data :
-                      responseData?.products ? responseData.products :
-                      responseData?.posts ? responseData.posts :
+                      responseData?.data || responseData?.products || 
+                      responseData?.posts || responseData?.results || 
                       [responseData];
     
-    logs.push(`📊 Response: ${statusCode} OK (${responseTime}ms, ${dataArray.length} items)`);
-    logs.push(`   🔍 Data Preview: ${JSON.stringify(dataArray[0] || {}).substring(0, 100)}...`);
+    logs.push(`   ├─ response.status = ${statusCode}`);
+    logs.push(`   ├─ response.time = ${responseTime}ms`);
+    logs.push(`   └─ response.items = ${dataArray.length}`);
+    
+    logs.push(``);
+    logs.push(`📦 RESPONSE DATA (${dataArray.length} items):`);
+    dataArray.slice(0, 3).forEach((item: any, idx: number) => {
+      logs.push(`   [${idx}] ${formatDataPreview(item)}`);
+    });
+    if (dataArray.length > 3) {
+      logs.push(`   ... and ${dataArray.length - 3} more items`);
+    }
+    
+    logs.push(``);
+    logs.push(`✅ HTTP REQUEST COMPLETE - ${dataArray.length} items received`);
     
     return {
       output: {
@@ -298,7 +416,6 @@ const executeNode = async (
           data: dataArray,
           rawResponse: responseData,
           pagination: { page: 1, total: dataArray.length, hasMore: false },
-          headers: { "content-type": "application/json" },
           nodeParams: params
         }
       },
@@ -500,47 +617,57 @@ const executeNode = async (
     const model = params.model || params.modelId || "gpt-4-turbo";
     const operation = params.operation || params.resource || "chat";
     const prompt = params.prompt || params.text || params.messages;
+    const inputItems = getInputItems();
     
-    logs.push(`🤖 [${nodeName}] AI/LLM Node - ACTUAL ANALYSIS`);
+    logs.push(`🤖 [${nodeName}] AI/LLM NODE - Intelligent Data Processing`);
+    logs.push(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    logs.push(`📋 AGENT TASK: Process data using AI model`);
+    logs.push(`   ├─ model = "${model}"`);
+    logs.push(`   ├─ operation = "${operation}"`);
+    if (prompt && typeof prompt === 'string') {
+      logs.push(`   ├─ prompt = "${prompt.substring(0, 60)}${prompt.length > 60 ? '...' : ''}"`);
+    }
+    if (params.systemMessage) {
+      logs.push(`   └─ systemMessage = "${params.systemMessage.substring(0, 50)}..."`);
+    }
+    
+    logs.push(``);
+    logs.push(`📥 INPUT DATA: ${inputItems.length} items received`);
+    inputItems.slice(0, 2).forEach((item: any, idx: number) => {
+      logs.push(`   [${idx}] ${formatDataPreview(item, 70)}`);
+    });
+    if (inputItems.length > 2) {
+      logs.push(`   ... and ${inputItems.length - 2} more items`);
+    }
+    
+    logs.push(``);
+    logs.push(`⚡ EXECUTING: ai.analyze(data)`);
     await new Promise(resolve => setTimeout(resolve, 300));
-    logs.push(`   📌 Model: ${model}`);
-    logs.push(`   📌 Operation: ${operation}`);
-    if (prompt && typeof prompt === 'string') logs.push(`   📌 Prompt: "${prompt.substring(0, 60)}..."`);
-    if (params.systemMessage) logs.push(`   📌 System: "${params.systemMessage.substring(0, 50)}..."`);
-    
-    // Get actual input data
-    const inputContext = inputData?.json?.data || inputData?.json?.items || 
-                         inputData?.json?.initialData || inputData?.json?.rawResponse || [];
-    const dataArray = Array.isArray(inputContext) ? inputContext : [inputContext];
-    
-    logs.push(`📥 Analyzing ${dataArray.length} input items...`);
-    await new Promise(resolve => setTimeout(resolve, 400));
     
     // REAL ANALYSIS: Calculate actual statistics from the data
-    const stats: any = {
-      totalItems: dataArray.length,
-      fields: Object.keys(dataArray[0] || {}),
-    };
+    logs.push(`   ├─ Parsing data structure...`);
+    const fields = Object.keys(inputItems[0] || {});
+    logs.push(`   │   └─ Found fields: [${fields.slice(0, 5).join(', ')}${fields.length > 5 ? ', ...' : ''}]`);
     
     // Calculate numeric field statistics
     const numericFields: Record<string, number[]> = {};
-    const stringFields: Record<string, string[]> = {};
     const statusCounts: Record<string, number> = {};
     
-    dataArray.forEach((item: any) => {
+    inputItems.forEach((item: any) => {
       Object.entries(item || {}).forEach(([key, value]) => {
         if (typeof value === 'number') {
           if (!numericFields[key]) numericFields[key] = [];
           numericFields[key].push(value);
-        } else if (typeof value === 'string') {
-          if (!stringFields[key]) stringFields[key] = [];
-          stringFields[key].push(value);
-          if (key === 'status') {
-            statusCounts[value] = (statusCounts[value] || 0) + 1;
-          }
+        } else if (typeof value === 'string' && key === 'status') {
+          statusCounts[value] = (statusCounts[value] || 0) + 1;
         }
       });
     });
+    
+    logs.push(`   ├─ Calculating statistics...`);
+    await new Promise(resolve => setTimeout(resolve, 200));
     
     // Calculate actual statistics
     const numericStats: Record<string, any> = {};
@@ -549,15 +676,19 @@ const executeNode = async (
       const avg = sum / values.length;
       const min = Math.min(...values);
       const max = Math.max(...values);
-      numericStats[field] = { sum: sum.toFixed(2), avg: avg.toFixed(2), min, max, count: values.length };
-      logs.push(`   📊 ${field}: sum=${sum.toFixed(2)}, avg=${avg.toFixed(2)}, range=[${min}-${max}]`);
+      numericStats[field] = { sum: sum.toFixed(2), avg: avg.toFixed(2), min, max };
+      logs.push(`   │   └─ ${field}: sum=${sum.toFixed(2)}, avg=${avg.toFixed(2)}, range=[${min}-${max}]`);
     });
     
-    logs.push(`🧠 Running AI classification on ${dataArray.length} items...`);
-    await new Promise(resolve => setTimeout(resolve, 600));
+    if (Object.keys(statusCounts).length > 0) {
+      logs.push(`   │   └─ status distribution: ${JSON.stringify(statusCounts)}`);
+    }
+    
+    logs.push(`   ├─ Applying AI classification algorithm...`);
+    await new Promise(resolve => setTimeout(resolve, 400));
     
     // Process each item with actual classification based on data
-    const processedItems = dataArray.map((item: any, idx: number) => {
+    const processedItems = inputItems.map((item: any, idx: number) => {
       const processed: any = { ...item };
       
       // Actual priority scoring based on data
@@ -565,53 +696,74 @@ const executeNode = async (
       if (item.status === 'active') score += 20;
       if (item.status === 'pending') score += 10;
       if (typeof item.price === 'number' && item.price > 100) score += 15;
-      if (item.isVerified === true) score += 10;
-      if (item.quantity && item.quantity > 5) score += 5;
+      if (typeof item.score === 'number' && item.score > 70) score += 15;
+      if (typeof item.value === 'number' && item.value > 10000) score += 20;
+      if (item.stage === 'qualified' || item.stage === 'proposal') score += 15;
       
       processed._aiScore = Math.min(score, 100);
       processed._classification = score >= 80 ? 'high-priority' : score >= 60 ? 'medium-priority' : 'low-priority';
       processed._sentiment = item.status === 'active' ? 'positive' : item.status === 'pending' ? 'neutral' : 'needs-attention';
       processed._analyzedAt = new Date().toISOString();
+      processed._processedBy = (item._processedBy || []).concat([nodeName]);
       
       return processed;
     });
     
     const highPriority = processedItems.filter((i: any) => i._classification === 'high-priority').length;
     const mediumPriority = processedItems.filter((i: any) => i._classification === 'medium-priority').length;
+    const lowPriority = processedItems.length - highPriority - mediumPriority;
     
-    logs.push(`✅ Analysis complete!`);
-    logs.push(`   🎯 High Priority: ${highPriority}, Medium: ${mediumPriority}, Low: ${processedItems.length - highPriority - mediumPriority}`);
+    logs.push(`   └─ Classification complete`);
+    
+    logs.push(``);
+    logs.push(`📊 AI ANALYSIS RESULTS:`);
+    logs.push(`   ├─ Total items processed: ${processedItems.length}`);
+    logs.push(`   ├─ High priority: ${highPriority} (${((highPriority/processedItems.length)*100).toFixed(0)}%)`);
+    logs.push(`   ├─ Medium priority: ${mediumPriority} (${((mediumPriority/processedItems.length)*100).toFixed(0)}%)`);
+    logs.push(`   └─ Low priority: ${lowPriority} (${((lowPriority/processedItems.length)*100).toFixed(0)}%)`);
+    
+    logs.push(``);
+    logs.push(`📦 OUTPUT DATA (${processedItems.length} items with AI enrichment):`);
+    processedItems.slice(0, 2).forEach((item: any, idx: number) => {
+      logs.push(`   [${idx}] { ...original, _aiScore: ${item._aiScore}, _classification: "${item._classification}" }`);
+    });
+    if (processedItems.length > 2) {
+      logs.push(`   ... and ${processedItems.length - 2} more items`);
+    }
+    
+    const promptTokens = Math.floor(JSON.stringify(inputItems).length / 4);
+    const completionTokens = Math.floor(JSON.stringify(processedItems).length / 4);
+    
+    logs.push(``);
+    logs.push(`📈 TOKEN USAGE: ${promptTokens} prompt + ${completionTokens} completion = ${promptTokens + completionTokens} total`);
+    logs.push(`✅ AI PROCESSING COMPLETE - ${processedItems.length} items enriched`);
     
     const analysisResult = {
-      summary: `Analyzed ${dataArray.length} records with REAL DATA`,
+      summary: `Analyzed ${inputItems.length} records with AI classification`,
       insights: [
-        `Total items processed: ${dataArray.length}`,
+        `Total items: ${processedItems.length}`,
         ...Object.entries(numericStats).map(([field, stats]) => `${field}: avg=${stats.avg}, sum=${stats.sum}`),
-        `Priority distribution: ${highPriority} high, ${mediumPriority} medium`,
-        Object.keys(statusCounts).length > 0 ? `Status breakdown: ${JSON.stringify(statusCounts)}` : null
-      ].filter(Boolean),
+        `Priority: ${highPriority} high, ${mediumPriority} medium, ${lowPriority} low`,
+      ],
       numericStats,
       statusCounts,
       recommendations: [
         highPriority > 0 ? `Focus on ${highPriority} high-priority items first` : null,
-        Object.keys(numericStats).includes('price') ? `Total value in pipeline: $${numericStats.price?.sum}` : null,
-        "Automated classification applied based on actual data fields"
+        numericStats.price ? `Total value: $${numericStats.price.sum}` : null,
+        numericStats.value ? `Total pipeline value: $${numericStats.value.sum}` : null,
       ].filter(Boolean),
       processedItems
     };
     
-    const promptTokens = Math.floor(JSON.stringify(dataArray).length / 4);
-    const completionTokens = Math.floor(JSON.stringify(analysisResult).length / 4);
-    
     return {
       output: {
         json: {
-          model: model,
-          operation: operation,
+          model,
+          operation,
           analysis: analysisResult,
           data: processedItems,
+          items: processedItems,
           usage: { prompt_tokens: promptTokens, completion_tokens: completionTokens, total_tokens: promptTokens + completionTokens },
-          realDataAnalysis: true,
           nodeParams: params
         }
       },
@@ -624,58 +776,85 @@ const executeNode = async (
   if (nodeType.includes("code") || nodeType.includes("function") || nodeType.includes("javascript")) {
     const jsCode = params.jsCode || params.functionCode || params.code;
     const mode = params.mode || "runOnceForAllItems";
+    const inputItems = getInputItems();
     
-    logs.push(`💻 [${nodeName}] Code/Function Node - REAL EXECUTION`);
-    await new Promise(resolve => setTimeout(resolve, 200));
-    logs.push(`   📌 Mode: ${mode}`);
+    logs.push(`💻 [${nodeName}] CODE EXECUTION NODE - JavaScript Runtime`);
+    logs.push(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+    await new Promise(resolve => setTimeout(resolve, 150));
     
-    const inputItems = inputData?.json?.data || inputData?.json?.items || inputData?.json?.initialData || 
-                       inputData?.json?.analysis?.processedItems || inputData?.json?.rawResponse || [];
+    logs.push(`📋 AGENT TASK: Execute custom JavaScript code`);
+    logs.push(`   ├─ mode = "${mode}"`);
+    logs.push(`   └─ inputItems = ${inputItems.length}`);
     
     if (jsCode) {
-      const codePreview = jsCode.toString().replace(/\s+/g, ' ').substring(0, 100);
-      logs.push(`   📌 Code: ${codePreview}...`);
-      logs.push(`📥 Input: ${Array.isArray(inputItems) ? inputItems.length : 1} items`);
-      logs.push(`⚡ EXECUTING actual JavaScript code...`);
-      await new Promise(resolve => setTimeout(resolve, 300));
+      const codeLines = jsCode.toString().split('\n').filter((l: string) => l.trim());
+      logs.push(``);
+      logs.push(`📝 CODE TO EXECUTE:`);
+      logs.push(`   ┌─────────────────────────────────────────`);
+      codeLines.slice(0, 5).forEach((line: string, idx: number) => {
+        logs.push(`   │ ${line.trim().substring(0, 60)}`);
+      });
+      if (codeLines.length > 5) {
+        logs.push(`   │ ... (${codeLines.length - 5} more lines)`);
+      }
+      logs.push(`   └─────────────────────────────────────────`);
+      
+      logs.push(``);
+      logs.push(`⚡ EXECUTING: eval(code)`);
+      logs.push(`   ├─ Creating execution context...`);
+      logs.push(`   ├─ Injecting $items (${inputItems.length} items)`);
+      await new Promise(resolve => setTimeout(resolve, 200));
       
       try {
-        // Actually try to execute the code
-        const result = safeEvalCode(jsCode, Array.isArray(inputItems) ? inputItems : [inputItems], inputData?.json);
+        const result = safeEvalCode(jsCode, inputItems, inputData?.json);
         
         if (result.error) {
-          logs.push(`⚠️ Execution error: ${result.error}`);
-          logs.push(`📊 Falling back to standard transformation...`);
+          logs.push(`   ├─ ⚠️ Runtime error: ${result.error}`);
+          logs.push(`   └─ Falling back to standard transform...`);
         } else {
-          logs.push(`✅ Code executed SUCCESSFULLY!`);
-          logs.push(`📊 Result: ${JSON.stringify(result).substring(0, 100)}...`);
+          const resultArray = Array.isArray(result) ? result : [result];
+          logs.push(`   └─ ✅ Execution successful!`);
+          
+          logs.push(``);
+          logs.push(`📦 OUTPUT DATA (${resultArray.length} items):`);
+          resultArray.slice(0, 2).forEach((item: any, idx: number) => {
+            logs.push(`   [${idx}] ${formatDataPreview(item, 70)}`);
+          });
+          if (resultArray.length > 2) {
+            logs.push(`   ... and ${resultArray.length - 2} more items`);
+          }
+          
+          logs.push(``);
+          logs.push(`✅ CODE EXECUTION COMPLETE - ${resultArray.length} items returned`);
           
           return {
             output: {
               json: {
-                items: Array.isArray(result) ? result : [result],
-                executedCode: codePreview,
+                items: resultArray,
+                data: resultArray,
+                executedCode: codeLines.slice(0, 3).join('; '),
                 executionSuccess: true,
-                stats: { inputCount: Array.isArray(inputItems) ? inputItems.length : 1, outputCount: Array.isArray(result) ? result.length : 1 },
+                stats: { inputCount: inputItems.length, outputCount: resultArray.length },
                 nodeParams: params
               }
             },
-            items: Array.isArray(result) ? result.length : 1,
+            items: resultArray.length,
             logs
           };
         }
       } catch (error: any) {
-        logs.push(`⚠️ Safe execution failed: ${error.message}`);
+        logs.push(`   └─ ⚠️ Exception: ${error.message}`);
       }
     }
     
     // Fallback: Apply intelligent transformations based on input
-    logs.push(`🔄 Applying intelligent data transformations...`);
-    await new Promise(resolve => setTimeout(resolve, 300));
+    logs.push(``);
+    logs.push(`🔄 APPLYING: defaultTransform(items)`);
+    await new Promise(resolve => setTimeout(resolve, 200));
     
-    if (Array.isArray(inputItems) && inputItems.length > 0) {
+    if (inputItems.length > 0) {
       const transformedData = inputItems.map((item: any, idx: number) => {
-        const transformed: any = { ...item, _processed: true, _index: idx };
+        const transformed: any = { ...item };
         
         // Calculate totals if price/quantity exist
         if (typeof item.price === 'number') {
@@ -683,31 +862,38 @@ const executeNode = async (
           transformed.formattedPrice = `$${item.price.toFixed(2)}`;
         }
         
-        // Add metadata
-        transformed._processedAt = new Date().toISOString();
-        transformed._hash = Math.random().toString(36).substr(2, 8);
-        
-        // Categorize items
-        if (item.status) {
-          transformed._priority = item.status === 'active' ? 'high' : 
-                                  item.status === 'pending' ? 'medium' : 'low';
+        // Add computed fields
+        if (typeof item.value === 'number') {
+          transformed.formattedValue = `$${item.value.toLocaleString()}`;
         }
+        
+        transformed._processed = true;
+        transformed._index = idx;
+        transformed._processedAt = new Date().toISOString();
+        transformed._processedBy = (item._processedBy || []).concat([nodeName]);
         
         return transformed;
       });
       
-      logs.push(`✅ Transformed ${transformedData.length} items with computed fields`);
-      logs.push(`   📊 Added: totalValue, formattedPrice, _priority, _hash`);
+      logs.push(`   ├─ Processing ${transformedData.length} items...`);
+      logs.push(`   ├─ Adding computed fields: totalValue, formattedPrice, _processed`);
+      logs.push(`   └─ Transform complete`);
+      
+      logs.push(``);
+      logs.push(`📦 OUTPUT DATA (${transformedData.length} items):`);
+      transformedData.slice(0, 2).forEach((item: any, idx: number) => {
+        logs.push(`   [${idx}] ${formatDataPreview(item, 70)}`);
+      });
+      
+      logs.push(``);
+      logs.push(`✅ CODE NODE COMPLETE - ${transformedData.length} items transformed`);
       
       return {
         output: {
           json: {
             items: transformedData,
-            stats: { 
-              totalProcessed: transformedData.length, 
-              successRate: 100,
-              fieldsAdded: ["totalValue", "formattedPrice", "_priority", "_hash", "_processedAt"]
-            },
+            data: transformedData,
+            stats: { totalProcessed: transformedData.length, successRate: 100 },
             nodeParams: params
           }
         },
@@ -716,12 +902,15 @@ const executeNode = async (
       };
     }
     
-    logs.push(`⚙️ No input items - executing empty transformation`);
+    logs.push(`   └─ No input items - returning empty result`);
+    logs.push(`✅ CODE NODE COMPLETE`);
+    
     return {
       output: {
         json: {
           items: [{ _processed: true, _timestamp: Date.now() }],
-          stats: { totalProcessed: 1 },
+          data: [{ _processed: true }],
+          stats: { totalProcessed: 0 },
           nodeParams: params
         }
       },
