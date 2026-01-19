@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Loader2, Play, X, Clock, Zap, Code, FileJson, Copy, Check, Download, BookOpen, ExternalLink, ArrowRight, Info, ZoomIn, ZoomOut, Maximize2, Move, Terminal, Bot } from "lucide-react";
+import { CheckCircle, Loader2, Play, X, Clock, Zap, Code, FileJson, Copy, Check, Download, BookOpen, ExternalLink, ArrowRight, Info, ZoomIn, ZoomOut, Maximize2, Move, Terminal, Bot, LayoutGrid } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWorkflowAgentEngine, ExecutionResult } from "./WorkflowAgentEngine";
+import { ExecutionFlowPanel } from "./NodeExecutionPanel";
 
 interface N8nNode {
   id?: string;
@@ -244,7 +245,7 @@ export const WorkflowExecutionModal = ({
   const [totalTime, setTotalTime] = useState(0);
   const [selectedNodeOutput, setSelectedNodeOutput] = useState<string | null>(null);
   const [selectedNodeFromPreview, setSelectedNodeFromPreview] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"output" | "workflow" | "guide" | "console">("output");
+  const [activeTab, setActiveTab] = useState<"visual" | "output" | "workflow" | "guide" | "console">("visual");
   const [copiedJson, setCopiedJson] = useState(false);
   const [copiedNodeOutput, setCopiedNodeOutput] = useState<string | null>(null);
   const [expandedGuide, setExpandedGuide] = useState<"n8n" | "make" | "zapier" | null>("n8n");
@@ -886,17 +887,21 @@ export const WorkflowExecutionModal = ({
           </div>
 
           {/* Execution Logs & Output with Tabs - Collapsible */}
-          <div className="border border-border rounded-xl bg-card overflow-hidden flex flex-col h-[350px] mt-4 shadow-lg">
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "output" | "workflow" | "guide")} className="flex flex-col h-full">
+          <div className="border border-border rounded-xl bg-card overflow-hidden flex flex-col h-[400px] mt-4 shadow-lg">
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "output" | "workflow" | "guide" | "console" | "visual")} className="flex flex-col h-full">
               <div className="p-2 border-b border-border flex items-center justify-between">
                 <TabsList className="h-8">
+                  <TabsTrigger value="visual" className="text-xs h-7 px-3 gap-1.5">
+                    <LayoutGrid className="w-3 h-3" />
+                    Execution
+                  </TabsTrigger>
                   <TabsTrigger value="output" className="text-xs h-7 px-3 gap-1.5">
                     <Zap className="w-3 h-3" />
                     Output
                   </TabsTrigger>
                   <TabsTrigger value="console" className="text-xs h-7 px-3 gap-1.5">
                     <Terminal className="w-3 h-3" />
-                    Agent Console
+                    Console
                   </TabsTrigger>
                   <TabsTrigger value="workflow" className="text-xs h-7 px-3 gap-1.5">
                     <FileJson className="w-3 h-3" />
@@ -963,6 +968,32 @@ export const WorkflowExecutionModal = ({
                   )}
                 </div>
               </div>
+
+              {/* NEW: Visual Execution Tab - n8n style data view */}
+              <TabsContent value="visual" className="flex-1 m-0 mt-0 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col">
+                <ScrollArea className="h-[340px]">
+                  <div className="p-4">
+                    {executionStatus === "idle" ? (
+                      <div className="flex flex-col items-center justify-center h-48 text-center">
+                        <LayoutGrid className="w-12 h-12 text-slate-500 mb-4" />
+                        <p className="text-slate-400 font-medium">Ready to Execute</p>
+                        <p className="text-slate-500 text-sm mt-1">Click "Run Workflow" to see execution data flow</p>
+                      </div>
+                    ) : (
+                      <ExecutionFlowPanel
+                        nodes={nodes.map(n => ({
+                          name: n.name,
+                          type: n.type,
+                          parameters: n.parameters
+                        }))}
+                        nodeOutputs={nodeOutputs}
+                        nodeStatuses={nodeStatuses}
+                        executionOrder={executionOrder}
+                      />
+                    )}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
 
               <TabsContent value="output" className="flex-1 m-0 mt-0 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col">
                 <ScrollArea className="h-[300px]">
