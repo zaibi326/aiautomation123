@@ -1,0 +1,79 @@
+{
+  "id": "workflow_003",
+  "name": "Lead Scoring Pipeline",
+  "description": "Scores leads based on engagement and assigns sales reps",
+  "version": "1.0.0",
+  "nodes": [
+    {
+      "id": "node_1",
+      "type": "manual_trigger",
+      "name": "Trigger Lead Scoring",
+      "config": {}
+    },
+    {
+      "id": "node_2",
+      "type": "data_node",
+      "name": "Fetch Leads",
+      "config": {
+        "dataType": "leads",
+        "count": 6,
+        "schema": {
+          "id": "uuid",
+          "company": "string",
+          "email": "email",
+          "source": ["website", "referral", "ads", "organic"],
+          "visits": "number:1-50",
+          "downloads": "number:0-10"
+        }
+      }
+    },
+    {
+      "id": "node_3",
+      "type": "transform_node",
+      "name": "Calculate Score",
+      "config": {
+        "operation": "map",
+        "transform": {
+          "score": "$item.visits * 2 + $item.downloads * 5",
+          "tier": "$item.score > 50 ? 'hot' : $item.score > 25 ? 'warm' : 'cold'"
+        },
+        "aiAssist": true,
+        "aiPrompt": "Calculate lead score based on visits and downloads"
+      }
+    },
+    {
+      "id": "node_4",
+      "type": "condition_node",
+      "name": "Is Hot Lead?",
+      "config": {
+        "condition": {
+          "field": "tier",
+          "operator": "equals",
+          "value": "hot"
+        }
+      }
+    },
+    {
+      "id": "node_5",
+      "type": "transform_node",
+      "name": "Assign Rep",
+      "config": {
+        "operation": "map",
+        "transform": {
+          "assignedTo": "Senior Sales Rep",
+          "priority": "urgent",
+          "followUpDate": "$tomorrow"
+        }
+      }
+    },
+    {
+      "id": "node_6",
+      "type": "output_node",
+      "name": "Export Leads",
+      "config": {
+        "format": "json",
+        "includeStats": true
+      }
+    }
+  ]
+}
