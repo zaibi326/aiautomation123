@@ -1,0 +1,67 @@
+{
+  "id": "workflow_001",
+  "name": "Data Transform Pipeline",
+  "description": "Fetches user data, transforms it, and outputs the result",
+  "version": "1.0.0",
+  "nodes": [
+    {
+      "id": "node_1",
+      "type": "manual_trigger",
+      "name": "Start Workflow",
+      "config": {
+        "description": "Manually trigger the workflow execution"
+      }
+    },
+    {
+      "id": "node_2",
+      "type": "data_node",
+      "name": "Generate Sample Users",
+      "config": {
+        "dataType": "users",
+        "count": 5,
+        "schema": {
+          "id": "uuid",
+          "name": "string",
+          "email": "email",
+          "status": ["active", "pending", "inactive"],
+          "score": "number:0-100"
+        }
+      }
+    },
+    {
+      "id": "node_3",
+      "type": "transform_node",
+      "name": "Filter Active Users",
+      "config": {
+        "operation": "filter",
+        "condition": {
+          "field": "status",
+          "operator": "equals",
+          "value": "active"
+        }
+      }
+    },
+    {
+      "id": "node_4",
+      "type": "transform_node",
+      "name": "Add Processed Timestamp",
+      "config": {
+        "operation": "map",
+        "transform": {
+          "processedAt": "$now",
+          "fullName": "$item.name",
+          "isHighScore": "$item.score > 50"
+        }
+      }
+    },
+    {
+      "id": "node_5",
+      "type": "output_node",
+      "name": "Return Results",
+      "config": {
+        "format": "json",
+        "includeMetadata": true
+      }
+    }
+  ]
+}

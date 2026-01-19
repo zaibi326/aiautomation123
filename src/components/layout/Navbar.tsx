@@ -12,6 +12,7 @@ const Navbar = () => {
 
   const navLinks = [
     { name: "Automations", href: "/automations" },
+    { name: "Workflow Runner", href: "/workflow-runner" },
     { name: "Courses", href: "/courses" },
     { name: "Pricing", href: "/pricing" },
   ];

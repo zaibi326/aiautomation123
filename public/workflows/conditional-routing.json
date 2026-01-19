@@ -1,0 +1,65 @@
+{
+  "id": "workflow_002",
+  "name": "Conditional Order Processing",
+  "description": "Routes orders based on value and status conditions",
+  "version": "1.0.0",
+  "nodes": [
+    {
+      "id": "node_1",
+      "type": "manual_trigger",
+      "name": "Start Processing",
+      "config": {}
+    },
+    {
+      "id": "node_2",
+      "type": "data_node",
+      "name": "Load Orders",
+      "config": {
+        "dataType": "orders",
+        "count": 8,
+        "schema": {
+          "orderId": "string",
+          "customer": "string",
+          "amount": "number:50-500",
+          "status": ["pending", "shipped", "delivered"],
+          "priority": ["low", "medium", "high"]
+        }
+      }
+    },
+    {
+      "id": "node_3",
+      "type": "condition_node",
+      "name": "Check High Value",
+      "config": {
+        "condition": {
+          "field": "amount",
+          "operator": "greaterThan",
+          "value": 200
+        },
+        "trueLabel": "High Value Orders",
+        "falseLabel": "Regular Orders"
+      }
+    },
+    {
+      "id": "node_4",
+      "type": "transform_node",
+      "name": "Tag Priority",
+      "config": {
+        "operation": "map",
+        "transform": {
+          "tag": "VIP",
+          "discount": 10,
+          "flaggedAt": "$now"
+        }
+      }
+    },
+    {
+      "id": "node_5",
+      "type": "output_node",
+      "name": "Final Output",
+      "config": {
+        "format": "json"
+      }
+    }
+  ]
+}

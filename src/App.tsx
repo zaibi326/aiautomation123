@@ -22,6 +22,7 @@ import Billing from "./pages/Billing";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminLogin from "./pages/AdminLogin";
 import NotFound from "./pages/NotFound";
+import WorkflowRunner from "./pages/WorkflowRunner";
 
 const queryClient = new QueryClient();
 
@@ -90,6 +91,7 @@ const App = () => (
                   </AdminRoute>
                 }
               />
+              <Route path="/workflow-runner" element={<WorkflowRunner />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AuthProvider>
