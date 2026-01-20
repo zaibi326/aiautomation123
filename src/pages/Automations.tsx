@@ -28,11 +28,15 @@ import { useAutomations, Automation } from "@/hooks/useAutomations";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useFreeAccess } from "@/hooks/useFreeAccess";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useAuth } from "@/contexts/AuthContext";
 import BulkDownloadSection from "@/components/home/BulkDownloadSection";
 import N8nWorkflowPreview from "@/components/N8nWorkflowPreview";
 import { WorkflowExecutionModal } from "@/components/WorkflowExecutionModal";
 import { WorkflowTester } from "@/components/WorkflowTester";
 import { toast } from "@/hooks/use-toast";
+
+// Number of free demo automations for non-logged in users
+const FREE_DEMO_COUNT = 3;
 
 // Icon mapping
 const iconMap: Record<string, React.ComponentType<any>> = {
@@ -64,6 +68,7 @@ interface AutomationCardProps {
   subcategories: ReturnType<typeof useAutomations>['subcategories'];
   iconMap: Record<string, React.ComponentType<any>>;
   hasAccess: boolean;
+  isFreeDemo: boolean;
   onRun: (automation: Automation) => void;
 }
 
@@ -73,6 +78,7 @@ const AutomationCard = ({
   subcategories, 
   iconMap,
   hasAccess,
+  isFreeDemo,
   onRun 
 }: AutomationCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -144,17 +150,17 @@ const AutomationCard = ({
             : automation.uses_count} uses
         </span>
         <Button
-          variant={hasAccess ? "default" : "outline"}
+          variant={hasAccess || isFreeDemo ? "default" : "outline"}
           size="sm"
           className={`gap-1.5 h-7 text-xs transition-all duration-300 opacity-0 group-hover:opacity-100 ${
-            !hasAccess ? "border-amber-500/50 text-amber-600 hover:bg-amber-500/10" : ""
+            !(hasAccess || isFreeDemo) ? "border-amber-500/50 text-amber-600 hover:bg-amber-500/10" : ""
           }`}
           onClick={handleRun}
         >
-          {hasAccess ? (
+          {hasAccess || isFreeDemo ? (
             <>
               <Play className="w-3 h-3" />
-              Run Now
+              {isFreeDemo && !hasAccess ? "Try Demo" : "Run Now"}
             </>
           ) : (
             <>
@@ -170,6 +176,7 @@ const AutomationCard = ({
 
 const Automations = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { categories, subcategories, automations, loading } = useAutomations();
   const { hasPaid } = useSubscription();
   const { hasFreeAccess } = useFreeAccess();
@@ -180,23 +187,45 @@ const Automations = () => {
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
   const [selectedAutomation, setSelectedAutomation] = useState<Automation | null>(null);
   const [executionModalOpen, setExecutionModalOpen] = useState(false);
+  const [demoRunsUsed, setDemoRunsUsed] = useState(() => {
+    const stored = localStorage.getItem("demoRunsUsed");
+    return stored ? parseInt(stored, 10) : 0;
+  });
 
   // Check if user has access to run automations
   const hasAccess = hasPaid || hasFreeAccess || isAdmin;
 
+  // Check if an automation is within free demo range (first 3)
+  const isFreeDemoAutomation = (automation: Automation) => {
+    if (hasAccess) return false; // Paid users don't need demo
+    const index = automations.findIndex(a => a.id === automation.id);
+    return index < FREE_DEMO_COUNT;
+  };
+
   const handleRunAutomation = (automation: Automation) => {
-    if (!hasAccess) {
-      toast({
-        title: "🔒 Premium Feature",
-        description: "Upgrade to run automations",
-        variant: "destructive",
-      });
-      navigate("/pricing");
+    const isFreeDemo = isFreeDemoAutomation(automation);
+    
+    // If user has access or it's a free demo, allow running
+    if (hasAccess || isFreeDemo) {
+      // Track demo usage for non-logged-in users
+      if (!user && isFreeDemo) {
+        const newCount = demoRunsUsed + 1;
+        setDemoRunsUsed(newCount);
+        localStorage.setItem("demoRunsUsed", newCount.toString());
+      }
+      
+      setSelectedAutomation(automation);
+      setExecutionModalOpen(true);
       return;
     }
     
-    setSelectedAutomation(automation);
-    setExecutionModalOpen(true);
+    // Otherwise show upgrade prompt
+    toast({
+      title: "🔒 Premium Feature",
+      description: "Upgrade to run all automations. First 3 are free to try!",
+      variant: "destructive",
+    });
+    navigate("/pricing");
   };
 
   const handleExecutionComplete = () => {
@@ -394,7 +423,7 @@ const Automations = () => {
               <>
                 {/* Automations Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {visibleAutomations.map((automation) => (
+                  {visibleAutomations.map((automation, index) => (
                     <AutomationCard 
                       key={automation.id} 
                       automation={automation}
@@ -402,6 +431,7 @@ const Automations = () => {
                       subcategories={subcategories}
                       iconMap={iconMap}
                       hasAccess={hasAccess}
+                      isFreeDemo={isFreeDemoAutomation(automation)}
                       onRun={handleRunAutomation}
                     />
                   ))}
