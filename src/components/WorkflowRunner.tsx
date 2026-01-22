@@ -129,12 +129,16 @@ export const WorkflowRunner = () => {
 
   const validateWorkflowJSON = (data: any): data is WorkflowJSON => {
     if (!data || typeof data !== "object") return false;
-    if (!data.id || typeof data.id !== "string") return false;
-    if (!data.name || typeof data.name !== "string") return false;
+    
+    // Support both custom format and n8n format
+    // n8n format may not have id at root level
+    if (!data.name && !data.nodes) return false;
     if (!Array.isArray(data.nodes)) return false;
     
+    // Validate nodes have minimum required fields
     for (const node of data.nodes) {
-      if (!node.id || !node.type || !node.name) return false;
+      // n8n nodes have type and name, may not have id
+      if (!node.type || !node.name) return false;
     }
     
     return true;
@@ -152,11 +156,25 @@ export const WorkflowRunner = () => {
       // Generate unique ID to avoid conflicts
       const uniqueId = `custom_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
+      // Ensure all nodes have IDs (n8n format may not have them)
+      const nodesWithIds = data.nodes.map((node: any, index: number) => ({
+        ...node,
+        id: node.id || `node_${index}_${Math.random().toString(36).substr(2, 6)}`
+      }));
+      
+      // Get workflow name from data or file name
+      const workflowName = data.name || file.name.replace(".json", "");
+      
       return {
         id: uniqueId,
-        name: data.name,
-        description: data.description || `Uploaded from ${file.name}`,
-        workflow: { ...data, id: uniqueId },
+        name: workflowName,
+        description: data.description || `Uploaded from ${file.name} (${nodesWithIds.length} nodes)`,
+        workflow: { 
+          ...data, 
+          id: uniqueId, 
+          name: workflowName,
+          nodes: nodesWithIds 
+        },
         isBuiltIn: false
       };
     } catch (error) {
