@@ -36,14 +36,7 @@ const App = () => (
           <AuthProvider>
             <Routes>
               <Route path="/" element={<Index />} />
-              <Route
-                path="/automations"
-                element={
-                  <ProtectedRoute>
-                    <Automations />
-                  </ProtectedRoute>
-                }
-              />
+              <Route path="/automations" element={<Automations />} />
               <Route
                 path="/automations/:id"
                 element={
