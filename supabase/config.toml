@@ -1,1 +1,4 @@
 project_id = "nmjcrwyfrccuzwdjdhin"
+
+[functions.export-workflow]
+verify_jwt = false

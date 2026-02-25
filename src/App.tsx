@@ -37,14 +37,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/automations" element={<Automations />} />
-              <Route
-                path="/automations/:id"
-                element={
-                  <ProtectedRoute>
-                    <AutomationDetail />
-                  </ProtectedRoute>
-                }
-              />
+              <Route path="/automations/:id" element={<AutomationDetail />} />
               <Route path="/courses" element={<Courses />} />
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/payment-confirmation" element={<PaymentConfirmation />} />
