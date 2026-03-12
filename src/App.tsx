@@ -98,6 +98,12 @@ const App = () => (
                 }
               />
               <Route path="/workflow-runner" element={<WorkflowRunner />} />
+              <Route path="/guides/ai-agency-roadmap" element={<AIAgencyRoadmap />} />
+              <Route path="/guides/build-free-ai-agency-website" element={<BuildFreeAIAgencyWebsite />} />
+              <Route path="/guides/automation-money-making" element={<AutomationMoneyMaking />} />
+              <Route path="/guides/best-ai-automation-tools" element={<BestAIAutomationTools />} />
+              <Route path="/guides/launch-your-ai-agency" element={<LaunchYourAIAgency />} />
+              <Route path="/guides/ai-automation-roadmap" element={<AIAutomationRoadmap />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AuthProvider>
