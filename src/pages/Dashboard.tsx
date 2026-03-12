@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { 
   Zap, Home, Grid, Settings, CreditCard, LogOut, 
   Plus, ArrowUpRight, BarChart3, Clock, CheckCircle, AlertCircle, Shield,
-  Play, Loader2, Lock, ChevronLeft, ChevronRight, Search, X
+  Play, Loader2, Lock, ChevronLeft, ChevronRight, Search, X,
+  Map, Globe, DollarSign, Wrench, Rocket, TrendingUp, BookOpen, Crown
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { PageTransition } from "@/components/PageTransition";
