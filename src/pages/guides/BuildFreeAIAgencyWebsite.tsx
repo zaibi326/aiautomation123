@@ -71,7 +71,7 @@ const BuildFreeAIAgencyWebsite = () => (
         
         <div className="mt-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
           <span>Made with</span>
-          <Heart className="w-4 h-4 text-red-500 fill-red-500" />
+          <Heart className="w-4 h-4 text-destructive fill-destructive" />
           <span>on</span>
           <a href="https://lovable.dev" target="_blank" rel="noopener noreferrer" className="font-semibold text-primary hover:underline">
             Lovable.dev
