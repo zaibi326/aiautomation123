@@ -1,11 +1,15 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { 
   Zap, Home, Grid, Settings, CreditCard, LogOut,
-  Check, ArrowRight
+  Check, ArrowRight, Crown, Shield
 } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSubscription } from "@/hooks/useSubscription";
+import { useFreeAccess } from "@/hooks/useFreeAccess";
+import { useUserRole } from "@/hooks/useUserRole";
 
 const Billing = () => {
   const { signOut } = useAuth();
