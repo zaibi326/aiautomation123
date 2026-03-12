@@ -272,14 +272,14 @@ const AdminDashboard = () => {
         if (newStatus === "approved" && submission?.user_id) {
           const { error: subError } = await supabase
             .from("user_subscriptions")
-            .upsert({
+            .insert({
               user_id: submission.user_id,
               plan: submission.plan_selected || "pro",
               status: "active",
               payment_id: id,
               starts_at: new Date().toISOString(),
-              expires_at: null, // lifetime - no expiry
-            }, { onConflict: "user_id" });
+              expires_at: null,
+            });
 
           if (subError) {
             console.error("Error creating subscription:", subError);
