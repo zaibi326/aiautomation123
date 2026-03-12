@@ -68,6 +68,7 @@ interface PaymentSubmission {
   name: string;
   email: string;
   phone: string | null;
+  user_id: string | null;
   plan_selected: string;
   payment_method: string;
   transaction_id: string | null;
