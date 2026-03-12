@@ -45,7 +45,7 @@ const BuildFreeAIAgencyWebsite = () => (
         
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <a 
-            href="https://wa.me/923000000000" 
+            href="https://wa.me/923059694651" 
             target="_blank" 
             rel="noopener noreferrer"
           >
