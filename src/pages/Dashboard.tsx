@@ -215,6 +215,49 @@ const Dashboard = () => {
                 </Button>
               </div>
 
+              {/* Pro Status Banner */}
+              {hasPaid && subscription && (
+                <div className="mb-8 p-5 rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10 border border-primary/20">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
+                      <Crown className="w-6 h-6 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-lg font-bold text-foreground">Pro Plan Active</h3>
+                        <Badge className="bg-primary/10 text-primary border-primary/20 border">
+                          ✅ Lifetime Access
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Payment confirmed — You have unlimited access to all automations, guides, and premium features forever!
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {!hasPaid && !hasFreeAccess && !isAdmin && (
+                <div className="mb-8 p-5 rounded-2xl bg-muted/50 border border-border">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center">
+                      <Lock className="w-6 h-6 text-muted-foreground" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-foreground">Free Plan</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Upgrade to Pro for unlimited access to all automations and guides.
+                      </p>
+                    </div>
+                    <Link to="/pricing">
+                      <Button variant="hero" size="sm" className="gap-2">
+                        <Crown className="w-4 h-4" />
+                        Upgrade Now
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              )}
               {/* Stats Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 {stats.map((stat) => (
