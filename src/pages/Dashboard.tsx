@@ -30,7 +30,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { isAdmin } = useUserRole();
   const { automations, loading } = useAutomations();
-  const { hasPaid } = useSubscription();
+  const { hasPaid, subscription } = useSubscription();
   const { hasFreeAccess } = useFreeAccess();
   const [activeTab, setActiveTab] = useState<"overview" | "automations">("overview");
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
