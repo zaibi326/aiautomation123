@@ -8,6 +8,7 @@ import {
   Map, Globe, DollarSign, Wrench, Rocket, TrendingUp, BookOpen, Crown
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { PageTransition } from "@/components/PageTransition";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
