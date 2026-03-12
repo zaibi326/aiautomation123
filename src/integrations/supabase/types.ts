@@ -270,33 +270,6 @@ export type Database = {
         }
         Relationships: []
       }
-      user_export_limits: {
-        Row: {
-          created_at: string
-          exports_this_month: number
-          id: string
-          last_reset_date: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          exports_this_month?: number
-          id?: string
-          last_reset_date?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          exports_this_month?: number
-          id?: string
-          last_reset_date?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       user_free_access: {
         Row: {
           created_at: string
@@ -385,41 +358,6 @@ export type Database = {
             columns: ["payment_id"]
             isOneToOne: false
             referencedRelation: "payment_submissions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      workflow_exports: {
-        Row: {
-          automation_id: string
-          exported_at: string
-          id: string
-          license_token: string
-          user_email: string
-          user_id: string
-        }
-        Insert: {
-          automation_id: string
-          exported_at?: string
-          id?: string
-          license_token?: string
-          user_email: string
-          user_id: string
-        }
-        Update: {
-          automation_id?: string
-          exported_at?: string
-          id?: string
-          license_token?: string
-          user_email?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "workflow_exports_automation_id_fkey"
-            columns: ["automation_id"]
-            isOneToOne: false
-            referencedRelation: "automations"
             referencedColumns: ["id"]
           },
         ]

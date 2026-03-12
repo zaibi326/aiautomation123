@@ -21,8 +21,7 @@ import {
   ChevronRight,
   Home,
   Play,
-  Lock,
-  Download
+  Lock
 } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
 import { useAutomations, Automation } from "@/hooks/useAutomations";
@@ -30,10 +29,10 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { useFreeAccess } from "@/hooks/useFreeAccess";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/contexts/AuthContext";
+import BulkDownloadSection from "@/components/home/BulkDownloadSection";
 import N8nWorkflowPreview from "@/components/N8nWorkflowPreview";
 import { WorkflowExecutionModal } from "@/components/WorkflowExecutionModal";
 import { WorkflowTester } from "@/components/WorkflowTester";
-import { useWorkflowExport } from "@/hooks/useWorkflowExport";
 import { toast } from "@/hooks/use-toast";
 
 // Number of free demo automations for non-logged in users
@@ -62,7 +61,7 @@ const getIcon = (iconName: string) => {
 
 const ITEMS_PER_PAGE = 6;
 
-// Automation Card Component with hover animation, run & export buttons
+// Automation Card Component with hover animation and run button
 interface AutomationCardProps {
   automation: Automation;
   categories: ReturnType<typeof useAutomations>['categories'];
@@ -71,8 +70,6 @@ interface AutomationCardProps {
   hasAccess: boolean;
   isFreeDemo: boolean;
   onRun: (automation: Automation) => void;
-  onExport: (automation: Automation) => void;
-  isExporting: boolean;
 }
 
 const AutomationCard = ({ 
@@ -82,9 +79,7 @@ const AutomationCard = ({
   iconMap,
   hasAccess,
   isFreeDemo,
-  onRun,
-  onExport,
-  isExporting,
+  onRun 
 }: AutomationCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
   
@@ -99,12 +94,6 @@ const AutomationCard = ({
     e.preventDefault();
     e.stopPropagation();
     onRun(automation);
-  };
-
-  const handleExport = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onExport(automation);
   };
 
   return (
@@ -160,44 +149,26 @@ const AutomationCard = ({
             ? `${(automation.uses_count / 1000).toFixed(1)}k` 
             : automation.uses_count} uses
         </span>
-        <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-300">
-          {hasAccess && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1 h-7 text-xs"
-              onClick={handleExport}
-              disabled={isExporting}
-            >
-              {isExporting ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
-              ) : (
-                <Download className="w-3 h-3" />
-              )}
-              Export
-            </Button>
+        <Button
+          variant={hasAccess || isFreeDemo ? "default" : "outline"}
+          size="sm"
+          className={`gap-1.5 h-7 text-xs transition-all duration-300 opacity-0 group-hover:opacity-100 ${
+            !(hasAccess || isFreeDemo) ? "border-amber-500/50 text-amber-600 hover:bg-amber-500/10" : ""
+          }`}
+          onClick={handleRun}
+        >
+          {hasAccess || isFreeDemo ? (
+            <>
+              <Play className="w-3 h-3" />
+              {isFreeDemo && !hasAccess ? "Try Demo" : "Run Now"}
+            </>
+          ) : (
+            <>
+              <Lock className="w-3 h-3" />
+              Upgrade
+            </>
           )}
-          <Button
-            variant={hasAccess || isFreeDemo ? "default" : "outline"}
-            size="sm"
-            className={`gap-1 h-7 text-xs ${
-              !(hasAccess || isFreeDemo) ? "border-amber-500/50 text-amber-600 hover:bg-amber-500/10" : ""
-            }`}
-            onClick={handleRun}
-          >
-            {hasAccess || isFreeDemo ? (
-              <>
-                <Play className="w-3 h-3" />
-                {isFreeDemo && !hasAccess ? "Try" : "Run"}
-              </>
-            ) : (
-              <>
-                <Lock className="w-3 h-3" />
-                Upgrade
-              </>
-            )}
-          </Button>
-        </div>
+        </Button>
       </div>
     </Link>
   );
@@ -210,7 +181,6 @@ const Automations = () => {
   const { hasPaid } = useSubscription();
   const { hasFreeAccess } = useFreeAccess();
   const { isAdmin } = useUserRole();
-  const { exportWorkflow, exporting: isExporting } = useWorkflowExport();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>("All");
@@ -463,8 +433,6 @@ const Automations = () => {
                       hasAccess={hasAccess}
                       isFreeDemo={isFreeDemoAutomation(automation)}
                       onRun={handleRunAutomation}
-                      onExport={(a) => exportWorkflow(a.id, a.title)}
-                      isExporting={isExporting}
                     />
                   ))}
                 </div>
@@ -486,14 +454,8 @@ const Automations = () => {
             )}
           </div>
 
-          {/* Export Usage Info */}
-          {hasAccess && user && (
-            <div className="mt-12 text-center">
-              <p className="text-sm text-muted-foreground">
-                🔒 Each export is watermarked with your license. Individual export only — no bulk downloads.
-              </p>
-            </div>
-          )}
+          {/* Bulk Download Section */}
+          <BulkDownloadSection />
         </main>
       </div>
 
