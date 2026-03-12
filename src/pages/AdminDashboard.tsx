@@ -256,6 +256,8 @@ const AdminDashboard = () => {
   const updateStatus = async (id: string, newStatus: string) => {
     setIsUpdating(true);
     try {
+      const submission = submissions.find(s => s.id === id);
+      
       const { error } = await supabase
         .from("payment_submissions")
         .update({ status: newStatus })
@@ -265,7 +267,29 @@ const AdminDashboard = () => {
         console.error("Error updating status:", error);
         toast.error("Failed to update status");
       } else {
-        toast.success(`Status updated to ${newStatus}`);
+        // If approved, create lifetime subscription for the user
+        if (newStatus === "approved" && submission?.user_id) {
+          const { error: subError } = await supabase
+            .from("user_subscriptions")
+            .upsert({
+              user_id: submission.user_id,
+              plan: submission.plan_selected || "pro",
+              status: "active",
+              payment_id: id,
+              starts_at: new Date().toISOString(),
+              expires_at: null, // lifetime - no expiry
+            }, { onConflict: "user_id" });
+
+          if (subError) {
+            console.error("Error creating subscription:", subError);
+            toast.error("Payment approved but failed to activate subscription");
+          } else {
+            toast.success(`Payment approved! Lifetime Pro access granted.`);
+          }
+        } else {
+          toast.success(`Status updated to ${newStatus}`);
+        }
+        
         // Update local state
         setSubmissions((prev) =>
           prev.map((s) => (s.id === id ? { ...s, status: newStatus } : s))
