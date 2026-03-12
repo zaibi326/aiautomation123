@@ -134,6 +134,35 @@ const Dashboard = () => {
               <Grid className="w-5 h-5" />
               Automations
             </button>
+            
+            {/* Guides Section */}
+            <div className="mt-6 mb-2 px-4">
+              <span className="text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50 flex items-center gap-2">
+                <BookOpen className="w-3.5 h-3.5" />
+                AI Growth Kit
+                {!hasAccess && <Lock className="w-3 h-3 text-amber-500" />}
+              </span>
+            </div>
+            {[
+              { to: "/guides/ai-agency-roadmap", icon: Map, label: "AI Agency Roadmap" },
+              { to: "/guides/build-free-ai-agency-website", icon: Globe, label: "Build Free Website" },
+              { to: "/guides/automation-money-making", icon: DollarSign, label: "Money Making" },
+              { to: "/guides/best-ai-automation-tools", icon: Wrench, label: "Best AI Tools" },
+              { to: "/guides/launch-your-ai-agency", icon: Rocket, label: "Launch AI Agency" },
+              { to: "/guides/ai-automation-roadmap", icon: TrendingUp, label: "AI Automation Roadmap" },
+            ].map((guide) => (
+              <Link
+                key={guide.to}
+                to={guide.to}
+                className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors text-sm"
+              >
+                <guide.icon className="w-4 h-4" />
+                <span className="truncate">{guide.label}</span>
+                {!hasAccess && <Crown className="w-3 h-3 text-amber-500 ml-auto flex-shrink-0" />}
+              </Link>
+            ))}
+
+            <div className="mt-4" />
             <Link
               to="/settings"
               className="flex items-center gap-3 px-4 py-3 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
