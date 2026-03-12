@@ -23,6 +23,12 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminLogin from "./pages/AdminLogin";
 import NotFound from "./pages/NotFound";
 import WorkflowRunner from "./pages/WorkflowRunner";
+import AIAgencyRoadmap from "./pages/guides/AIAgencyRoadmap";
+import BuildFreeAIAgencyWebsite from "./pages/guides/BuildFreeAIAgencyWebsite";
+import AutomationMoneyMaking from "./pages/guides/AutomationMoneyMaking";
+import BestAIAutomationTools from "./pages/guides/BestAIAutomationTools";
+import LaunchYourAIAgency from "./pages/guides/LaunchYourAIAgency";
+import AIAutomationRoadmap from "./pages/guides/AIAutomationRoadmap";
 
 const queryClient = new QueryClient();
 
@@ -92,6 +98,12 @@ const App = () => (
                 }
               />
               <Route path="/workflow-runner" element={<WorkflowRunner />} />
+              <Route path="/guides/ai-agency-roadmap" element={<AIAgencyRoadmap />} />
+              <Route path="/guides/build-free-ai-agency-website" element={<BuildFreeAIAgencyWebsite />} />
+              <Route path="/guides/automation-money-making" element={<AutomationMoneyMaking />} />
+              <Route path="/guides/best-ai-automation-tools" element={<BestAIAutomationTools />} />
+              <Route path="/guides/launch-your-ai-agency" element={<LaunchYourAIAgency />} />
+              <Route path="/guides/ai-automation-roadmap" element={<AIAutomationRoadmap />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AuthProvider>
