@@ -1,15 +1,24 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { 
   Zap, Home, Grid, Settings, CreditCard, LogOut,
-  Check, ArrowRight
+  Check, ArrowRight, Crown, Shield
 } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSubscription } from "@/hooks/useSubscription";
+import { useFreeAccess } from "@/hooks/useFreeAccess";
+import { useUserRole } from "@/hooks/useUserRole";
 
 const Billing = () => {
   const { signOut } = useAuth();
   const navigate = useNavigate();
+  const { hasPaid, subscription } = useSubscription();
+  const { hasFreeAccess } = useFreeAccess();
+  const { isAdmin } = useUserRole();
+
+  const hasProAccess = hasPaid || hasFreeAccess || isAdmin;
 
   const handleSignOut = async () => {
     await signOut();
@@ -83,33 +92,77 @@ const Billing = () => {
               <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6">
                 <div>
                   <h2 className="text-lg font-semibold text-foreground mb-1">Current Plan</h2>
-                  <p className="text-muted-foreground">You are currently on the <span className="font-medium text-foreground">Free</span> plan.</p>
+                  {hasProAccess ? (
+                    <div className="flex items-center gap-2">
+                      <p className="text-muted-foreground">You are on the <span className="font-medium text-primary">Pro</span> plan.</p>
+                      <Badge className="bg-primary/10 text-primary border-primary/20 border">
+                        ✅ Lifetime Access
+                      </Badge>
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground">You are currently on the <span className="font-medium text-foreground">Free</span> plan.</p>
+                  )}
                 </div>
-                <Link to="/pricing">
-                  <Button variant="hero" className="gap-2">
-                    Upgrade Plan
-                    <ArrowRight className="w-4 h-4" />
-                  </Button>
-                </Link>
+                {!hasProAccess && (
+                  <Link to="/pricing">
+                    <Button variant="hero" className="gap-2">
+                      Upgrade Plan
+                      <ArrowRight className="w-4 h-4" />
+                    </Button>
+                  </Link>
+                )}
               </div>
 
-              <div className="grid sm:grid-cols-3 gap-4 p-4 rounded-xl bg-secondary/50">
-                <div>
-                  <div className="text-sm text-muted-foreground mb-1">Runs Used</div>
-                  <div className="text-2xl font-bold text-foreground">47 / 100</div>
+              {hasProAccess ? (
+                <div className="p-5 rounded-xl bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10 border border-primary/20">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
+                      <Crown className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-foreground">Pro Plan Active</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Unlimited access to all automations, guides, courses, and premium features — forever!
+                      </p>
+                    </div>
+                  </div>
+                  <div className="grid sm:grid-cols-3 gap-4 mt-4">
+                    <div className="p-3 rounded-lg bg-card/50">
+                      <div className="text-sm text-muted-foreground mb-1">Plan</div>
+                      <div className="text-lg font-bold text-primary">Pro Lifetime</div>
+                    </div>
+                    <div className="p-3 rounded-lg bg-card/50">
+                      <div className="text-sm text-muted-foreground mb-1">Status</div>
+                      <div className="text-lg font-bold text-primary flex items-center gap-1">
+                        <Shield className="w-4 h-4" /> Active
+                      </div>
+                    </div>
+                    <div className="p-3 rounded-lg bg-card/50">
+                      <div className="text-sm text-muted-foreground mb-1">Expires</div>
+                      <div className="text-lg font-bold text-foreground">Never ♾️</div>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-sm text-muted-foreground mb-1">Active Automations</div>
-                  <div className="text-2xl font-bold text-foreground">3 / 5</div>
+              ) : (
+                <div className="grid sm:grid-cols-3 gap-4 p-4 rounded-xl bg-secondary/50">
+                  <div>
+                    <div className="text-sm text-muted-foreground mb-1">Runs Used</div>
+                    <div className="text-2xl font-bold text-foreground">47 / 100</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground mb-1">Active Automations</div>
+                    <div className="text-2xl font-bold text-foreground">3 / 5</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground mb-1">Billing Cycle</div>
+                    <div className="text-2xl font-bold text-foreground">Monthly</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-sm text-muted-foreground mb-1">Billing Cycle</div>
-                  <div className="text-2xl font-bold text-foreground">Monthly</div>
-                </div>
-              </div>
+              )}
             </div>
 
-            {/* Upgrade Options */}
+            {/* Upgrade Options - only show if not pro */}
+            {!hasProAccess && (
             <div className="grid md:grid-cols-2 gap-6 mb-6">
               <div className="bg-card rounded-2xl border border-border p-6">
                 <div className="flex items-center justify-between mb-4">
@@ -166,6 +219,7 @@ const Billing = () => {
                 </Link>
               </div>
             </div>
+            )}
 
             {/* Payment Method */}
             <div className="bg-card rounded-2xl border border-border p-6 mb-6">

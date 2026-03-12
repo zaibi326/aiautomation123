@@ -217,7 +217,7 @@ const Dashboard = () => {
               </div>
 
               {/* Pro Status Banner */}
-              {hasPaid && subscription && (
+              {hasAccess && !isAdmin && (
                 <div className="mb-8 p-5 rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10 border border-primary/20">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
