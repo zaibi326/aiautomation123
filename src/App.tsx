@@ -23,6 +23,12 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminLogin from "./pages/AdminLogin";
 import NotFound from "./pages/NotFound";
 import WorkflowRunner from "./pages/WorkflowRunner";
+import AIAgencyRoadmap from "./pages/guides/AIAgencyRoadmap";
+import BuildFreeAIAgencyWebsite from "./pages/guides/BuildFreeAIAgencyWebsite";
+import AutomationMoneyMaking from "./pages/guides/AutomationMoneyMaking";
+import BestAIAutomationTools from "./pages/guides/BestAIAutomationTools";
+import LaunchYourAIAgency from "./pages/guides/LaunchYourAIAgency";
+import AIAutomationRoadmap from "./pages/guides/AIAutomationRoadmap";
 
 const queryClient = new QueryClient();
 
