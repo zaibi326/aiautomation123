@@ -4,6 +4,8 @@ import { Download, Package, Loader2, Lock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useFreeAccess } from "@/hooks/useFreeAccess";
+
+const STARTER_BUNDLE_IDS = ["bundle-2", "bundle-3"];
 import { useUserRole } from "@/hooks/useUserRole";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -96,15 +98,22 @@ const templateBundles = [
 
 const BulkDownloadSection = () => {
   const { user } = useAuth();
-  const { hasPaid, loading: subscriptionLoading } = useSubscription();
+  const { hasPaid, subscription, loading: subscriptionLoading } = useSubscription();
   const { hasFreeAccess, loading: freeAccessLoading } = useFreeAccess();
   const { isAdmin } = useUserRole();
   const navigate = useNavigate();
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
-  const canDownload = isAdmin || hasPaid || hasFreeAccess;
+  const isProPlan = isAdmin || hasFreeAccess || (hasPaid && subscription?.plan === 'pro');
+  const isStarterPlan = hasPaid && subscription?.plan === 'starter';
   const isLoading = subscriptionLoading || freeAccessLoading;
+
+  const canDownloadBundle = (bundleId: string) => {
+    if (isAdmin || hasFreeAccess || isProPlan) return true;
+    if (isStarterPlan && STARTER_BUNDLE_IDS.includes(bundleId)) return true;
+    return false;
+  };
 
   const handleDownload = async (bundle: typeof templateBundles[0]) => {
     if (!user) {
@@ -113,7 +122,7 @@ const BulkDownloadSection = () => {
       return;
     }
 
-    if (!canDownload) {
+    if (!canDownloadBundle(bundle.id)) {
       navigate("/pricing");
       return;
     }
@@ -252,7 +261,7 @@ const BulkDownloadSection = () => {
                       <Lock className="w-4 h-4" />
                       Signup to Download
                     </>
-                  ) : !canDownload && !isLoading ? (
+                  ) : !canDownloadBundle(bundle.id) && !isLoading ? (
                     <>
                       <Lock className="w-4 h-4" />
                       Subscribe to Download
@@ -270,7 +279,7 @@ const BulkDownloadSection = () => {
         </div>
 
         {/* CTA for non-subscribers */}
-        {!canDownload && !isLoading && user && (
+        {!isProPlan && !isLoading && user && (
           <div className="mt-12 text-center">
             <p className="text-muted-foreground mb-4">
               Unlock all template bundles with a premium subscription
