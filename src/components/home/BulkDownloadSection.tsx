@@ -98,15 +98,22 @@ const templateBundles = [
 
 const BulkDownloadSection = () => {
   const { user } = useAuth();
-  const { hasPaid, loading: subscriptionLoading } = useSubscription();
+  const { hasPaid, subscription, loading: subscriptionLoading } = useSubscription();
   const { hasFreeAccess, loading: freeAccessLoading } = useFreeAccess();
   const { isAdmin } = useUserRole();
   const navigate = useNavigate();
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
-  const canDownload = isAdmin || hasPaid || hasFreeAccess;
+  const isProPlan = isAdmin || hasFreeAccess || (hasPaid && subscription?.plan === 'pro');
+  const isStarterPlan = hasPaid && subscription?.plan === 'starter';
   const isLoading = subscriptionLoading || freeAccessLoading;
+
+  const canDownloadBundle = (bundleId: string) => {
+    if (isAdmin || hasFreeAccess || isProPlan) return true;
+    if (isStarterPlan && STARTER_BUNDLE_IDS.includes(bundleId)) return true;
+    return false;
+  };
 
   const handleDownload = async (bundle: typeof templateBundles[0]) => {
     if (!user) {
@@ -115,7 +122,7 @@ const BulkDownloadSection = () => {
       return;
     }
 
-    if (!canDownload) {
+    if (!canDownloadBundle(bundle.id)) {
       navigate("/pricing");
       return;
     }
