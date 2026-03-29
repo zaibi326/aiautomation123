@@ -5,7 +5,7 @@ import {
   Zap, Home, Grid, Settings, CreditCard, LogOut, 
   Plus, ArrowUpRight, BarChart3, Clock, CheckCircle, AlertCircle, Shield,
   Play, Loader2, Lock, ChevronLeft, ChevronRight, Search, X,
-  Map, Globe, DollarSign, Wrench, Rocket, TrendingUp, BookOpen, Crown
+  Map, Globe, DollarSign, Wrench, Rocket, TrendingUp, BookOpen, Crown, ArrowUpRight
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
