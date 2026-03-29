@@ -198,9 +198,16 @@ const BulkDownloadSection = () => {
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/10 text-green-600 dark:text-green-400 text-sm font-medium">
                 🎁 Free Access Granted - Download All Templates
               </div>
-            ) : hasPaid ? (
+            ) : isProPlan ? (
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/10 text-green-600 dark:text-green-400 text-sm font-medium">
-                ✓ Premium Member - Download All Templates
+                ✓ Pro Member - Download All Templates
+              </div>
+            ) : isStarterPlan ? (
+              <div className="inline-flex flex-col sm:flex-row items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-sm font-medium">
+                <span>📦 Starter Plan - 2 Bundles Unlocked</span>
+                <button onClick={() => navigate("/pricing")} className="underline font-semibold hover:opacity-80 transition-opacity">
+                  Upgrade to Pro for all bundles →
+                </button>
               </div>
             ) : (
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-sm font-medium">
