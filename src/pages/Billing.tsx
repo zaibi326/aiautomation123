@@ -92,7 +92,14 @@ const Billing = () => {
               <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6">
                 <div>
                   <h2 className="text-lg font-semibold text-foreground mb-1">Current Plan</h2>
-                  {hasProAccess ? (
+                  {hasPaid && subscription?.plan === 'starter' ? (
+                    <div className="flex items-center gap-2">
+                      <p className="text-muted-foreground">You are on the <span className="font-medium text-amber-600">Starter</span> plan.</p>
+                      <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20 border">
+                        📦 Yearly Access
+                      </Badge>
+                    </div>
+                  ) : hasProAccess ? (
                     <div className="flex items-center gap-2">
                       <p className="text-muted-foreground">You are on the <span className="font-medium text-primary">Pro</span> plan.</p>
                       <Badge className="bg-primary/10 text-primary border-primary/20 border">
@@ -103,17 +110,56 @@ const Billing = () => {
                     <p className="text-muted-foreground">You are currently on the <span className="font-medium text-foreground">Free</span> plan.</p>
                   )}
                 </div>
-                {!hasProAccess && (
+                {!hasProAccess && !(hasPaid && subscription?.plan === 'starter') ? (
                   <Link to="/pricing">
                     <Button variant="hero" className="gap-2">
                       Upgrade Plan
                       <ArrowRight className="w-4 h-4" />
                     </Button>
                   </Link>
-                )}
+                ) : hasPaid && subscription?.plan === 'starter' ? (
+                  <Link to="/pricing">
+                    <Button variant="hero" className="gap-2">
+                      Upgrade to Pro
+                      <ArrowRight className="w-4 h-4" />
+                    </Button>
+                  </Link>
+                ) : null}
               </div>
 
-              {hasProAccess ? (
+              {hasPaid && subscription?.plan === 'starter' ? (
+                <div className="p-5 rounded-xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-orange-500/10 border border-amber-500/20">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                      <Crown className="w-6 h-6 text-amber-500" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-foreground">Starter Plan Active</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Access to 5,000 workflow downloads, 2,000 uploads, courses, and simulation features.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="grid sm:grid-cols-3 gap-4 mt-4">
+                    <div className="p-3 rounded-lg bg-card/50">
+                      <div className="text-sm text-muted-foreground mb-1">Plan</div>
+                      <div className="text-lg font-bold text-amber-600">Starter Yearly</div>
+                    </div>
+                    <div className="p-3 rounded-lg bg-card/50">
+                      <div className="text-sm text-muted-foreground mb-1">Status</div>
+                      <div className="text-lg font-bold text-amber-600 flex items-center gap-1">
+                        <Shield className="w-4 h-4" /> Active
+                      </div>
+                    </div>
+                    <div className="p-3 rounded-lg bg-card/50">
+                      <div className="text-sm text-muted-foreground mb-1">Expires</div>
+                      <div className="text-lg font-bold text-foreground">
+                        {subscription?.expires_at ? new Date(subscription.expires_at).toLocaleDateString() : '1 Year'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : hasProAccess ? (
                 <div className="p-5 rounded-xl bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10 border border-primary/20">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
@@ -162,37 +208,39 @@ const Billing = () => {
             </div>
 
             {/* Upgrade Options - only show if not pro */}
-            {!hasProAccess && (
-            <div className="grid md:grid-cols-2 gap-6 mb-6">
-              <div className="bg-card rounded-2xl border border-border p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-foreground">Starter Plan</h3>
-                  <span className="text-2xl font-bold text-foreground">$50<span className="text-sm font-normal text-muted-foreground">/year</span></span>
+            {(!hasProAccess || (hasPaid && subscription?.plan === 'starter')) && (
+            <div className={`grid gap-6 mb-6 ${hasPaid && subscription?.plan === 'starter' ? 'md:grid-cols-1 max-w-lg' : 'md:grid-cols-2'}`}>
+              {!(hasPaid && subscription?.plan === 'starter') && (
+                <div className="bg-card rounded-2xl border border-border p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-foreground">Starter Plan</h3>
+                    <span className="text-2xl font-bold text-foreground">$50<span className="text-sm font-normal text-muted-foreground">/year</span></span>
+                  </div>
+                  <ul className="space-y-3 mb-6">
+                    {[
+                      "5,000 Workflow Templates Download",
+                      "2,000 Workflow Uploads",
+                      "Workflow Running Simulation",
+                      "AI Automation Courses",
+                      "250+ Templates with Video Guides 🎥",
+                      "Email & Live Chat Support",
+                    ].map((feature) => (
+                      <li key={feature} className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Check className="w-4 h-4 text-primary" />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                  <Link to="/pricing">
+                    <Button variant="outline" className="w-full">Get Starter</Button>
+                  </Link>
                 </div>
-                <ul className="space-y-3 mb-6">
-                  {[
-                    "5,000 Workflow Templates Download",
-                    "2,000 Workflow Uploads",
-                    "Workflow Running Simulation",
-                    "AI Automation Courses",
-                    "250+ Templates with Video Guides 🎥",
-                    "Email & Live Chat Support",
-                  ].map((feature) => (
-                    <li key={feature} className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Check className="w-4 h-4 text-primary" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                <Link to="/pricing">
-                  <Button variant="outline" className="w-full">Get Starter</Button>
-                </Link>
-              </div>
+              )}
 
               <div className="bg-card rounded-2xl border-2 border-primary p-6 relative">
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                   <span className="px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-bold">
-                    MOST POPULAR
+                    {hasPaid && subscription?.plan === 'starter' ? 'RECOMMENDED UPGRADE' : 'MOST POPULAR'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between mb-4">
