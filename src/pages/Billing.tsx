@@ -166,12 +166,13 @@ const Billing = () => {
             <div className="grid md:grid-cols-2 gap-6 mb-6">
               <div className="bg-card rounded-2xl border border-border p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-foreground">Basic Plan</h3>
-                  <span className="text-2xl font-bold text-foreground">$20<span className="text-sm font-normal text-muted-foreground">/month</span></span>
+                  <h3 className="text-lg font-semibold text-foreground">Starter Plan</h3>
+                  <span className="text-2xl font-bold text-foreground">$50<span className="text-sm font-normal text-muted-foreground">/year</span></span>
                 </div>
                 <ul className="space-y-3 mb-6">
                   {[
-                    "15K+ Workflow Templates Download",
+                    "5,000 Workflow Templates Download",
+                    "2,000 Workflow Uploads",
                     "Workflow Running Simulation",
                     "AI Automation Courses",
                     "250+ Templates with Video Guides 🎥",
@@ -184,7 +185,7 @@ const Billing = () => {
                   ))}
                 </ul>
                 <Link to="/pricing">
-                  <Button variant="outline" className="w-full">Get Basic</Button>
+                  <Button variant="outline" className="w-full">Get Starter</Button>
                 </Link>
               </div>
 

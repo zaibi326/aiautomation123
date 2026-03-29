@@ -323,7 +323,7 @@ const PaymentConfirmation = () => {
                         <SelectValue placeholder="Choose a plan" />
                       </SelectTrigger>
                       <SelectContent className="bg-popover">
-                        <SelectItem value="basic">Basic Plan - $20 (One Month)</SelectItem>
+                        <SelectItem value="starter">Starter Plan - $50 (Per Year)</SelectItem>
                         <SelectItem value="pro">Pro Plan - $50 (Lifetime)</SelectItem>
                       </SelectContent>
                     </Select>
