@@ -209,7 +209,8 @@ const Billing = () => {
 
             {/* Upgrade Options - only show if not pro */}
             {(!hasProAccess || (hasPaid && subscription?.plan === 'starter')) && (
-            <div className="grid md:grid-cols-2 gap-6 mb-6">
+            <div className={`grid gap-6 mb-6 ${hasPaid && subscription?.plan === 'starter' ? 'md:grid-cols-1 max-w-lg' : 'md:grid-cols-2'}`}>
+              {!(hasPaid && subscription?.plan === 'starter') && (
               <div className="bg-card rounded-2xl border border-border p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-foreground">Starter Plan</h3>
