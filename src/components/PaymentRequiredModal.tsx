@@ -36,10 +36,10 @@ const PaymentRequiredModal = ({ open, onOpenChange }: PaymentRequiredModalProps)
             <div className="p-4 rounded-xl border border-border bg-card">
               <div className="flex items-center gap-2 mb-2">
                 <Zap className="w-5 h-5 text-primary" />
-                <span className="font-semibold">Basic</span>
+                <span className="font-semibold">Starter</span>
               </div>
-              <p className="text-2xl font-bold text-foreground">$20</p>
-              <p className="text-xs text-muted-foreground">One Month</p>
+              <p className="text-2xl font-bold text-foreground">$50</p>
+              <p className="text-xs text-muted-foreground">Per Year</p>
             </div>
             <div className="p-4 rounded-xl border-2 border-primary bg-primary/5 relative">
               <div className="absolute -top-2 right-2">

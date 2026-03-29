@@ -21,12 +21,13 @@ const WHATSAPP_DISPLAY = "+92 305 969 4651";
 
 const plans = [
   {
-    name: "Basic Plan",
-    price: "$20",
-    period: "One Month",
+    name: "Starter Plan",
+    price: "$50",
+    period: "Per Year",
     description: "Perfect for getting started with AI automation",
     features: [
-      "15K+ Workflow Templates Download 📥",
+      "5,000 Workflow Templates Download 📥",
+      "2,000 Workflow Uploads 📤",
       "Unlimited Workflow Running Simulation 🔄",
       "Test Your Own JSON Workflows ✅",
       "AI Automation Courses",
@@ -41,7 +42,7 @@ const plans = [
       "Email Support & Live Chat Support",
     ],
     limits: {
-      downloads: "Unlimited Downloads",
+      downloads: "5,000 Downloads",
       runs: "Unlimited Simulations",
       testJson: "Test Your Own Workflows"
     },
