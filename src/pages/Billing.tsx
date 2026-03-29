@@ -211,35 +211,36 @@ const Billing = () => {
             {(!hasProAccess || (hasPaid && subscription?.plan === 'starter')) && (
             <div className={`grid gap-6 mb-6 ${hasPaid && subscription?.plan === 'starter' ? 'md:grid-cols-1 max-w-lg' : 'md:grid-cols-2'}`}>
               {!(hasPaid && subscription?.plan === 'starter') && (
-              <div className="bg-card rounded-2xl border border-border p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-foreground">Starter Plan</h3>
-                  <span className="text-2xl font-bold text-foreground">$50<span className="text-sm font-normal text-muted-foreground">/year</span></span>
+                <div className="bg-card rounded-2xl border border-border p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-foreground">Starter Plan</h3>
+                    <span className="text-2xl font-bold text-foreground">$50<span className="text-sm font-normal text-muted-foreground">/year</span></span>
+                  </div>
+                  <ul className="space-y-3 mb-6">
+                    {[
+                      "5,000 Workflow Templates Download",
+                      "2,000 Workflow Uploads",
+                      "Workflow Running Simulation",
+                      "AI Automation Courses",
+                      "250+ Templates with Video Guides 🎥",
+                      "Email & Live Chat Support",
+                    ].map((feature) => (
+                      <li key={feature} className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Check className="w-4 h-4 text-primary" />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                  <Link to="/pricing">
+                    <Button variant="outline" className="w-full">Get Starter</Button>
+                  </Link>
                 </div>
-                <ul className="space-y-3 mb-6">
-                  {[
-                    "5,000 Workflow Templates Download",
-                    "2,000 Workflow Uploads",
-                    "Workflow Running Simulation",
-                    "AI Automation Courses",
-                    "250+ Templates with Video Guides 🎥",
-                    "Email & Live Chat Support",
-                  ].map((feature) => (
-                    <li key={feature} className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Check className="w-4 h-4 text-primary" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                <Link to="/pricing">
-                  <Button variant="outline" className="w-full">Get Starter</Button>
-                </Link>
-              </div>
+              )}
 
               <div className="bg-card rounded-2xl border-2 border-primary p-6 relative">
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                   <span className="px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-bold">
-                    MOST POPULAR
+                    {hasPaid && subscription?.plan === 'starter' ? 'RECOMMENDED UPGRADE' : 'MOST POPULAR'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between mb-4">
