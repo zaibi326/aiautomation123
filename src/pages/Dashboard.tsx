@@ -216,23 +216,43 @@ const Dashboard = () => {
                 </Button>
               </div>
 
-              {/* Pro Status Banner */}
+              {/* Plan Status Banner */}
               {hasAccess && !isAdmin && (
-                <div className="mb-8 p-5 rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10 border border-primary/20">
+                <div className={`mb-8 p-5 rounded-2xl border ${
+                  subscription?.plan === 'starter' 
+                    ? 'bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-orange-500/10 border-amber-500/20'
+                    : 'bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10 border-primary/20'
+                }`}>
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
-                      <Crown className="w-6 h-6 text-primary" />
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                      subscription?.plan === 'starter' ? 'bg-amber-500/20' : 'bg-primary/20'
+                    }`}>
+                      <Crown className={`w-6 h-6 ${subscription?.plan === 'starter' ? 'text-amber-500' : 'text-primary'}`} />
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <h3 className="text-lg font-bold text-foreground">Pro Plan Active</h3>
-                        <Badge className="bg-primary/10 text-primary border-primary/20 border">
-                          ✅ Lifetime Access
+                        <h3 className="text-lg font-bold text-foreground">
+                          {subscription?.plan === 'starter' ? 'Starter Plan Active' : 'Pro Plan Active'}
+                        </h3>
+                        <Badge className={`border ${
+                          subscription?.plan === 'starter'
+                            ? 'bg-amber-500/10 text-amber-600 border-amber-500/20'
+                            : 'bg-primary/10 text-primary border-primary/20'
+                        }`}>
+                          {subscription?.plan === 'starter' ? '📦 Yearly Access' : '✅ Lifetime Access'}
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground mt-1">
-                        Payment confirmed — You have unlimited access to all automations, guides, and premium features forever!
+                        {subscription?.plan === 'starter' 
+                          ? 'Starter plan active — You have access to 5,000 workflow downloads, 2,000 uploads, and selected features.'
+                          : 'Payment confirmed — You have unlimited access to all automations, guides, and premium features forever!'
+                        }
                       </p>
+                      {subscription?.plan === 'starter' && (
+                        <Link to="/pricing" className="inline-flex items-center gap-1 text-sm text-primary font-medium mt-2 hover:underline">
+                          Upgrade to Pro for unlimited access <ArrowUpRight className="w-3 h-3" />
+                        </Link>
+                      )}
                     </div>
                   </div>
                 </div>
