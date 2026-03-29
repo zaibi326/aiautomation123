@@ -4,6 +4,8 @@ import { Download, Package, Loader2, Lock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useFreeAccess } from "@/hooks/useFreeAccess";
+
+const STARTER_BUNDLE_IDS = ["bundle-2", "bundle-3"];
 import { useUserRole } from "@/hooks/useUserRole";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
