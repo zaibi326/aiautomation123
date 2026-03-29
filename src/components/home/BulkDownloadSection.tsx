@@ -261,7 +261,7 @@ const BulkDownloadSection = () => {
                       <Lock className="w-4 h-4" />
                       Signup to Download
                     </>
-                  ) : !canDownload && !isLoading ? (
+                  ) : !canDownloadBundle(bundle.id) && !isLoading ? (
                     <>
                       <Lock className="w-4 h-4" />
                       Subscribe to Download
@@ -279,7 +279,7 @@ const BulkDownloadSection = () => {
         </div>
 
         {/* CTA for non-subscribers */}
-        {!canDownload && !isLoading && user && (
+        {!isProPlan && !isLoading && user && (
           <div className="mt-12 text-center">
             <p className="text-muted-foreground mb-4">
               Unlock all template bundles with a premium subscription
