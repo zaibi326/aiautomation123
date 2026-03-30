@@ -57,8 +57,25 @@ const AutomationDetail = () => {
     }
   };
 
-  // Check if user can download (admin, paid, or has free access)
+  // Check if user can download (admin, paid, free access, or free demo)
   const canDownload = isAdmin || hasPaid || hasFreeAccess;
+  const [isFreeDemoAutomation, setIsFreeDemoAutomation] = useState(false);
+
+  // Check if this automation is in first 10 (free demo)
+  useEffect(() => {
+    const checkFreeDemo = async () => {
+      if (canDownload || !id) return;
+      const { data } = await supabase
+        .from("automations")
+        .select("id")
+        .order("title")
+        .limit(10);
+      if (data) {
+        setIsFreeDemoAutomation(data.some(a => a.id === id));
+      }
+    };
+    checkFreeDemo();
+  }, [id, canDownload]);
 
   useEffect(() => {
     const fetchAutomation = async () => {
