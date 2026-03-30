@@ -31,7 +31,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { isAdmin } = useUserRole();
   const { automations, loading } = useAutomations();
-  const { hasPaid, subscription } = useSubscription();
+  const { hasPaid, subscription, isPlusUser } = useSubscription();
   const { hasFreeAccess } = useFreeAccess();
   const [activeTab, setActiveTab] = useState<"overview" | "automations">("overview");
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
@@ -41,7 +41,7 @@ const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const itemsPerPage = 12;
 
-  // Check if user has access to run automations
+  // Plus plan does NOT give full access
   const hasAccess = hasPaid || hasFreeAccess || isAdmin;
 
   const handleRunAutomation = (e: React.MouseEvent, automation: Automation) => {
