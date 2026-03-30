@@ -241,6 +241,8 @@ const AdminDashboard = () => {
       // Set expiration for starter plan (1 year), null for pro (lifetime)
       const expiresAt = grantPlanType === "starter" 
         ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+        : grantPlanType === "plus"
+        ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
         : null;
 
       const { error: subError } = await supabase
@@ -257,7 +259,7 @@ const AdminDashboard = () => {
         console.error("Error creating subscription:", subError);
         toast.error("Failed to grant plan access");
       } else {
-        toast.success(`${grantPlanType === "pro" ? "Pro" : "Starter"} plan granted to ${newFreeAccessEmail}!`);
+        toast.success(`${grantPlanType === "pro" ? "Pro" : grantPlanType === "plus" ? "Plus" : "Starter"} plan granted to ${newFreeAccessEmail}!`);
         setNewFreeAccessEmail("");
         setNewFreeAccessNotes("");
       }
@@ -335,6 +337,8 @@ const AdminDashboard = () => {
           const planType = submission.plan_selected || "pro";
           const expiresAt = planType === "starter" 
             ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+            : planType === "plus"
+            ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
             : null;
             
           const { error: subError } = await supabase
@@ -352,7 +356,7 @@ const AdminDashboard = () => {
             console.error("Error creating subscription:", subError);
             toast.error("Payment approved but failed to activate subscription");
           } else {
-            const planLabel = planType === "starter" ? "Starter (1 Year)" : "Lifetime Pro";
+            const planLabel = planType === "starter" ? "Starter (1 Year)" : planType === "plus" ? "Plus (1 Month)" : "Lifetime Pro";
             toast.success(`Payment approved! ${planLabel} access granted.`);
           }
         } else {
@@ -821,6 +825,7 @@ const AdminDashboard = () => {
                           <SelectContent className="bg-popover">
                             <SelectItem value="starter">Starter Plan ($50/year)</SelectItem>
                             <SelectItem value="pro">Pro Plan ($100/lifetime)</SelectItem>
+                            <SelectItem value="plus">Plus Plan ($10/month + per workflow)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>

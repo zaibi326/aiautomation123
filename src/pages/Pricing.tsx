@@ -84,8 +84,8 @@ const plans = [
   },
   {
     name: "Plus Plan",
-    price: "$5",
-    period: "/month + $0.50/workflow",
+    price: "$10",
+    period: "/month + per workflow",
     description: "Pay per workflow — all Pro features included",
     features: [
       "All Pro Plan Features Included ✅",
