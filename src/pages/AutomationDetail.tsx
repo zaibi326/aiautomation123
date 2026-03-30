@@ -371,7 +371,7 @@ const AutomationDetail = () => {
                       size="lg" 
                       className="w-full"
                       onClick={handleDownload}
-                      disabled={subscriptionLoading || settingsLoading || freeAccessLoading || downloading || (!canDownload && !appSettings.allow_user_downloads)}
+                      disabled={subscriptionLoading || settingsLoading || freeAccessLoading || downloading || (!canDownload && !isFreeDemoAutomation && !appSettings.allow_user_downloads)}
                     >
                       {downloading ? (
                         <>
