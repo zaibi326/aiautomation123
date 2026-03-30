@@ -88,8 +88,7 @@ const plans = [
     period: "/month + per workflow",
     description: "Access Pro-level workflows without full unlock — pay separately for each workflow",
     features: [
-      "All Pro Plan Features Included ✅",
-      "15K+ Workflow Templates Download 📥",
+      "Pay Only for Workflows You Use 💰",
       "Unlimited Workflow Running Simulation 🔄",
       "Test Your Own JSON Workflows ✅",
       "AI Automation Courses",
@@ -97,10 +96,8 @@ const plans = [
       "AI Agency Roadmap",
       "250+ Templates with Step-by-Step Video Guides 🎥",
       "40+ Marketing Automations with Setup Video Guides 🎥",
-      "Pay Only for Workflows You Use 💰",
       "1-on-1 Consultation",
       "Priority Support",
-      "Lifetime Updates",
     ],
     limits: {
       downloads: "Pay Per Workflow",
