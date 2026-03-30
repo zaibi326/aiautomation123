@@ -99,6 +99,13 @@ const Billing = () => {
                         📦 Yearly Access
                       </Badge>
                     </div>
+                  ) : hasPaid && subscription?.plan === 'plus' ? (
+                    <div className="flex items-center gap-2">
+                      <p className="text-muted-foreground">You are on the <span className="font-medium text-blue-600">Plus</span> plan.</p>
+                      <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20 border">
+                        💎 Monthly + Per Workflow
+                      </Badge>
+                    </div>
                   ) : hasProAccess ? (
                     <div className="flex items-center gap-2">
                       <p className="text-muted-foreground">You are on the <span className="font-medium text-primary">Pro</span> plan.</p>
@@ -110,14 +117,14 @@ const Billing = () => {
                     <p className="text-muted-foreground">You are currently on the <span className="font-medium text-foreground">Free</span> plan.</p>
                   )}
                 </div>
-                {!hasProAccess && !(hasPaid && subscription?.plan === 'starter') ? (
+                {!hasProAccess && !(hasPaid && subscription?.plan === 'starter') && !(hasPaid && subscription?.plan === 'plus') ? (
                   <Link to="/pricing">
                     <Button variant="hero" className="gap-2">
                       Upgrade Plan
                       <ArrowRight className="w-4 h-4" />
                     </Button>
                   </Link>
-                ) : hasPaid && subscription?.plan === 'starter' ? (
+                ) : (hasPaid && subscription?.plan === 'starter') || (hasPaid && subscription?.plan === 'plus') ? (
                   <Link to="/pricing">
                     <Button variant="hero" className="gap-2">
                       Upgrade to Pro
