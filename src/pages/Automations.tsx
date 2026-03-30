@@ -36,7 +36,7 @@ import { WorkflowTester } from "@/components/WorkflowTester";
 import { toast } from "@/hooks/use-toast";
 
 // Number of free demo automations for non-logged in users
-const FREE_DEMO_COUNT = 3;
+const FREE_DEMO_COUNT = 10;
 
 // Icon mapping
 const iconMap: Record<string, React.ComponentType<any>> = {

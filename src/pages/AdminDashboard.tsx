@@ -722,6 +722,71 @@ const AdminDashboard = () => {
                     </div>
                   </div>
 
+                  {/* Grant Plan Access */}
+                  <div className="p-6 rounded-2xl bg-card border border-border">
+                    <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                      <CreditCard className="w-5 h-5" />
+                      Grant Plan Access
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Manually grant Starter or Pro plan access to a user by email
+                    </p>
+                    
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="planAccessEmail">User Email</Label>
+                        <Input
+                          id="planAccessEmail"
+                          type="email"
+                          placeholder="user@example.com"
+                          value={newFreeAccessEmail}
+                          onChange={(e) => setNewFreeAccessEmail(e.target.value)}
+                          disabled={grantingAccess}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="planType">Plan Type</Label>
+                        <Select value={grantPlanType} onValueChange={setGrantPlanType}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select plan" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-popover">
+                            <SelectItem value="starter">Starter Plan ($50/year)</SelectItem>
+                            <SelectItem value="pro">Pro Plan ($100/lifetime)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="freeAccessNotes">Notes (Optional)</Label>
+                        <Textarea
+                          id="freeAccessNotes"
+                          placeholder="Reason for granting access..."
+                          value={newFreeAccessNotes}
+                          onChange={(e) => setNewFreeAccessNotes(e.target.value)}
+                          disabled={grantingAccess}
+                          rows={2}
+                        />
+                      </div>
+                      <Button 
+                        onClick={handleGrantPlanAccess}
+                        disabled={grantingAccess || !newFreeAccessEmail.trim()}
+                        className="gap-2"
+                      >
+                        {grantingAccess ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Granting...
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus className="w-4 h-4" />
+                            Grant {grantPlanType === "pro" ? "Pro" : "Starter"} Access
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+
                   {/* Grant Free Access */}
                   <div className="p-6 rounded-2xl bg-card border border-border">
                     <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
@@ -734,9 +799,9 @@ const AdminDashboard = () => {
                     
                     <div className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="freeAccessEmail">User Email</Label>
+                        <Label htmlFor="freeAccessEmail2">User Email</Label>
                         <Input
-                          id="freeAccessEmail"
+                          id="freeAccessEmail2"
                           type="email"
                           placeholder="user@example.com"
                           value={newFreeAccessEmail}
@@ -745,9 +810,9 @@ const AdminDashboard = () => {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="freeAccessNotes">Notes (Optional)</Label>
+                        <Label htmlFor="freeAccessNotes2">Notes (Optional)</Label>
                         <Textarea
-                          id="freeAccessNotes"
+                          id="freeAccessNotes2"
                           placeholder="Reason for granting access..."
                           value={newFreeAccessNotes}
                           onChange={(e) => setNewFreeAccessNotes(e.target.value)}
