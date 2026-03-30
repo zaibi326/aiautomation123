@@ -166,6 +166,38 @@ const Billing = () => {
                     </div>
                   </div>
                 </div>
+              ) : hasPaid && subscription?.plan === 'plus' ? (
+                <div className="p-5 rounded-xl bg-gradient-to-r from-blue-500/10 via-blue-500/5 to-cyan-500/10 border border-blue-500/20">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                      <Crown className="w-6 h-6 text-blue-500" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-foreground">Plus Plan Active</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        All Pro features included. $10/month base + per workflow charge for each workflow you use.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="grid sm:grid-cols-3 gap-4 mt-4">
+                    <div className="p-3 rounded-lg bg-card/50">
+                      <div className="text-sm text-muted-foreground mb-1">Plan</div>
+                      <div className="text-lg font-bold text-blue-600">Plus Monthly</div>
+                    </div>
+                    <div className="p-3 rounded-lg bg-card/50">
+                      <div className="text-sm text-muted-foreground mb-1">Status</div>
+                      <div className="text-lg font-bold text-blue-600 flex items-center gap-1">
+                        <Shield className="w-4 h-4" /> Active
+                      </div>
+                    </div>
+                    <div className="p-3 rounded-lg bg-card/50">
+                      <div className="text-sm text-muted-foreground mb-1">Renews</div>
+                      <div className="text-lg font-bold text-foreground">
+                        {subscription?.expires_at ? new Date(subscription.expires_at).toLocaleDateString() : 'Monthly'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               ) : hasProAccess ? (
                 <div className="p-5 rounded-xl bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10 border border-primary/20">
                   <div className="flex items-center gap-4">
