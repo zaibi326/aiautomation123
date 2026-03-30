@@ -119,6 +119,7 @@ const AdminDashboard = () => {
   const [newFreeAccessNotes, setNewFreeAccessNotes] = useState("");
   const [grantingAccess, setGrantingAccess] = useState(false);
   const [loadingFreeAccess, setLoadingFreeAccess] = useState(false);
+  const [grantPlanType, setGrantPlanType] = useState("starter");
 
   const fetchSubmissions = async () => {
     setLoading(true);
@@ -207,6 +208,67 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleGrantPlanAccess = async () => {
+    if (!newFreeAccessEmail.trim()) {
+      toast.error("Please enter an email address");
+      return;
+    }
+
+    setGrantingAccess(true);
+    try {
+      // Find user by email
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .limit(1000);
+
+      // We need to find the user_id from auth - let's check payment_submissions or login_attempts for the email
+      const { data: loginData } = await supabase
+        .from("login_attempts")
+        .select("user_id")
+        .eq("email", newFreeAccessEmail.trim())
+        .not("user_id", "is", null)
+        .limit(1);
+
+      const userId = loginData?.[0]?.user_id;
+
+      if (!userId) {
+        toast.error("User not found. Make sure the user has logged in at least once.");
+        setGrantingAccess(false);
+        return;
+      }
+
+      // Set expiration for starter plan (1 year), null for pro (lifetime)
+      const expiresAt = grantPlanType === "starter" 
+        ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+        : null;
+
+      const { error: subError } = await supabase
+        .from("user_subscriptions")
+        .insert({
+          user_id: userId,
+          plan: grantPlanType,
+          status: "active",
+          starts_at: new Date().toISOString(),
+          expires_at: expiresAt,
+        });
+
+      if (subError) {
+        console.error("Error creating subscription:", subError);
+        toast.error("Failed to grant plan access");
+      } else {
+        toast.success(`${grantPlanType === "pro" ? "Pro" : "Starter"} plan granted to ${newFreeAccessEmail}!`);
+        setNewFreeAccessEmail("");
+        setNewFreeAccessNotes("");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("Failed to grant plan access");
+    } finally {
+      setGrantingAccess(false);
+    }
+  };
+
   useEffect(() => {
     let filtered = submissions;
 
@@ -270,22 +332,28 @@ const AdminDashboard = () => {
       } else {
         // If approved, create lifetime subscription for the user
         if (newStatus === "approved" && submission?.user_id) {
+          const planType = submission.plan_selected || "pro";
+          const expiresAt = planType === "starter" 
+            ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+            : null;
+            
           const { error: subError } = await supabase
             .from("user_subscriptions")
             .insert({
               user_id: submission.user_id,
-              plan: submission.plan_selected || "pro",
+              plan: planType,
               status: "active",
               payment_id: id,
               starts_at: new Date().toISOString(),
-              expires_at: null,
+              expires_at: expiresAt,
             });
 
           if (subError) {
             console.error("Error creating subscription:", subError);
             toast.error("Payment approved but failed to activate subscription");
           } else {
-            toast.success(`Payment approved! Lifetime Pro access granted.`);
+            const planLabel = planType === "starter" ? "Starter (1 Year)" : "Lifetime Pro";
+            toast.success(`Payment approved! ${planLabel} access granted.`);
           }
         } else {
           toast.success(`Status updated to ${newStatus}`);
@@ -722,6 +790,71 @@ const AdminDashboard = () => {
                     </div>
                   </div>
 
+                  {/* Grant Plan Access */}
+                  <div className="p-6 rounded-2xl bg-card border border-border">
+                    <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                      <CreditCard className="w-5 h-5" />
+                      Grant Plan Access
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Manually grant Starter or Pro plan access to a user by email
+                    </p>
+                    
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="planAccessEmail">User Email</Label>
+                        <Input
+                          id="planAccessEmail"
+                          type="email"
+                          placeholder="user@example.com"
+                          value={newFreeAccessEmail}
+                          onChange={(e) => setNewFreeAccessEmail(e.target.value)}
+                          disabled={grantingAccess}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="planType">Plan Type</Label>
+                        <Select value={grantPlanType} onValueChange={setGrantPlanType}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select plan" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-popover">
+                            <SelectItem value="starter">Starter Plan ($50/year)</SelectItem>
+                            <SelectItem value="pro">Pro Plan ($100/lifetime)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="freeAccessNotes">Notes (Optional)</Label>
+                        <Textarea
+                          id="freeAccessNotes"
+                          placeholder="Reason for granting access..."
+                          value={newFreeAccessNotes}
+                          onChange={(e) => setNewFreeAccessNotes(e.target.value)}
+                          disabled={grantingAccess}
+                          rows={2}
+                        />
+                      </div>
+                      <Button 
+                        onClick={handleGrantPlanAccess}
+                        disabled={grantingAccess || !newFreeAccessEmail.trim()}
+                        className="gap-2"
+                      >
+                        {grantingAccess ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Granting...
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus className="w-4 h-4" />
+                            Grant {grantPlanType === "pro" ? "Pro" : "Starter"} Access
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+
                   {/* Grant Free Access */}
                   <div className="p-6 rounded-2xl bg-card border border-border">
                     <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
@@ -734,9 +867,9 @@ const AdminDashboard = () => {
                     
                     <div className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="freeAccessEmail">User Email</Label>
+                        <Label htmlFor="freeAccessEmail2">User Email</Label>
                         <Input
-                          id="freeAccessEmail"
+                          id="freeAccessEmail2"
                           type="email"
                           placeholder="user@example.com"
                           value={newFreeAccessEmail}
@@ -745,9 +878,9 @@ const AdminDashboard = () => {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="freeAccessNotes">Notes (Optional)</Label>
+                        <Label htmlFor="freeAccessNotes2">Notes (Optional)</Label>
                         <Textarea
-                          id="freeAccessNotes"
+                          id="freeAccessNotes2"
                           placeholder="Reason for granting access..."
                           value={newFreeAccessNotes}
                           onChange={(e) => setNewFreeAccessNotes(e.target.value)}
