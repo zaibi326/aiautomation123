@@ -146,28 +146,6 @@ const AutomationDetail = () => {
       }
 
       if (!hasPaid) {
-        // Allow free demo automations for logged-in users too
-        if (isFreeDemoAutomation && automation?.preview_json) {
-          setDownloading(true);
-          try {
-            const jsonStr = typeof automation.preview_json === 'string' 
-              ? automation.preview_json 
-              : JSON.stringify(automation.preview_json, null, 2);
-            const blob = new Blob([jsonStr], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${automation.title.replace(/[^a-zA-Z0-9]/g, '_')}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-            toast.success("JSON downloaded! Import into n8n to use.");
-          } catch {
-            toast.error("Download failed");
-          } finally {
-            setDownloading(false);
-          }
-          return;
-        }
         navigate("/pricing");
         return;
       }
