@@ -57,8 +57,25 @@ const AutomationDetail = () => {
     }
   };
 
-  // Check if user can download (admin, paid, or has free access)
+  // Check if user can download (admin, paid, free access, or free demo)
   const canDownload = isAdmin || hasPaid || hasFreeAccess;
+  const [isFreeDemoAutomation, setIsFreeDemoAutomation] = useState(false);
+
+  // Check if this automation is in first 10 (free demo)
+  useEffect(() => {
+    const checkFreeDemo = async () => {
+      if (canDownload || !id) return;
+      const { data } = await supabase
+        .from("automations")
+        .select("id")
+        .order("title")
+        .limit(10);
+      if (data) {
+        setIsFreeDemoAutomation(data.some(a => a.id === id));
+      }
+    };
+    checkFreeDemo();
+  }, [id, canDownload]);
 
   useEffect(() => {
     const fetchAutomation = async () => {
@@ -89,6 +106,29 @@ const AutomationDetail = () => {
   }, [id]);
 
   const handleDownload = async () => {
+    // Free demo automation - allow JSON download without signup
+    if (!user && isFreeDemoAutomation && automation?.preview_json) {
+      setDownloading(true);
+      try {
+        const jsonStr = typeof automation.preview_json === 'string' 
+          ? automation.preview_json 
+          : JSON.stringify(automation.preview_json, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${automation.title.replace(/[^a-zA-Z0-9]/g, '_')}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast.success("JSON downloaded! Import into n8n to use.");
+      } catch {
+        toast.error("Download failed");
+      } finally {
+        setDownloading(false);
+      }
+      return;
+    }
+
     if (!user) {
       toast.info("Please signup first to download");
       navigate("/signup");
@@ -104,12 +144,56 @@ const AutomationDetail = () => {
       }
 
       if (!hasPaid) {
+        // Allow free demo automations for logged-in users too
+        if (isFreeDemoAutomation && automation?.preview_json) {
+          setDownloading(true);
+          try {
+            const jsonStr = typeof automation.preview_json === 'string' 
+              ? automation.preview_json 
+              : JSON.stringify(automation.preview_json, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${automation.title.replace(/[^a-zA-Z0-9]/g, '_')}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            toast.success("JSON downloaded! Import into n8n to use.");
+          } catch {
+            toast.error("Download failed");
+          } finally {
+            setDownloading(false);
+          }
+          return;
+        }
         navigate("/pricing");
         return;
       }
     }
     
     if (!automation?.download_url) {
+      // Fallback: download preview_json if no download_url
+      if (automation?.preview_json) {
+        setDownloading(true);
+        try {
+          const jsonStr = typeof automation.preview_json === 'string' 
+            ? automation.preview_json 
+            : JSON.stringify(automation.preview_json, null, 2);
+          const blob = new Blob([jsonStr], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${automation.title.replace(/[^a-zA-Z0-9]/g, '_')}.json`;
+          a.click();
+          URL.revokeObjectURL(url);
+          toast.success("JSON downloaded!");
+        } catch {
+          toast.error("Download failed");
+        } finally {
+          setDownloading(false);
+        }
+        return;
+      }
       toast.error("Download link not available");
       return;
     }
@@ -287,17 +371,22 @@ const AutomationDetail = () => {
                       size="lg" 
                       className="w-full"
                       onClick={handleDownload}
-                      disabled={subscriptionLoading || settingsLoading || freeAccessLoading || downloading || (!canDownload && !appSettings.allow_user_downloads)}
+                      disabled={subscriptionLoading || settingsLoading || freeAccessLoading || downloading || (!canDownload && !isFreeDemoAutomation && !appSettings.allow_user_downloads)}
                     >
                       {downloading ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
                           Downloading...
                         </>
-                      ) : (!canDownload && !appSettings.allow_user_downloads) ? (
+                      ) : (!canDownload && !isFreeDemoAutomation && !appSettings.allow_user_downloads) ? (
+                        <>
+                          <Lock className="w-4 h-4" />
+                          Upgrade to Download
+                        </>
+                      ) : isFreeDemoAutomation && !canDownload ? (
                         <>
                           <Download className="w-4 h-4" />
-                          Downloads Disabled
+                          Download Free Demo
                         </>
                       ) : (
                         <>
