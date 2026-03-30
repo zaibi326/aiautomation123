@@ -14,7 +14,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 const Billing = () => {
   const { signOut } = useAuth();
   const navigate = useNavigate();
-  const { hasPaid, subscription } = useSubscription();
+  const { hasPaid, subscription, isPlusUser } = useSubscription();
   const { hasFreeAccess } = useFreeAccess();
   const { isAdmin } = useUserRole();
 

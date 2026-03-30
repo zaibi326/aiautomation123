@@ -14,17 +14,18 @@ export const useSubscription = () => {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasPaid, setHasPaid] = useState(false);
+  const [isPlusUser, setIsPlusUser] = useState(false);
 
   useEffect(() => {
     const checkSubscription = async () => {
       if (!user) {
         setLoading(false);
         setHasPaid(false);
+        setIsPlusUser(false);
         return;
       }
 
       try {
-        // Check for active subscription
         const { data: subData } = await supabase
           .from("user_subscriptions")
           .select("*")
@@ -33,17 +34,26 @@ export const useSubscription = () => {
           .maybeSingle();
 
         if (subData) {
-          // Check if subscription is still valid (not expired)
           const isValid = !subData.expires_at || new Date(subData.expires_at) > new Date();
           setSubscription(subData);
-          setHasPaid(isValid);
+          
+          if (subData.plan === "plus") {
+            // Plus plan does NOT give full access — pay per workflow
+            setHasPaid(false);
+            setIsPlusUser(isValid);
+          } else {
+            setHasPaid(isValid);
+            setIsPlusUser(false);
+          }
         } else {
           setSubscription(null);
           setHasPaid(false);
+          setIsPlusUser(false);
         }
       } catch (error) {
         console.error("Error checking subscription:", error);
         setHasPaid(false);
+        setIsPlusUser(false);
       } finally {
         setLoading(false);
       }
@@ -52,5 +62,5 @@ export const useSubscription = () => {
     checkSubscription();
   }, [user]);
 
-  return { subscription, loading, hasPaid };
+  return { subscription, loading, hasPaid, isPlusUser };
 };
