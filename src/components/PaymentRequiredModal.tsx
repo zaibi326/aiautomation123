@@ -32,27 +32,35 @@ const PaymentRequiredModal = ({ open, onOpenChange }: PaymentRequiredModalProps)
 
         <div className="space-y-4 py-4">
           {/* Plans Preview */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="p-4 rounded-xl border border-border bg-card">
-              <div className="flex items-center gap-2 mb-2">
-                <Zap className="w-5 h-5 text-primary" />
-                <span className="font-semibold">Starter</span>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="p-3 rounded-xl border border-border bg-card">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <Zap className="w-4 h-4 text-primary" />
+                <span className="font-semibold text-xs">Starter</span>
               </div>
-              <p className="text-2xl font-bold text-foreground">$50</p>
-              <p className="text-xs text-muted-foreground">Per Year</p>
+              <p className="text-lg font-bold text-foreground">$50</p>
+              <p className="text-[10px] text-muted-foreground">Per Year</p>
             </div>
-            <div className="p-4 rounded-xl border-2 border-primary bg-primary/5 relative">
-              <div className="absolute -top-2 right-2">
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary text-primary-foreground font-medium">
+            <div className="p-3 rounded-xl border-2 border-primary bg-primary/5 relative">
+              <div className="absolute -top-2 right-1">
+                <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground font-medium">
                   Popular
                 </span>
               </div>
-              <div className="flex items-center gap-2 mb-2">
-                <Crown className="w-5 h-5 text-primary" />
-                <span className="font-semibold">Pro</span>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <Crown className="w-4 h-4 text-primary" />
+                <span className="font-semibold text-xs">Pro</span>
               </div>
-              <p className="text-2xl font-bold text-primary">$100</p>
-              <p className="text-xs text-muted-foreground">Lifetime</p>
+              <p className="text-lg font-bold text-primary">$100</p>
+              <p className="text-[10px] text-muted-foreground">Lifetime</p>
+            </div>
+            <div className="p-3 rounded-xl border border-border bg-card">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <Zap className="w-4 h-4 text-accent-foreground" />
+                <span className="font-semibold text-xs">Plus</span>
+              </div>
+              <p className="text-lg font-bold text-foreground">$5</p>
+              <p className="text-[10px] text-muted-foreground">/mo + per use</p>
             </div>
           </div>
 
