@@ -208,6 +208,67 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleGrantPlanAccess = async () => {
+    if (!newFreeAccessEmail.trim()) {
+      toast.error("Please enter an email address");
+      return;
+    }
+
+    setGrantingAccess(true);
+    try {
+      // Find user by email
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .limit(1000);
+
+      // We need to find the user_id from auth - let's check payment_submissions or login_attempts for the email
+      const { data: loginData } = await supabase
+        .from("login_attempts")
+        .select("user_id")
+        .eq("email", newFreeAccessEmail.trim())
+        .not("user_id", "is", null)
+        .limit(1);
+
+      const userId = loginData?.[0]?.user_id;
+
+      if (!userId) {
+        toast.error("User not found. Make sure the user has logged in at least once.");
+        setGrantingAccess(false);
+        return;
+      }
+
+      // Set expiration for starter plan (1 year), null for pro (lifetime)
+      const expiresAt = grantPlanType === "starter" 
+        ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+        : null;
+
+      const { error: subError } = await supabase
+        .from("user_subscriptions")
+        .insert({
+          user_id: userId,
+          plan: grantPlanType,
+          status: "active",
+          starts_at: new Date().toISOString(),
+          expires_at: expiresAt,
+        });
+
+      if (subError) {
+        console.error("Error creating subscription:", subError);
+        toast.error("Failed to grant plan access");
+      } else {
+        toast.success(`${grantPlanType === "pro" ? "Pro" : "Starter"} plan granted to ${newFreeAccessEmail}!`);
+        setNewFreeAccessEmail("");
+        setNewFreeAccessNotes("");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("Failed to grant plan access");
+    } finally {
+      setGrantingAccess(false);
+    }
+  };
+
   useEffect(() => {
     let filtered = submissions;
 
