@@ -108,8 +108,8 @@ const AutomationDetail = () => {
   }, [id]);
 
   const handleDownload = async () => {
-    // Free demo automation - allow JSON download without signup
-    if (!user && isFreeDemoAutomation && automation?.preview_json) {
+    // Free demo automation - allow JSON download for anyone (logged in or not)
+    if (isFreeDemoAutomation && !canDownload && automation?.preview_json) {
       setDownloading(true);
       try {
         const jsonStr = typeof automation.preview_json === 'string' 
