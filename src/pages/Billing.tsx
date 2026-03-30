@@ -99,6 +99,13 @@ const Billing = () => {
                         📦 Yearly Access
                       </Badge>
                     </div>
+                  ) : hasPaid && subscription?.plan === 'plus' ? (
+                    <div className="flex items-center gap-2">
+                      <p className="text-muted-foreground">You are on the <span className="font-medium text-blue-600">Plus</span> plan.</p>
+                      <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20 border">
+                        💎 Monthly + Per Workflow
+                      </Badge>
+                    </div>
                   ) : hasProAccess ? (
                     <div className="flex items-center gap-2">
                       <p className="text-muted-foreground">You are on the <span className="font-medium text-primary">Pro</span> plan.</p>
@@ -110,14 +117,14 @@ const Billing = () => {
                     <p className="text-muted-foreground">You are currently on the <span className="font-medium text-foreground">Free</span> plan.</p>
                   )}
                 </div>
-                {!hasProAccess && !(hasPaid && subscription?.plan === 'starter') ? (
+                {!hasProAccess && !(hasPaid && subscription?.plan === 'starter') && !(hasPaid && subscription?.plan === 'plus') ? (
                   <Link to="/pricing">
                     <Button variant="hero" className="gap-2">
                       Upgrade Plan
                       <ArrowRight className="w-4 h-4" />
                     </Button>
                   </Link>
-                ) : hasPaid && subscription?.plan === 'starter' ? (
+                ) : (hasPaid && subscription?.plan === 'starter') || (hasPaid && subscription?.plan === 'plus') ? (
                   <Link to="/pricing">
                     <Button variant="hero" className="gap-2">
                       Upgrade to Pro
@@ -155,6 +162,38 @@ const Billing = () => {
                       <div className="text-sm text-muted-foreground mb-1">Expires</div>
                       <div className="text-lg font-bold text-foreground">
                         {subscription?.expires_at ? new Date(subscription.expires_at).toLocaleDateString() : '1 Year'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : hasPaid && subscription?.plan === 'plus' ? (
+                <div className="p-5 rounded-xl bg-gradient-to-r from-blue-500/10 via-blue-500/5 to-cyan-500/10 border border-blue-500/20">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                      <Crown className="w-6 h-6 text-blue-500" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-foreground">Plus Plan Active</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        All Pro features included. $10/month base + per workflow charge for each workflow you use.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="grid sm:grid-cols-3 gap-4 mt-4">
+                    <div className="p-3 rounded-lg bg-card/50">
+                      <div className="text-sm text-muted-foreground mb-1">Plan</div>
+                      <div className="text-lg font-bold text-blue-600">Plus Monthly</div>
+                    </div>
+                    <div className="p-3 rounded-lg bg-card/50">
+                      <div className="text-sm text-muted-foreground mb-1">Status</div>
+                      <div className="text-lg font-bold text-blue-600 flex items-center gap-1">
+                        <Shield className="w-4 h-4" /> Active
+                      </div>
+                    </div>
+                    <div className="p-3 rounded-lg bg-card/50">
+                      <div className="text-sm text-muted-foreground mb-1">Renews</div>
+                      <div className="text-lg font-bold text-foreground">
+                        {subscription?.expires_at ? new Date(subscription.expires_at).toLocaleDateString() : 'Monthly'}
                       </div>
                     </div>
                   </div>
@@ -208,9 +247,9 @@ const Billing = () => {
             </div>
 
             {/* Upgrade Options - only show if not pro */}
-            {(!hasProAccess || (hasPaid && subscription?.plan === 'starter')) && (
-            <div className={`grid gap-6 mb-6 ${hasPaid && subscription?.plan === 'starter' ? 'md:grid-cols-1 max-w-lg' : 'md:grid-cols-2'}`}>
-              {!(hasPaid && subscription?.plan === 'starter') && (
+            {(!hasProAccess || (hasPaid && subscription?.plan === 'starter') || (hasPaid && subscription?.plan === 'plus')) && (
+            <div className={`grid gap-6 mb-6 ${(hasPaid && (subscription?.plan === 'starter' || subscription?.plan === 'plus')) ? 'md:grid-cols-1 max-w-lg' : 'md:grid-cols-2'}`}>
+              {!(hasPaid && subscription?.plan === 'starter') && !(hasPaid && subscription?.plan === 'plus') && (
                 <div className="bg-card rounded-2xl border border-border p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold text-foreground">Starter Plan</h3>
