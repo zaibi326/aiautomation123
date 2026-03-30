@@ -119,6 +119,7 @@ const AdminDashboard = () => {
   const [newFreeAccessNotes, setNewFreeAccessNotes] = useState("");
   const [grantingAccess, setGrantingAccess] = useState(false);
   const [loadingFreeAccess, setLoadingFreeAccess] = useState(false);
+  const [grantPlanType, setGrantPlanType] = useState("starter");
 
   const fetchSubmissions = async () => {
     setLoading(true);
