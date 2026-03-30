@@ -332,22 +332,28 @@ const AdminDashboard = () => {
       } else {
         // If approved, create lifetime subscription for the user
         if (newStatus === "approved" && submission?.user_id) {
+          const planType = submission.plan_selected || "pro";
+          const expiresAt = planType === "starter" 
+            ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+            : null;
+            
           const { error: subError } = await supabase
             .from("user_subscriptions")
             .insert({
               user_id: submission.user_id,
-              plan: submission.plan_selected || "pro",
+              plan: planType,
               status: "active",
               payment_id: id,
               starts_at: new Date().toISOString(),
-              expires_at: null,
+              expires_at: expiresAt,
             });
 
           if (subError) {
             console.error("Error creating subscription:", subError);
             toast.error("Payment approved but failed to activate subscription");
           } else {
-            toast.success(`Payment approved! Lifetime Pro access granted.`);
+            const planLabel = planType === "starter" ? "Starter (1 Year)" : "Lifetime Pro";
+            toast.success(`Payment approved! ${planLabel} access granted.`);
           }
         } else {
           toast.success(`Status updated to ${newStatus}`);
