@@ -378,10 +378,15 @@ const AutomationDetail = () => {
                           <Loader2 className="w-4 h-4 animate-spin" />
                           Downloading...
                         </>
-                      ) : (!canDownload && !appSettings.allow_user_downloads) ? (
+                      ) : (!canDownload && !isFreeDemoAutomation && !appSettings.allow_user_downloads) ? (
+                        <>
+                          <Lock className="w-4 h-4" />
+                          Upgrade to Download
+                        </>
+                      ) : isFreeDemoAutomation && !canDownload ? (
                         <>
                           <Download className="w-4 h-4" />
-                          Downloads Disabled
+                          Download Free Demo
                         </>
                       ) : (
                         <>
