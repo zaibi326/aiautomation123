@@ -59,7 +59,7 @@ const PaymentRequiredModal = ({ open, onOpenChange }: PaymentRequiredModalProps)
                 <Zap className="w-4 h-4 text-accent-foreground" />
                 <span className="font-semibold text-xs">Plus</span>
               </div>
-              <p className="text-lg font-bold text-foreground">$5</p>
+              <p className="text-lg font-bold text-foreground">$10</p>
               <p className="text-[10px] text-muted-foreground">/mo + per use</p>
             </div>
           </div>
